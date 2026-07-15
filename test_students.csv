@@ -1,0 +1,4 @@
+nombre, curso, codigo, email_padre, nombre_padre
+Carlos Mendez, 11B, ST-11-001, padre.carlos@test.com, Juan Mendez
+Camila Rojas, 11B, ST-11-002, padre.camila@test.com, Andrea Rojas
+David Torres, 11B, ST-11-003, padre.david.t@test.com, Ricardo Torres
