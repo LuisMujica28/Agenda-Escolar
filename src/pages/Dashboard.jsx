@@ -7,7 +7,7 @@ import {
     Loader2, BookOpen, Calendar as CalendarIcon, ClipboardList, 
     MessageSquare, User, FileText, Award, Star, Bell, 
     ChevronRight, CheckCircle2, AlertTriangle, TrendingUp,
-    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X
+    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2
 } from 'lucide-react';
 import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS } from '../lib/mockData';
 
@@ -577,16 +577,20 @@ export default function Dashboard() {
         <>
             <div className="w-full space-y-8 animate-fade-in">
             {/* Banner de Bienvenida Premium */}
-            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-700 via-violet-600 to-indigo-800 text-white p-6 md:p-8 shadow-xl border border-indigo-500/20">
-                <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-1/4 translate-x-1/8">
-                    <Sparkles size={300} />
-                </div>
+            <div 
+                className="relative rounded-3xl overflow-hidden bg-slate-900 text-white p-6 md:p-8 shadow-xl border border-indigo-500/10"
+                style={{
+                    backgroundImage: 'linear-gradient(to right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.4)), url("/dashboard_welcome_bg.png")',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                }}
+            >
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-indigo-100 flex items-center gap-1.5 w-fit border border-white/10 mb-3">
                             <Sparkles size={12} /> Portal Oficial INAS
                         </span>
-                        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
                             {userRole === 'parent' ? `¡Hola, ${currentUser.displayName || 'Acudiente'}!` : `Bienvenido al Panel de Control`}
                         </h1>
                         <p className="text-indigo-100/90 text-sm mt-1.5 max-w-xl font-medium">
@@ -872,7 +876,7 @@ export default function Dashboard() {
                         <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                             <Sparkles className="text-indigo-600" size={20} /> Acciones Rápidas del Docente
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                             <Link 
                                 to="/teacher/search" 
                                 className="bg-indigo-50/20 border border-indigo-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70"
@@ -914,6 +918,17 @@ export default function Dashboard() {
                                 <div>
                                     <h4 className="text-sm font-bold text-gray-800">Buzón de Mensajes</h4>
                                     <p className="text-[10px] text-gray-500 mt-1 leading-normal">Responde inquietudes e intercambia mensajes con acudientes.</p>
+                                </div>
+                            </Link>
+
+                            <Link 
+                                to="/admin/stats" 
+                                className="bg-blue-50/20 border border-blue-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-blue-50/70"
+                            >
+                                <BarChart2 className="text-blue-600 group-hover:scale-110 transition-transform" size={28} />
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-800">Estadísticas</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Analiza promedios, rendimientos y alertas académicas de cursos.</p>
                                 </div>
                             </Link>
                         </div>
@@ -965,7 +980,7 @@ export default function Dashboard() {
                         <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                             <Sparkles className="text-indigo-600" size={20} /> Panel Administrativo Institucional
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                             <Link 
                                 to="/admin/new-circular" 
                                 className="bg-indigo-50/20 border border-indigo-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70"
@@ -1007,6 +1022,17 @@ export default function Dashboard() {
                                 <div>
                                     <h4 className="text-sm font-bold text-gray-800">Planilla de Control</h4>
                                     <p className="text-[10px] text-gray-500 mt-1 leading-normal">Genera e imprime planillas de asistencia físicas del colegio.</p>
+                                </div>
+                            </Link>
+
+                            <Link 
+                                to="/admin/stats" 
+                                className="bg-blue-50/20 border border-blue-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-blue-50/70"
+                            >
+                                <BarChart2 className="text-blue-600 group-hover:scale-110 transition-transform" size={28} />
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-800">Estadísticas Académicas</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Analiza promedios, rendimientos y alertas académicas del plantel.</p>
                                 </div>
                             </Link>
                         </div>

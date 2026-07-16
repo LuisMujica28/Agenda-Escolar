@@ -19,7 +19,8 @@ import ImportCourse from './pages/admin/ImportCourse';
 import ImportGrades from './pages/admin/ImportGrades';
 import PrintBoletin from './pages/admin/PrintBoletin';
 import PrintPlanilla from './pages/admin/PrintPlanilla';
-import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer } from 'lucide-react';
+import AcademicStats from './pages/admin/AcademicStats';
+import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2 } from 'lucide-react';
 
 function Layout({ children }) {
   const { currentUser, userRole, logout } = useAuth();
@@ -90,6 +91,15 @@ function Layout({ children }) {
               }`}
             >
               <Printer size={18} /> Planilla de Control
+            </Link>
+            <Link 
+              to="/admin/stats" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/admin/stats') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <BarChart2 size={18} /> Estadísticas Académicas
             </Link>
           </>
         );
@@ -217,6 +227,15 @@ function Layout({ children }) {
               }`}
             >
               <Printer size={18} /> Planilla de Control
+            </Link>
+            <Link 
+              to="/admin/stats" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/admin/stats') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <BarChart2 size={18} /> Estadísticas Académicas
             </Link>
           </>
         );
@@ -384,6 +403,7 @@ function App() {
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
 
            {/* Admin Routes */}
+          <Route path="/admin/stats" element={<Layout><AcademicStats /></Layout>} />
           <Route path="/admin/new-circular" element={<Layout><CreateCircular /></Layout>} />
           <Route path="/admin/import" element={<Layout><ImportCourse /></Layout>} />
           <Route path="/admin/import-grades" element={<Layout><ImportGrades /></Layout>} />
