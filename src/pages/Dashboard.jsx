@@ -855,7 +855,7 @@ export default function Dashboard() {
 
                         <div 
                             onClick={handleOpenCircularsModal}
-                            className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition cursor-pointer hover:bg-slate-50/50 active:scale-[0.98]"
+                            className="bg-white border border-gray-100 rounded-3xl p-6 flex items-center gap-4 cursor-pointer hover-elevate active-press hover:bg-slate-50/50"
                         >
                             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
                                 <Bell size={24} />
@@ -875,7 +875,7 @@ export default function Dashboard() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <Link 
                                 to="/teacher/search" 
-                                className="bg-indigo-50/20 hover:bg-indigo-50 border border-indigo-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-36 group shadow-inner"
+                                className="bg-indigo-50/20 border border-indigo-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70"
                             >
                                 <Users className="text-indigo-600 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -886,7 +886,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/teacher/create-task" 
-                                className="bg-emerald-50/20 hover:bg-emerald-50 border border-emerald-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-36 group shadow-inner"
+                                className="bg-emerald-50/20 border border-emerald-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-emerald-50/70"
                             >
                                 <ClipboardList className="text-emerald-600 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -897,7 +897,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/teacher/sync-grades" 
-                                className="bg-violet-50/20 hover:bg-violet-50 border border-violet-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-36 group shadow-inner"
+                                className="bg-violet-50/20 border border-violet-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-violet-50/70"
                             >
                                 <BookOpen className="text-violet-600 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -908,7 +908,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/messages" 
-                                className="bg-amber-50/20 hover:bg-amber-50 border border-amber-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-36 group shadow-inner"
+                                className="bg-amber-50/20 border border-amber-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-amber-50/70"
                             >
                                 <MessageSquare className="text-amber-500 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -948,7 +948,7 @@ export default function Dashboard() {
 
                         <div 
                             onClick={handleOpenCircularsModal}
-                            className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition cursor-pointer hover:bg-slate-50/50 active:scale-[0.98]"
+                            className="bg-white border border-gray-100 rounded-3xl p-6 flex items-center gap-4 cursor-pointer hover-elevate active-press hover:bg-slate-50/50"
                         >
                             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
                                 <Bell size={24} />
@@ -968,7 +968,7 @@ export default function Dashboard() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <Link 
                                 to="/admin/new-circular" 
-                                className="bg-indigo-50/20 hover:bg-indigo-50 border border-indigo-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-40 group shadow-inner"
+                                className="bg-indigo-50/20 border border-indigo-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70"
                             >
                                 <PlusCircle className="text-indigo-600 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -979,7 +979,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/admin/import" 
-                                className="bg-emerald-50/20 hover:bg-emerald-50 border border-emerald-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-40 group shadow-inner"
+                                className="bg-emerald-50/20 border border-emerald-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-emerald-50/70"
                             >
                                 <Upload className="text-emerald-600 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -990,7 +990,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/teacher/sync-grades" 
-                                className="bg-violet-50/20 hover:bg-violet-50 border border-violet-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-40 group shadow-inner"
+                                className="bg-violet-50/20 border border-violet-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-violet-50/70"
                             >
                                 <ClipboardList className="text-violet-600 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -1001,7 +1001,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/planilla-print" 
-                                className="bg-amber-50/20 hover:bg-amber-50 border border-amber-100/50 p-5 rounded-2xl transition text-left flex flex-col justify-between h-40 group shadow-inner"
+                                className="bg-amber-50/20 border border-amber-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-amber-50/70"
                             >
                                 <Printer className="text-amber-500 group-hover:scale-110 transition-transform" size={28} />
                                 <div>
@@ -1035,7 +1035,7 @@ export default function Dashboard() {
                                                 setSelectedAdminCourse(course);
                                                 setAdminSearchTerm('');
                                             }}
-                                            className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 border shadow-sm ${
+                                            className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 border shadow-sm active-press ${
                                                 isSelected
                                                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/10'
                                                     : 'bg-white hover:bg-gray-50 border-gray-100 text-gray-600'
