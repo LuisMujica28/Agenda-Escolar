@@ -25,11 +25,24 @@ export function AuthProvider({ children }) {
             if (email.includes('profe') || email.includes('teacher')) role = 'teacher';
             if (email.includes('padre') || email.includes('parent') || email.includes('demo')) role = 'parent';
 
+            let fixedUid = 'fake-' + role + '-static';
+            let displayName = 'Usuario Demo';
+            if (role === 'parent') {
+                fixedUid = 'demo-parent';
+                displayName = 'Usuario Demo Acudiente';
+            } else if (role === 'teacher') {
+                fixedUid = 'demo-teacher';
+                displayName = 'Docente Demo';
+            } else if (role === 'admin') {
+                fixedUid = 'demo-admin';
+                displayName = 'Administrador Demo';
+            }
+
             const fakeUser = {
-                uid: 'fake-' + role + '-' + Date.now(),
+                uid: fixedUid,
                 email,
                 isAnonymous: false,
-                displayName: 'Usuario Demo'
+                displayName
             };
 
             // Simulamos retardo de red

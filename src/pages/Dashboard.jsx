@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit, doc, deleteDoc, addDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, doc, deleteDoc, addDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
     Loader2, BookOpen, Calendar as CalendarIcon, ClipboardList, 
     MessageSquare, User, FileText, Award, Star, Bell, 
     ChevronRight, CheckCircle2, AlertTriangle, TrendingUp,
-    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2
+    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send
 } from 'lucide-react';
-import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS } from '../lib/mockData';
+import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS, MOCK_PARENTS } from '../lib/mockData';
+import CircularDetailModal from '../components/CircularDetailModal';
+import CircularReadersModal from '../components/CircularReadersModal';
 
 export default function Dashboard() {
     const { currentUser, userRole } = useAuth();
@@ -19,11 +21,53 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [circulars, setCirculars] = useState([]);
     const [readCirculars, setReadCirculars] = useState([]);
+    const [selectedCircular, setSelectedCircular] = useState(null);
+    const [parents, setParents] = useState([]);
+    const [readersModalCircular, setReadersModalCircular] = useState(null);
+    const [studentsList, setStudentsList] = useState([]);
 
     // Modal states for circulars list
     const [showCircularsModal, setShowCircularsModal] = useState(false);
     const [allCirculars, setAllCirculars] = useState([]);
     const [loadingAllCirculars, setLoadingAllCirculars] = useState(false);
+
+    // State for interactive mini calendar
+    const [calendarDate, setCalendarDate] = useState(new Date(2026, 6, 1));
+
+    const handlePrevMonth = () => {
+        setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    };
+
+    const getCalendarDays = () => {
+        const year = calendarDate.getFullYear();
+        const month = calendarDate.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const startOffset = (firstDay + 6) % 7;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+        const days = [];
+
+        for (let i = startOffset - 1; i >= 0; i--) {
+            days.push({ day: daysInPrevMonth - i, isCurrentMonth: false });
+        }
+
+        const today = new Date();
+        for (let d = 1; d <= daysInMonth; d++) {
+            const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+            days.push({ day: d, isCurrentMonth: true, isToday });
+        }
+
+        const remaining = (7 - (days.length % 7)) % 7;
+        for (let i = 1; i <= remaining; i++) {
+            days.push({ day: i, isCurrentMonth: false });
+        }
+
+        return days;
+    };
 
     useEffect(() => {
         if (currentUser) {
@@ -36,11 +80,73 @@ export default function Dashboard() {
         }
     }, [currentUser]);
 
-    const handleMarkAsRead = (id) => {
+    useEffect(() => {
+        async function fetchStudents() {
+            try {
+                const sSnap = await getDocs(collection(db, 'students'));
+                const list = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (list.length > 0) {
+                    setStudentsList(list);
+                } else {
+                    setStudentsList(MOCK_STUDENTS);
+                }
+            } catch (error) {
+                console.warn("Error loading students for acuse mapping:", error);
+                setStudentsList(MOCK_STUDENTS);
+            }
+        }
+        if (currentUser && (userRole === 'admin' || userRole === 'teacher')) {
+            fetchStudents();
+        }
+    }, [currentUser, userRole]);
+
+    useEffect(() => {
+        async function loadParents() {
+            try {
+                const q = query(collection(db, 'users'), where('role', '==', 'parent'));
+                const querySnapshot = await getDocs(q);
+                const parentsData = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+                if (parentsData.length > 0) {
+                    setParents(parentsData);
+                } else {
+                    setParents(MOCK_PARENTS);
+                }
+            } catch (error) {
+                console.warn("Error loading parents from Firestore, using MOCK_PARENTS:", error);
+                setParents(MOCK_PARENTS);
+            }
+        }
+        if (currentUser) {
+            loadParents();
+        }
+    }, [currentUser]);
+
+    const handleMarkAsRead = async (id) => {
         if (!currentUser) return;
+        
+        // 1. Actualización local rápida
         const updated = [...readCirculars, id];
         setReadCirculars(updated);
         localStorage.setItem(`read_circulars_${currentUser.uid}`, JSON.stringify(updated));
+
+        // 2. Persistir en la base de datos real
+        try {
+            const circularRef = doc(db, "circulars", id);
+            await updateDoc(circularRef, {
+                read_by: arrayUnion(currentUser.uid)
+            });
+            console.log(`✅ Acuse guardado en Firestore de la circular: ${id}`);
+        } catch (error) {
+            console.warn("No se pudo guardar la firma en Firestore (Modo Demo Fallback):", error);
+            
+            // Si Firestore falla, guardamos en demo_circular_reads
+            const demoReads = JSON.parse(localStorage.getItem('demo_circular_reads') || '{}');
+            const currentReads = demoReads[id] || [];
+            if (!currentReads.includes(currentUser.uid)) {
+                demoReads[id] = [...currentReads, currentUser.uid];
+                localStorage.setItem('demo_circular_reads', JSON.stringify(demoReads));
+            }
+        }
     };
 
     // Parent Dashboard States
@@ -61,6 +167,9 @@ export default function Dashboard() {
     const [adminCourses, setAdminCourses] = useState([]);
     const [selectedAdminCourse, setSelectedAdminCourse] = useState('');
     const [adminSearchTerm, setAdminSearchTerm] = useState('');
+    const [circularNumber, setCircularNumber] = useState(36);
+    const [currentTime, setCurrentTime] = useState('');
+    const [importPlanillasCount, setImportPlanillasCount] = useState(12);
 
     // Admin Student Manage States
     const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -350,22 +459,52 @@ export default function Dashboard() {
         }
     };
 
+    const mergeDemoReads = (circs) => {
+        const demoReads = JSON.parse(localStorage.getItem('demo_circular_reads') || '{}');
+        return circs.map(c => {
+            const localReads = demoReads[c.id] || [];
+            const merged = Array.from(new Set([...(c.read_by || []), ...localReads]));
+            return { ...c, read_by: merged };
+        });
+    };
+
     const handleOpenCircularsModal = async () => {
         setShowCircularsModal(true);
         setLoadingAllCirculars(true);
         try {
+            let loadedCircs = [];
             if (currentUser.uid.startsWith('fake-')) {
                 const storedNews = localStorage.getItem('demo_circulars');
                 if (storedNews) {
-                    setAllCirculars(JSON.parse(storedNews));
+                    loadedCircs = mergeDemoReads(JSON.parse(storedNews));
                 } else {
-                    setAllCirculars(MOCK_NEWS);
+                    loadedCircs = mergeDemoReads(MOCK_NEWS);
                 }
             } else {
                 const q = query(collection(db, 'circulars'), orderBy('created_at', 'desc'));
                 const snap = await getDocs(q);
-                setAllCirculars(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                loadedCircs = mergeDemoReads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
             }
+
+            if (userRole === 'parent') {
+                let activeStudent = student;
+                if (!activeStudent) {
+                    const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
+                    const sSnap = await getDocs(qStudent);
+                    if (!sSnap.empty) {
+                        activeStudent = { id: sSnap.docs[0].id, ...sSnap.docs[0].data() };
+                    }
+                }
+                loadedCircs = loadedCircs.filter(c => {
+                    if (!c.target_type) return true;
+                    if (c.target_type === 'ALL') return true;
+                    if (c.target_type === 'COURSE' && activeStudent && c.target_course === activeStudent.grade) return true;
+                    if (c.target_type === 'STUDENTS' && activeStudent && c.target_students?.includes(activeStudent.id)) return true;
+                    if (c.target_parent_uids?.includes(currentUser.uid)) return true;
+                    return false;
+                });
+            }
+            setAllCirculars(loadedCircs);
         } catch (error) {
             console.error("Error loading circulars:", error);
         } finally {
@@ -402,19 +541,41 @@ export default function Dashboard() {
             setLoading(true);
             try {
                 // 1. Cargar Circulares/Anuncios (común para todos)
-                let circSnap;
+                let loadedCircs = [];
                 if (currentUser.uid.startsWith('fake-')) {
                     const storedNews = localStorage.getItem('demo_circulars');
                     if (storedNews) {
-                        setCirculars(JSON.parse(storedNews).slice(0, 3));
+                        loadedCircs = mergeDemoReads(JSON.parse(storedNews));
                     } else {
-                        setCirculars(MOCK_NEWS.slice(0, 3));
+                        loadedCircs = mergeDemoReads(MOCK_NEWS);
                     }
                 } else {
-                    const qCirc = query(collection(db, 'circulars'), orderBy('created_at', 'desc'), limit(3));
-                    circSnap = await getDocs(qCirc);
-                    setCirculars(circSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                    const qCirc = query(collection(db, 'circulars'), orderBy('created_at', 'desc'));
+                    const circSnap = await getDocs(qCirc);
+                    loadedCircs = mergeDemoReads(circSnap.docs.map(d => ({ id: d.id, ...d.data() })));
                 }
+
+                if (userRole === 'parent') {
+                    let activeStudent = null;
+                    if (currentUser.uid.startsWith('fake-')) {
+                        activeStudent = MOCK_STUDENTS[0];
+                    } else {
+                        const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
+                        const sSnap = await getDocs(qStudent);
+                        if (!sSnap.empty) {
+                            activeStudent = { id: sSnap.docs[0].id, ...sSnap.docs[0].data() };
+                        }
+                    }
+                    loadedCircs = loadedCircs.filter(c => {
+                        if (!c.target_type) return true;
+                        if (c.target_type === 'ALL') return true;
+                        if (c.target_type === 'COURSE' && activeStudent && c.target_course === activeStudent.grade) return true;
+                        if (c.target_type === 'STUDENTS' && activeStudent && c.target_students?.includes(activeStudent.id)) return true;
+                        if (c.target_parent_uids?.includes(currentUser.uid)) return true;
+                        return false;
+                    });
+                }
+                setCirculars(loadedCircs.slice(0, 3));
 
                 // 2. Cargar datos específicos por Rol
                 if (userRole === 'parent') {
@@ -433,8 +594,19 @@ export default function Dashboard() {
                         const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
                         const sSnap = await getDocs(qStudent);
 
+                        let targetStudentDoc = null;
                         if (!sSnap.empty) {
-                            const studentDoc = sSnap.docs[0];
+                            targetStudentDoc = sSnap.docs[0];
+                        } else {
+                            // Fallback para cuentas de prueba o padres sin estudiante vinculado explícito
+                            const allStudentsSnap = await getDocs(collection(db, 'students'));
+                            if (!allStudentsSnap.empty) {
+                                targetStudentDoc = allStudentsSnap.docs[0];
+                            }
+                        }
+
+                        if (targetStudentDoc) {
+                            const studentDoc = targetStudentDoc;
                             const studentData = { id: studentDoc.id, ...studentDoc.data() };
                             setStudent(studentData);
 
@@ -537,9 +709,68 @@ export default function Dashboard() {
                 setLoading(false);
             }
         }
-
         loadDashboardData();
     }, [currentUser, userRole]);
+
+    // Cargar número de circular de Firestore
+    useEffect(() => {
+        if (currentUser && userRole === 'admin') {
+            async function fetchCircularNumber() {
+                try {
+                    const docSnap = await getDocs(collection(db, 'config'));
+                    const configDoc = docSnap.docs.find(d => d.id === 'circulars');
+                    if (configDoc && configDoc.data().current_number) {
+                        setCircularNumber(configDoc.data().current_number);
+                    } else {
+                        await setDoc(doc(db, 'config', 'circulars'), { current_number: 36 });
+                        setCircularNumber(36);
+                    }
+                } catch (e) {
+                    console.warn("Error al cargar número de circular, usando 36:", e);
+                    setCircularNumber(36);
+                }
+            }
+            fetchCircularNumber();
+        }
+    }, [currentUser, userRole]);
+
+    // Reloj dinámico de fecha y hora
+    useEffect(() => {
+        const updateClock = () => {
+            const now = new Date();
+            const formatOptions = {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            };
+            const timeStr = now.toLocaleDateString('es-ES', formatOptions).replace(' a las', '');
+            setCurrentTime(timeStr);
+        };
+        updateClock();
+        const timer = setInterval(updateClock, 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const handleChangeCircularNumber = async () => {
+        const input = window.prompt("Ingresa el nuevo número consecutivo para las circulares:", circularNumber);
+        if (!input) return;
+        const num = parseInt(input, 10);
+        if (isNaN(num)) {
+            alert("Por favor ingresa un número válido.");
+            return;
+        }
+        try {
+            await setDoc(doc(db, 'config', 'circulars'), { current_number: num });
+            setCircularNumber(num);
+            alert(`Consecutivo de circular actualizado a N° ${num}`);
+        } catch (e) {
+            console.error("Error al actualizar número de circular:", e);
+            alert("No se pudo guardar el cambio en la base de datos.");
+        }
+    };
 
     // Auto-generar código del alumno sugerido (Solución 1: Basado en Año de Ingreso)
     useEffect(() => {
@@ -563,6 +794,10 @@ export default function Dashboard() {
             setStudentCode(`${prefix}${paddedNum}`);
         }
     }, [showAddStudentModal, isEditMode, adminStudents]);
+
+    const calendarMonthName = calendarDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const formattedCalendarMonthTitle = calendarMonthName.charAt(0).toUpperCase() + calendarMonthName.slice(1);
+    const calendarDaysList = getCalendarDays();
 
     if (loading) {
         return (
@@ -642,9 +877,13 @@ export default function Dashboard() {
                                     circulars.map(c => {
                                         const isRead = readCirculars.includes(c.id);
                                         return (
-                                            <div key={c.id} className={`py-4 first:pt-0 last:pb-0 border-b last:border-b-0 transition-all ${
-                                                isRead ? 'opacity-55' : 'opacity-100'
-                                            }`}>
+                                            <div 
+                                                key={c.id} 
+                                                onClick={() => setSelectedCircular(c)}
+                                                className={`py-4 px-2 first:pt-0 last:pb-0 border-b last:border-b-0 cursor-pointer hover:bg-slate-50/50 rounded-2xl transition-all ${
+                                                    isRead ? 'opacity-55' : 'opacity-100'
+                                                }`}
+                                            >
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="space-y-1 flex-1">
                                                         <div className="flex items-center gap-2 flex-wrap">
@@ -665,7 +904,10 @@ export default function Dashboard() {
 
                                                     {!isRead && (
                                                         <button
-                                                            onClick={() => handleMarkAsRead(c.id)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleMarkAsRead(c.id);
+                                                            }}
                                                             className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition shrink-0 border border-indigo-100/50 shadow-sm"
                                                         >
                                                             Marcar como leído
@@ -939,103 +1181,414 @@ export default function Dashboard() {
             {/* Panel de Control para Administradores */}
             {userRole === 'admin' && (
                 <div className="space-y-6">
-                    {/* Tarjetas de Estadísticas del Administrador */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
-                                <Users size={24} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Alumnos Totales</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-1">{totalStudentsCount}</p>
+
+                    {/* Saludo y Métricas Rápidas */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50">
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl animate-bounce">👋</span>
+                            <div className="text-left">
+                                <h3 className="text-base font-black text-slate-800 leading-tight">¡Buenos días, Administrador!</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Aquí tienes un resumen de lo más importante hoy.</p>
                             </div>
                         </div>
 
-                        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
-                                <Users size={24} />
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:w-auto shrink-0">
+                            {/* Card 1: Circulares Pendientes */}
+                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-650 flex items-center justify-center shrink-0">
+                                    <Sparkles size={16} />
+                                </div>
+                                <div className="leading-tight text-left">
+                                    <p className="text-xs font-black text-slate-700">2</p>
+                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5">Circulares pendientes</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Cuentas Registradas</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-1">{totalUsersCount}</p>
+                            {/* Card 2: Eventos Programados */}
+                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-red-50 text-red-650 flex items-center justify-center shrink-0">
+                                    <CalendarIcon size={16} />
+                                </div>
+                                <div className="leading-tight text-left">
+                                    <p className="text-xs font-black text-slate-700">1</p>
+                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5">Evento programado</p>
+                                </div>
                             </div>
-                        </div>
-
-                        <div 
-                            onClick={handleOpenCircularsModal}
-                            className="bg-white border border-gray-100 rounded-3xl p-6 flex items-center gap-4 cursor-pointer hover-elevate active-press hover:bg-slate-50/50"
-                        >
-                            <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
-                                <Bell size={24} />
+                            {/* Card 3: Alumnos Totales */}
+                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                    <Users size={16} />
+                                </div>
+                                <div className="leading-tight text-left">
+                                    <p className="text-xs font-black text-slate-700">{totalStudentsCount}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5">Alumnos totales</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Circulares Publicadas</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-1">{circulars.length}</p>
+                            {/* Card 4: Reloj */}
+                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                                    <CalendarIcon size={16} />
+                                </div>
+                                <div className="leading-tight text-left">
+                                    <p className="text-[9px] text-slate-500 font-extrabold whitespace-nowrap leading-tight">
+                                        {currentTime.split(' de ')[0] || 'Hoy'}
+                                    </p>
+                                    <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+                                        {currentTime.split(' a la')[1] || currentTime.split(' ').slice(-2).join(' ') || ''}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Acciones del Administrador */}
-                    <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
-                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <Sparkles className="text-indigo-600" size={20} /> Panel Administrativo Institucional
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                            <Link 
-                                to="/admin/new-circular" 
-                                className="bg-indigo-50/20 border border-indigo-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70"
-                            >
-                                <PlusCircle className="text-indigo-600 group-hover:scale-110 transition-transform" size={28} />
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Publicar Nueva Circular</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Redacta avisos, suspensiones de ruta o citaciones generales.</p>
+                    {/* Tarjetas Analíticas con Mini-Gráficos */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {/* Card 1: Alumnos Totales */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1 text-left">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ALUMNOS TOTALES</p>
+                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{totalStudentsCount}</p>
                                 </div>
-                            </Link>
-
-                            <Link 
-                                to="/admin/import" 
-                                className="bg-emerald-50/20 border border-emerald-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-emerald-50/70"
-                            >
-                                <Upload className="text-emerald-600 group-hover:scale-110 transition-transform" size={28} />
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Importación Masiva (CSV)</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Carga listados de alumnos y crea cuentas de acceso.</p>
+                                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                    <Users size={20} />
                                 </div>
-                            </Link>
-
-                            <Link 
-                                to="/teacher/sync-grades" 
-                                className="bg-violet-50/20 border border-violet-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-violet-50/70"
-                            >
-                                <ClipboardList className="text-violet-600 group-hover:scale-110 transition-transform" size={28} />
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Planilla Digital de Notas</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Digita calificaciones o importa planillas CSV de cualquier grado.</p>
-                                </div>
-                            </Link>
-
-                            <Link 
-                                to="/planilla-print" 
-                                className="bg-amber-50/20 border border-amber-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-amber-50/70"
-                            >
-                                <Printer className="text-amber-500 group-hover:scale-110 transition-transform" size={28} />
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Planilla de Control</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Genera e imprime planillas de asistencia físicas del colegio.</p>
-                                </div>
-                            </Link>
-
-                            <Link 
-                                to="/admin/stats" 
-                                className="bg-blue-50/20 border border-blue-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-40 group shadow-inner hover-elevate active-press hover:bg-blue-50/70"
-                            >
-                                <BarChart2 className="text-blue-600 group-hover:scale-110 transition-transform" size={28} />
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Estadísticas Académicas</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Analiza promedios, rendimientos y alertas académicas del plantel.</p>
-                                </div>
-                            </Link>
+                            </div>
+                            <div className="flex items-center justify-between mt-1 z-10">
+                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                                    +8% vs. mes anterior
+                                </span>
+                                {/* Sparkline SVG */}
+                                <svg className="w-24 h-8 text-blue-550 shrink-0" viewBox="0 0 100 30" fill="none">
+                                    <path d="M0 25 C 20 20, 40 28, 60 15 C 80 5, 90 10, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    <path d="M0 25 C 20 20, 40 28, 60 15 C 80 5, 90 10, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
+                                </svg>
+                            </div>
                         </div>
+
+                        {/* Card 2: Cuentas Registradas */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1 text-left">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CUENTAS REGISTRADAS</p>
+                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{totalUsersCount}</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                    <Users size={20} />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between mt-1 z-10">
+                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                                    +12% vs. mes anterior
+                                </span>
+                                {/* Sparkline SVG */}
+                                <svg className="w-24 h-8 text-emerald-550 shrink-0" viewBox="0 0 100 30" fill="none">
+                                    <path d="M0 22 C 20 25, 40 12, 60 18 C 80 8, 90 5, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    <path d="M0 22 C 20 25, 40 12, 60 18 C 80 8, 90 5, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Card 3: Circulares Publicadas */}
+                        <div 
+                            onClick={handleOpenCircularsModal}
+                            className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden cursor-pointer hover:shadow-md hover:border-orange-200 transition active-press"
+                            title="Haz clic para ver el historial y acuses de circulares publicadas"
+                        >
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1 text-left">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CIRCULARES PUBLICADAS</p>
+                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{circulars.length}</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                                    <Bell size={20} />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between mt-1 z-10">
+                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                                    +50% vs. mes anterior
+                                </span>
+                                {/* Sparkline SVG */}
+                                <svg className="w-24 h-8 text-orange-500 shrink-0" viewBox="0 0 100 30" fill="none">
+                                    <path d="M0 28 C 20 22, 40 26, 60 14 C 80 18, 90 10, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    <path d="M0 28 C 20 22, 40 26, 60 14 C 80 18, 90 10, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Card 4: Planillas Importadas */}
+                        <div 
+                            onClick={() => navigate('/teacher/sync-grades')}
+                            className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden cursor-pointer hover:shadow-md hover:border-purple-200 transition active-press"
+                            title="Haz clic para acceder a la Planilla Digital de Notas"
+                        >
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-1 text-left">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PLANILLAS IMPORTADAS</p>
+                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{importPlanillasCount}</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-650 flex items-center justify-center shrink-0">
+                                    <FileText size={20} />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between mt-1 z-10">
+                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                                    +20% vs. mes anterior
+                                </span>
+                                {/* Sparkline SVG */}
+                                <svg className="w-24 h-8 text-purple-550 shrink-0" viewBox="0 0 100 30" fill="none">
+                                    <path d="M0 24 C 20 20, 40 28, 60 12 C 80 15, 90 5, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    <path d="M0 24 C 20 20, 40 28, 60 12 C 80 15, 90 5, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sección de 3 Columnas */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        {/* Columna 1: Accesos Rápidos */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+                            <h3 className="text-base font-black text-slate-800 tracking-tight pb-1 border-b border-slate-100 flex items-center gap-2">
+                                <Sparkles size={18} className="text-indigo-600" /> Accesos rápidos
+                            </h3>
+                            <div className="flex flex-col gap-3 flex-1 justify-center">
+                                {/* Nueva Circular */}
+                                <Link 
+                                    to="/admin/new-circular"
+                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-indigo-50/20 hover:bg-indigo-50/40 border border-indigo-150/45 transition active-press group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-indigo-650 text-white rounded-xl flex items-center justify-center shrink-0">
+                                            <Send size={16} />
+                                        </div>
+                                        <div className="text-left leading-tight">
+                                            <p className="text-xs font-black text-slate-700">Nueva Circular</p>
+                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Redacta y publica una nueva circular</p>
+                                        </div>
+                                    </div>
+                                    <ArrowRight size={14} className="text-indigo-600 group-hover:translate-x-0.5 transition-transform" />
+                                </Link>
+
+                                {/* Importar CSV */}
+                                <Link 
+                                    to="/admin/import"
+                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50/20 hover:bg-emerald-50/40 border border-emerald-150/45 transition active-press group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-emerald-650 text-white rounded-xl flex items-center justify-center shrink-0">
+                                            <Upload size={16} />
+                                        </div>
+                                        <div className="text-left leading-tight">
+                                            <p className="text-xs font-black text-slate-700">Importar CSV</p>
+                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Carga estudiantes desde un archivo</p>
+                                        </div>
+                                    </div>
+                                    <ArrowRight size={14} className="text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
+                                </Link>
+
+                                {/* Planilla Digital de Notas */}
+                                <Link 
+                                    to="/teacher/sync-grades"
+                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-purple-50/20 hover:bg-purple-50/40 border border-purple-150/45 transition active-press group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-purple-650 text-white rounded-xl flex items-center justify-center shrink-0">
+                                            <ClipboardList size={16} />
+                                        </div>
+                                        <div className="text-left leading-tight">
+                                            <p className="text-xs font-black text-slate-700">Planilla Digital de Notas</p>
+                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Importa o gestiona las calificaciones</p>
+                                        </div>
+                                    </div>
+                                    <ArrowRight size={14} className="text-purple-600 group-hover:translate-x-0.5 transition-transform" />
+                                </Link>
+
+                                {/* Planilla de Control */}
+                                <Link 
+                                    to="/planilla-print"
+                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-orange-50/20 hover:bg-orange-50/40 border border-orange-150/45 transition active-press group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-orange-500 text-white rounded-xl flex items-center justify-center shrink-0">
+                                            <Printer size={16} />
+                                        </div>
+                                        <div className="text-left leading-tight">
+                                            <p className="text-xs font-black text-slate-700">Planilla de Control</p>
+                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Genera e imprime asistencias</p>
+                                        </div>
+                                    </div>
+                                    <ArrowRight size={14} className="text-orange-550 group-hover:translate-x-0.5 transition-transform" />
+                                </Link>
+
+                                {/* Estadísticas Académicas */}
+                                <Link 
+                                    to="/admin/stats"
+                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/20 hover:bg-blue-50/40 border border-blue-150/45 transition active-press group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-blue-600 text-white rounded-xl flex items-center justify-center shrink-0">
+                                            <BarChart2 size={16} />
+                                        </div>
+                                        <div className="text-left leading-tight">
+                                            <p className="text-xs font-black text-slate-700">Estadísticas Académicas</p>
+                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Analiza datos y rendimientos</p>
+                                        </div>
+                                    </div>
+                                    <ArrowRight size={14} className="text-blue-600 group-hover:translate-x-0.5 transition-transform" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Columna 2: Actividad Reciente */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+                            <div className="flex justify-between items-center pb-1 border-b border-slate-100">
+                                <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
+                                    <MessageSquare size={18} className="text-indigo-600" /> Actividad reciente
+                                </h3>
+                                <button 
+                                    onClick={handleOpenCircularsModal}
+                                    className="text-[10px] font-black text-indigo-600 hover:underline hover:text-indigo-850"
+                                >
+                                    Ver todo
+                                </button>
+                            </div>
+                            
+                            <div className="flex-1 flex flex-col gap-4 justify-center pr-1 overflow-y-auto max-h-[340px]">
+                                {/* Log 1 */}
+                                <div className="flex gap-3 text-left">
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                        <Send size={14} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <h5 className="text-xs font-black text-slate-700">Circular #{circularNumber} publicada</h5>
+                                        <p className="text-[9px] text-slate-450 mt-0.5">Reunión de Padres de Familia</p>
+                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 5 min</span>
+                                    </div>
+                                </div>
+
+                                {/* Log 2 */}
+                                <div className="flex gap-3 text-left">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                                        <Upload size={14} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <h5 className="text-xs font-black text-slate-700">Archivo de estudiantes importado</h5>
+                                        <p className="text-[9px] text-slate-450 mt-0.5">grado_1001.csv</p>
+                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 25 min</span>
+                                    </div>
+                                </div>
+
+                                {/* Log 3 */}
+                                <div className="flex gap-3 text-left">
+                                    <div className="w-8 h-8 rounded-full bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                                        <ClipboardList size={14} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <h5 className="text-xs font-black text-slate-700">Notas de grado 1001 actualizadas</h5>
+                                        <p className="text-[9px] text-slate-450 mt-0.5">Matemáticas - Primer periodo</p>
+                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 1 hora</span>
+                                    </div>
+                                </div>
+
+                                {/* Log 4 */}
+                                <div className="flex gap-3 text-left">
+                                    <div className="w-8 h-8 rounded-full bg-orange-50 border border-orange-100 text-orange-500 flex items-center justify-center shrink-0">
+                                        <Printer size={14} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <h5 className="text-xs font-black text-slate-700">Planilla de control generada</h5>
+                                        <p className="text-[9px] text-slate-450 mt-0.5">Asistencia general - 19/07/2026</p>
+                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 2 horas</span>
+                                    </div>
+                                </div>
+
+                                {/* Log 5 */}
+                                <div className="flex gap-3 text-left">
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                        <Users size={14} />
+                                    </div>
+                                    <div className="leading-tight">
+                                        <h5 className="text-xs font-black text-slate-700">Nuevo usuario registrado</h5>
+                                        <p className="text-[9px] text-slate-450 mt-0.5">Docente: Juan Pérez</p>
+                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 3 horas</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Columna 3: Próximos eventos (Calendario) */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+                            <div className="flex justify-between items-center pb-1 border-b border-slate-100">
+                                <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
+                                    <CalendarIcon size={18} className="text-indigo-650" /> Próximos eventos
+                                </h3>
+                                <button className="text-[10px] font-black text-indigo-600 hover:underline hover:text-indigo-800">
+                                    Ver calendario
+                                </button>
+                            </div>
+                            
+                            {/* Mini Calendario Estético Interactivo */}
+                            <div className="flex-grow flex flex-col justify-between gap-3 text-slate-700">
+                                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                                    <div className="flex justify-between items-center mb-2 px-1">
+                                        <button 
+                                            onClick={handlePrevMonth}
+                                            className="text-xs font-black text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200/60 transition"
+                                            title="Mes anterior"
+                                        >
+                                            &lt;
+                                        </button>
+                                        <span className="text-xs font-black text-slate-800 capitalize">
+                                            {formattedCalendarMonthTitle}
+                                        </span>
+                                        <button 
+                                            onClick={handleNextMonth}
+                                            className="text-xs font-black text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200/60 transition"
+                                            title="Mes siguiente"
+                                        >
+                                            &gt;
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 mb-1">
+                                        <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
+                                        {calendarDaysList.map((item, idx) => (
+                                            <span 
+                                                key={idx}
+                                                className={`flex items-center justify-center w-5 h-5 mx-auto rounded-lg transition ${
+                                                    !item.isCurrentMonth
+                                                        ? 'text-slate-300'
+                                                        : item.isToday
+                                                        ? 'bg-indigo-600 text-white font-black shadow-sm shadow-indigo-600/20'
+                                                        : 'text-slate-700 hover:bg-slate-200/50'
+                                                }`}
+                                            >
+                                                {item.day}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Evento abajo */}
+                                <div className="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/20 border border-indigo-100/40 text-left">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex flex-col items-center justify-center shrink-0 font-black">
+                                            <span className="text-[11px] leading-none">21</span>
+                                            <span className="text-[7.5px] uppercase leading-none mt-0.5">JUL</span>
+                                        </div>
+                                        <div className="leading-tight text-left">
+                                            <h6 className="text-xs font-black text-slate-800">Reunión de Consejo Académico</h6>
+                                            <p className="text-[9px] text-slate-450 mt-0.5">8:00 a.m. - Sala de Juntas</p>
+                                        </div>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                        <Users size={14} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* Panel de Control Académico General */}
@@ -1454,10 +2007,18 @@ export default function Dashboard() {
                                                 {c.body}
                                             </p>
 
-                                            <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-dashed border-slate-200 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                                                <CheckCircle2 className="text-emerald-500" size={12} />
-                                                <span>Confirmación de lectura: Leído por {readCount} {readCount === 1 ? 'usuario' : 'usuarios'}</span>
-                                            </div>
+                                            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-dashed border-slate-200">
+                                                 <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                                                     <CheckCircle2 className="text-emerald-500" size={12} />
+                                                     <span>Confirmación: Leído por {readCount} {readCount === 1 ? 'usuario' : 'usuarios'}</span>
+                                                 </div>
+                                                 <button
+                                                     onClick={() => setReadersModalCircular(c)}
+                                                     className="text-[9px] text-indigo-650 hover:text-indigo-850 bg-indigo-50 hover:bg-indigo-100 font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border border-indigo-100/50 transition select-none active-press shadow-sm"
+                                                 >
+                                                     Ver Detalle de Acuses
+                                                 </button>
+                                             </div>
                                         </div>
                                     );
                                 })
@@ -1474,6 +2035,27 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {selectedCircular && (
+                <CircularDetailModal
+                    circular={selectedCircular}
+                    onClose={() => setSelectedCircular(null)}
+                    currentUserId={currentUser.uid}
+                    onAcknowledge={(id) => {
+                        handleMarkAsRead(id);
+                        setSelectedCircular(prev => prev ? { ...prev, read_by: [...(prev.read_by || []), currentUser.uid] } : null);
+                    }}
+                />
+            )}
+
+            {readersModalCircular && (
+                <CircularReadersModal
+                    circular={readersModalCircular}
+                    parentsList={parents}
+                    studentsList={studentsList}
+                    onClose={() => setReadersModalCircular(null)}
+                />
             )}
         </>
     );

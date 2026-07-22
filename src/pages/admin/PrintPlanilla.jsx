@@ -268,7 +268,7 @@ export default function PrintPlanilla() {
     // RENDERIZADOR DE PLANILLA INDIVIDUAL (Componente Interno)
     const renderPlanillaSheet = (courseName, subjectName, studentList, grades) => {
         return (
-            <div className="printable-sheet bg-white border border-slate-350 shadow-2xl relative flex flex-col justify-between overflow-hidden shrink-0 mb-8">
+            <div className="printable-sheet bg-white border border-slate-350 shadow-2xl relative flex flex-col justify-between overflow-hidden shrink-0 mb-8 mx-auto">
                 {/* Borde doble oficial */}
                 <div className="absolute inset-[0.25cm] border-[3px] border-slate-700 border-double rounded-lg pointer-events-none page-border"></div>
 
@@ -541,6 +541,7 @@ export default function PrintPlanilla() {
                 .printable-sheet {
                     width: 33cm;
                     height: 22cm;
+                    margin: 0 auto;
                     background-color: white;
                     padding: 0.7cm;
                     border: 1px solid #cbd5e1;
@@ -551,6 +552,13 @@ export default function PrintPlanilla() {
                     justify-content: space-between;
                     overflow: hidden;
                     flex-shrink: 0;
+                }
+                @media screen {
+                    .no-print-scroll {
+                        width: 100%;
+                        overflow-x: auto;
+                        padding-bottom: 12px;
+                    }
                 }
             `}</style>
 
@@ -807,7 +815,9 @@ export default function PrintPlanilla() {
                         <span className="text-xs font-bold text-slate-400">Descargando registros académicos...</span>
                     </div>
                 ) : (
-                    renderPlanillaSheet(selectedCourse, selectedSubject, students, gradesMap)
+                    <div className="no-print-scroll">
+                        {renderPlanillaSheet(selectedCourse, selectedSubject, students, gradesMap)}
+                    </div>
                 )
             ) : (
                 /* Modo Lote */
@@ -827,7 +837,7 @@ export default function PrintPlanilla() {
                 ) : (
                     <div className="flex flex-col items-center w-full gap-8">
                         {loadedBatchData.map((data, idx) => (
-                            <div key={idx}>
+                            <div key={idx} className="no-print-scroll">
                                 {renderPlanillaSheet(data.course, data.subject, data.students, data.gradesMap)}
                             </div>
                         ))}

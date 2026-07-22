@@ -80,3 +80,12 @@ export const MOCK_LOGS = [
         student_id: 'st-1'
     }
 ];
+
+export const MOCK_PARENTS = [
+    { uid: 'parent-1', displayName: 'Luisa Pérez (Acudiente de Juanito)', email: 'luisa@school.com' },
+    { uid: 'parent-2', displayName: 'Pedro García (Acudiente de María)', email: 'pedro@school.com' },
+    { uid: 'parent-3', displayName: 'Sofía López (Acudiente de Carlos)', email: 'sofia@school.com' },
+    { uid: 'parent-4', displayName: 'Carlos Ramos (Acudiente de Mateo)', email: 'carlos@school.com' },
+    { uid: 'demo-parent', displayName: 'Usuario Demo Acudiente (Mock)', email: 'demo@school.com' }
+];
+

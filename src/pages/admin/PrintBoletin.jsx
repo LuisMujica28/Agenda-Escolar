@@ -205,6 +205,13 @@ export default function PrintBoletin() {
                         border: 2px double #334155 !important;
                     }
                 }
+                @media screen {
+                    .no-print-scroll {
+                        width: 100%;
+                        overflow-x: auto;
+                        padding-bottom: 12px;
+                    }
+                }
             `}</style>
 
             {/* Barra de Controles */}
@@ -233,9 +240,10 @@ export default function PrintBoletin() {
                 </button>
             </div>
 
-            {/* Hoja Oficio (22cm x 33cm) */}
-            <div 
-                id="printable-boletin" 
+            <div className="no-print-scroll w-full flex justify-center">
+                {/* Hoja Oficio (22cm x 33cm) */}
+                <div 
+                    id="printable-boletin" 
                 className="w-[22cm] h-[33cm] bg-white p-[1.2cm] border border-slate-300 shadow-2xl relative flex flex-col justify-between overflow-hidden shrink-0"
             >
                 {/* Borde Oficial Doble */}
@@ -512,6 +520,7 @@ export default function PrintBoletin() {
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

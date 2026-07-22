@@ -15,12 +15,12 @@ import HomeworkCalendar from './pages/parent/HomeworkCalendar';
 import MessagingPage from './pages/parent/MessagingPage';
 import CreateTask from './pages/teacher/CreateTask';
 import SyncGrades from './pages/teacher/SyncGrades';
-import ImportCourse from './pages/admin/ImportCourse';
-import ImportGrades from './pages/admin/ImportGrades';
+import ImportData from './pages/admin/ImportData';
 import PrintBoletin from './pages/admin/PrintBoletin';
 import PrintPlanilla from './pages/admin/PrintPlanilla';
 import AcademicStats from './pages/admin/AcademicStats';
-import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2 } from 'lucide-react';
+import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2, Layers } from 'lucide-react';
+import IaChatBot from './components/IaChatBot';
 
 function Layout({ children }) {
   const { currentUser, userRole, logout } = useAuth();
@@ -190,16 +190,7 @@ function Layout({ children }) {
                 isActive('/admin/import') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
               }`}
             >
-              <Table size={18} /> Importar Curso
-            </Link>
-            <Link 
-              to="/admin/import-grades" 
-              onClick={() => setIsSidebarOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
-                isActive('/admin/import-grades') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
-              }`}
-            >
-              <BookOpen size={18} /> Importar Notas
+              <Layers size={18} /> Carga Masiva
             </Link>
             <Link 
               to="/teacher/sync-grades" 
@@ -257,14 +248,15 @@ function Layout({ children }) {
     <div className="min-h-screen bg-slate-50/50 flex">
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white hidden md:flex flex-col border-r border-slate-800/40 shrink-0 sticky top-0 h-screen z-30">
-        {/* Sidebar Header */}
-        <div className="h-16 px-6 border-b border-slate-800/40 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-lg border border-slate-800 shrink-0">
-            <img src="/Escudo.png" alt="INAS" className="w-full h-full object-contain" />
+        {/* Sidebar Header: Solo Escudo y Nombre Institucional (Sin la palabra INAS) */}
+        <div className="p-4 border-b border-slate-800/40 flex items-center gap-3 bg-slate-950/30">
+          <div className="w-10 h-10 flex items-center justify-center shrink-0 drop-shadow-md">
+            <img src="/Escudo1.png" alt="Escudo Institucional" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <h2 className="text-xs font-extrabold tracking-wide uppercase leading-none">INAS</h2>
-            <span className="text-[9px] text-slate-400 font-bold tracking-wide">NUEVA AMÉRICA DE SUBA</span>
+          <div className="leading-tight text-left">
+            <span className="text-[10px] text-slate-200 font-black tracking-wide uppercase block">
+              INSTITUTO NUEVA AMÉRICA DE SUBA
+            </span>
           </div>
         </div>
 
@@ -273,9 +265,18 @@ function Layout({ children }) {
           {renderNavLinks()}
         </nav>
 
+        {/* Imagen transparente sin fondo INAS.png aún más grande y más arriba */}
+        <div className="py-0 px-2 text-center flex items-center justify-center -mt-2 -mb-2">
+          <img 
+            src="/INAS.png" 
+            alt="INAS" 
+            className="w-56 h-auto max-h-24 object-contain drop-shadow-2xl opacity-95 hover:opacity-100 transition transform hover:scale-105" 
+          />
+        </div>
+
         {/* User Card & Logout */}
-        <div className="p-4 border-t border-slate-800/40 bg-slate-950/20 space-y-3">
-          <div className="flex items-center gap-2.5 px-2">
+        <div className="p-4 border-t border-slate-800/40 bg-slate-950/60 space-y-3">
+          <div className="flex items-center gap-2.5 px-2 text-left">
             <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700/50 shrink-0">
               <User size={16} className="text-slate-300" />
             </div>
@@ -307,15 +308,14 @@ function Layout({ children }) {
       <aside className={`fixed top-0 bottom-0 left-0 w-64 bg-slate-900 text-white z-50 transform transition-transform duration-300 ease-out md:hidden flex flex-col ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="h-16 px-6 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center border border-slate-800 shrink-0">
-              <img src="/Escudo.png" alt="INAS" className="w-full h-full object-contain" />
+            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+              <img src="/Escudo1.png" alt="Escudo Institucional" className="w-full h-full object-contain" />
             </div>
-            <div>
-              <h2 className="text-xs font-extrabold uppercase">INAS</h2>
-              <span className="text-[10px] text-slate-400">NUEVA AMÉRICA DE SUBA</span>
-            </div>
+            <span className="text-[9px] text-slate-200 font-black tracking-wide uppercase text-left leading-tight">
+              INSTITUTO NUEVA AMÉRICA DE SUBA
+            </span>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-slate-400 hover:text-white">
             <X size={20} />
@@ -326,8 +326,13 @@ function Layout({ children }) {
           {renderNavLinks()}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950/20 space-y-3">
-          <div className="flex items-center gap-2.5 px-2">
+        {/* Imagen transparente sin fondo INAS.png Mobile */}
+        <div className="py-0 px-2 text-center flex items-center justify-center -mt-2 -mb-2">
+          <img src="/INAS.png" alt="INAS" className="w-52 h-auto max-h-20 object-contain drop-shadow-md" />
+        </div>
+
+        <div className="p-4 border-t border-slate-800 bg-slate-950/60 space-y-3">
+          <div className="flex items-center gap-2.5 px-2 text-left">
             <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
               <User size={16} className="text-slate-300" />
             </div>
@@ -387,6 +392,9 @@ function Layout({ children }) {
             {children}
           </div>
         </main>
+
+        {/* Asistente Hermes IA */}
+        <IaChatBot />
       </div>
     </div>
   );
@@ -405,8 +413,7 @@ function App() {
            {/* Admin Routes */}
           <Route path="/admin/stats" element={<Layout><AcademicStats /></Layout>} />
           <Route path="/admin/new-circular" element={<Layout><CreateCircular /></Layout>} />
-          <Route path="/admin/import" element={<Layout><ImportCourse /></Layout>} />
-          <Route path="/admin/import-grades" element={<Layout><ImportGrades /></Layout>} />
+          <Route path="/admin/import" element={<Layout><ImportData /></Layout>} />
           <Route path="/admin/boletin/:studentId" element={<Layout><GradesCard /></Layout>} />
           <Route path="/admin/boletin-print/:studentId" element={<PrintBoletin />} />
           <Route path="/planilla-print" element={<PrintPlanilla />} />
