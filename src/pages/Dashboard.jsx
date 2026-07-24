@@ -1527,46 +1527,54 @@ export default function Dashboard() {
                                 </button>
                             </div>
                             
-                            {/* Mini Calendario Estético Interactivo */}
+                            {/* Mini Calendario Estético Interactivo con Fondo Calendario.png */}
                             <div className="flex-grow flex flex-col justify-between gap-3 text-slate-700">
-                                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
-                                    <div className="flex justify-between items-center mb-2 px-1">
-                                        <button 
-                                            onClick={handlePrevMonth}
-                                            className="text-xs font-black text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200/60 transition"
-                                            title="Mes anterior"
-                                        >
-                                            &lt;
-                                        </button>
-                                        <span className="text-xs font-black text-slate-800 capitalize">
-                                            {formattedCalendarMonthTitle}
-                                        </span>
-                                        <button 
-                                            onClick={handleNextMonth}
-                                            className="text-xs font-black text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200/60 transition"
-                                            title="Mes siguiente"
-                                        >
-                                            &gt;
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 mb-1">
-                                        <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
-                                    </div>
-                                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
-                                        {calendarDaysList.map((item, idx) => (
-                                            <span 
-                                                key={idx}
-                                                className={`flex items-center justify-center w-5 h-5 mx-auto rounded-lg transition ${
-                                                    !item.isCurrentMonth
-                                                        ? 'text-slate-300'
-                                                        : item.isToday
-                                                        ? 'bg-indigo-600 text-white font-black shadow-sm shadow-indigo-600/20'
-                                                        : 'text-slate-700 hover:bg-slate-200/50'
-                                                }`}
+                                <div 
+                                    className="relative overflow-hidden p-3.5 rounded-2xl border border-slate-200/80 shadow-md bg-cover bg-center transition-all"
+                                    style={{ backgroundImage: "url('/Calendario.png')" }}
+                                >
+                                    {/* Capa Traslúcida Glassmorphism para legibilidad impecable */}
+                                    <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] rounded-2xl"></div>
+
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-center mb-2 px-1">
+                                            <button 
+                                                onClick={handlePrevMonth}
+                                                className="text-xs font-black text-slate-700 hover:text-slate-950 p-1 px-2 rounded-lg hover:bg-white bg-white/70 border border-slate-200/60 shadow-xs transition active-press"
+                                                title="Mes anterior"
                                             >
-                                                {item.day}
+                                                &lt;
+                                            </button>
+                                            <span className="text-xs font-black text-slate-900 capitalize bg-white/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/60 shadow-xs">
+                                                {formattedCalendarMonthTitle}
                                             </span>
-                                        ))}
+                                            <button 
+                                                onClick={handleNextMonth}
+                                                className="text-xs font-black text-slate-700 hover:text-slate-950 p-1 px-2 rounded-lg hover:bg-white bg-white/70 border border-slate-200/60 shadow-xs transition active-press"
+                                                title="Mes siguiente"
+                                            >
+                                                &gt;
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-800 mb-1.5 bg-white/60 backdrop-blur-xs rounded-lg py-1 border border-slate-200/30">
+                                            <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
+                                        </div>
+                                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
+                                            {calendarDaysList.map((item, idx) => (
+                                                <span 
+                                                    key={idx}
+                                                    className={`flex items-center justify-center w-5.5 h-5.5 mx-auto rounded-lg transition ${
+                                                        !item.isCurrentMonth
+                                                            ? 'text-slate-400/70'
+                                                            : item.isToday
+                                                            ? 'bg-indigo-600 text-white font-black shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
+                                                            : 'text-slate-900 font-extrabold hover:bg-indigo-50/80 bg-white/60 border border-slate-200/40 backdrop-blur-xs'
+                                                    }`}
+                                                >
+                                                    {item.day}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1671,6 +1679,24 @@ export default function Dashboard() {
                                         >
                                             <Trash2 size={15} className="text-rose-500" /> Eliminar Curso
                                         </button>
+                                        <Link
+                                            to="/admin/boletin-print"
+                                            className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md flex items-center gap-1.5 shrink-0 transition"
+                                        >
+                                            <BookOpen size={14} /> Boletines Masivos
+                                        </Link>
+                                        <Link
+                                            to="/planilla-print"
+                                            className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2.5 rounded-2xl text-xs border border-slate-200 shadow-sm flex items-center gap-1.5 shrink-0 transition"
+                                        >
+                                            <Printer size={14} /> Planillas Masivas
+                                        </Link>
+                                        <Link
+                                            to="/admin/consolidado-print"
+                                            className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md shadow-amber-500/10 flex items-center gap-1.5 shrink-0 transition"
+                                        >
+                                            <Award size={14} /> Consolidado & Ranking
+                                        </Link>
                                     </div>
                                     <div className="text-xs text-gray-400 font-semibold">
                                         Mostrando {

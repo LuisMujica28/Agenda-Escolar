@@ -18,8 +18,9 @@ import SyncGrades from './pages/teacher/SyncGrades';
 import ImportData from './pages/admin/ImportData';
 import PrintBoletin from './pages/admin/PrintBoletin';
 import PrintPlanilla from './pages/admin/PrintPlanilla';
+import PrintConsolidado from './pages/admin/PrintConsolidado';
 import AcademicStats from './pages/admin/AcademicStats';
-import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2, Layers } from 'lucide-react';
+import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2, Layers, Award } from 'lucide-react';
 import IaChatBot from './components/IaChatBot';
 
 function Layout({ children }) {
@@ -220,6 +221,24 @@ function Layout({ children }) {
               <Printer size={18} /> Planilla de Control
             </Link>
             <Link 
+              to="/admin/boletin-print" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/admin/boletin-print') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <BookOpen size={18} /> Boletines (Masivo)
+            </Link>
+            <Link 
+              to="/admin/consolidado-print" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/admin/consolidado-print') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <Award size={18} /> Consolidado & Ranking
+            </Link>
+            <Link 
               to="/admin/stats" 
               onClick={() => setIsSidebarOpen(false)}
               className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
@@ -415,7 +434,8 @@ function App() {
           <Route path="/admin/new-circular" element={<Layout><CreateCircular /></Layout>} />
           <Route path="/admin/import" element={<Layout><ImportData /></Layout>} />
           <Route path="/admin/boletin/:studentId" element={<Layout><GradesCard /></Layout>} />
-          <Route path="/admin/boletin-print/:studentId" element={<PrintBoletin />} />
+          <Route path="/admin/boletin-print/:studentId?" element={<PrintBoletin />} />
+          <Route path="/admin/consolidado-print" element={<PrintConsolidado />} />
           <Route path="/planilla-print" element={<PrintPlanilla />} />
 
           {/* Teacher Routes */}

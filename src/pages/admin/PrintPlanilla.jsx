@@ -3,13 +3,13 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Printer, FileText, CheckSquare, Square, RefreshCw, Users, Trash2, Plus } from 'lucide-react';
+import { Loader2, ArrowLeft, Printer, FileText, CheckSquare, Square, RefreshCw, Trash2, Plus, Layers, Grid } from 'lucide-react';
 
 export default function PrintPlanilla() {
     const { currentUser, userRole } = useAuth();
     const navigate = useNavigate();
 
-    // Modo de impresión: 'single' (planilla única) o 'batch' (lote por docente)
+    // Modo de impresión: 'single' (única), 'course' (lote por curso), 'batch' (lote por docente), 'all_courses' (todos los cursos)
     const [printMode, setPrintMode] = useState('single');
 
     // Filtros Modo Único
@@ -19,7 +19,7 @@ export default function PrintPlanilla() {
     const [selectedPeriod, setSelectedPeriod] = useState('1');
     const [isBlankTemplate, setIsBlankTemplate] = useState(false);
 
-    // Estados Modo Lote (Docente)
+    // Estados Modo Lote (Docente / Curso / Todos)
     const [teachersList, setTeachersList] = useState([]);
     const [selectedTeacher, setSelectedTeacher] = useState('');
     const [batchClasses, setBatchClasses] = useState([]); // Array de { course, subject, checked }
@@ -31,8 +31,6 @@ export default function PrintPlanilla() {
     const [gradesMap, setGradesMap] = useState({});
     const [loading, setLoading] = useState(false);
     const [logoError, setLogoError] = useState(false);
-
-    const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
     const subjects = [
         'Artes plásticas',
@@ -57,7 +55,7 @@ export default function PrintPlanilla() {
         }
     }, [userRole, navigate]);
 
-    // Cargar cursos
+    // Cargar cursos disponibles
     useEffect(() => {
         async function loadCourses() {
             try {
@@ -105,23 +103,38 @@ export default function PrintPlanilla() {
         loadTeachers();
     }, []);
 
-    // Cargar asignaciones del docente seleccionado
+    // Cargar asignaciones según el modo seleccionado
     useEffect(() => {
-        if (!selectedTeacher) return;
-        async function loadTeacherAssignments() {
-            try {
-                const snap = await getDocs(collection(db, 'class_sheets'));
-                const list = snap.docs
-                    .map(doc => doc.data())
-                    .filter(d => d.teacher_email === selectedTeacher)
-                    .map(d => ({ course: d.course, subject: d.subject, checked: true }));
-                setBatchClasses(list);
-            } catch (e) {
-                console.error("Error al cargar asignaturas del docente:", e);
+        if (printMode === 'batch' && selectedTeacher) {
+            // Modo Docente
+            async function loadTeacherAssignments() {
+                try {
+                    const snap = await getDocs(collection(db, 'class_sheets'));
+                    const list = snap.docs
+                        .map(doc => doc.data())
+                        .filter(d => d.teacher_email === selectedTeacher)
+                        .map(d => ({ course: d.course, subject: d.subject, checked: true }));
+                    setBatchClasses(list);
+                } catch (e) {
+                    console.error("Error al cargar asignaturas del docente:", e);
+                }
             }
+            loadTeacherAssignments();
+        } else if (printMode === 'course' && selectedCourse) {
+            // Modo Lote por Curso (Todas las asignaturas del curso)
+            const list = subjects.map(s => ({ course: selectedCourse, subject: s, checked: true }));
+            setBatchClasses(list);
+        } else if (printMode === 'all_courses' && courses.length > 0) {
+            // Modo Todos los Cursos
+            const list = [];
+            courses.forEach(c => {
+                subjects.forEach(s => {
+                    list.push({ course: c, subject: s, checked: true });
+                });
+            });
+            setBatchClasses(list);
         }
-        loadTeacherAssignments();
-    }, [selectedTeacher]);
+    }, [printMode, selectedTeacher, selectedCourse, courses]);
 
     // Cargar estudiantes y calificaciones de una planilla única
     const fetchPlanillaData = async () => {
@@ -139,9 +152,7 @@ export default function PrintPlanilla() {
                     const words = name.trim().split(/\s+/);
                     if (words.length <= 1) return name;
                     if (words.length === 2) return `${words[1]} ${words[0]}`;
-                    const apellidos = words.slice(-2).join(' ');
-                    const nombres = words.slice(0, -2).join(' ');
-                    return `${apellidos} ${nombres}`;
+                    return `${words.slice(-2).join(' ')} ${words.slice(0, -2).join(' ')}`;
                 };
                 return getSortKey(a).localeCompare(getSortKey(b));
             };
@@ -177,7 +188,7 @@ export default function PrintPlanilla() {
         }
     }, [selectedCourse, selectedSubject, selectedPeriod, isBlankTemplate, printMode]);
 
-    // Cargar calificaciones y estudiantes para todo el lote del docente en paralelo
+    // Cargar calificaciones y estudiantes para todo el lote
     const fetchBatchData = async () => {
         const activeClasses = batchClasses.filter(c => c.checked);
         if (activeClasses.length === 0) {
@@ -327,7 +338,7 @@ export default function PrintPlanilla() {
                             </div>
                         </div>
 
-                        {/* Tabla de Estudiantes Compacta con Ahorro de Tinta */}
+                        {/* Tabla de Estudiantes Compacta */}
                         <div className="mt-2">
                             <table className="w-full text-left text-[7px] border-collapse border-4 border-double border-slate-800 table-fixed">
                                 <thead>
@@ -353,49 +364,75 @@ export default function PrintPlanilla() {
                                         <th className="border border-slate-400 font-normal"></th>
                                         <th className="border border-slate-400 font-normal"></th>
                                         <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal text-[5.5px] bg-slate-50/30">(20%)</th>
-                                        <th className="border border-slate-400 font-normal text-[5.5px] bg-slate-50/30">(20%)</th>
-                                        <th className="border border-slate-400 font-normal">1</th>
-                                        <th className="border border-slate-400 font-normal">2</th>
-                                        <th className="border border-slate-400 font-normal">3</th>
-                                        <th className="border border-slate-400 font-normal">4</th>
-                                        <th className="border border-slate-400 font-normal">5</th>
-                                        <th className="border border-slate-400 font-bold bg-slate-50">T</th>
-                                        <th className="border border-slate-400 font-normal">1</th>
-                                        <th className="border border-slate-400 font-normal">2</th>
-                                        <th className="border border-slate-400 font-normal">3</th>
-                                        <th className="border border-slate-400 font-normal">4</th>
-                                        <th className="border border-slate-400 font-normal">5</th>
-                                        <th className="border border-slate-400 font-bold bg-slate-50">T</th>
-                                        <th className="border border-slate-400 font-normal text-[5.5px] bg-slate-50/30">(20%)</th>
+
+                                        <th className="border border-slate-400 font-normal">20%</th>
+                                        <th className="border border-slate-400 font-normal">20%</th>
+
+                                        <th className="border border-slate-400 font-normal">G1</th>
+                                        <th className="border border-slate-400 font-normal">G2</th>
+                                        <th className="border border-slate-400 font-normal">G3</th>
+                                        <th className="border border-slate-400 font-normal">G4</th>
+                                        <th className="border border-slate-400 font-normal">G5</th>
+                                        <th className="border border-slate-400 font-bold bg-slate-50/50">Def</th>
+
+                                        <th className="border border-slate-400 font-normal">E1</th>
+                                        <th className="border border-slate-400 font-normal">E2</th>
+                                        <th className="border border-slate-400 font-normal">E3</th>
+                                        <th className="border border-slate-400 font-normal">E4</th>
+                                        <th className="border border-slate-400 font-normal">E5</th>
+                                        <th className="border border-slate-400 font-bold bg-slate-50/50">Def</th>
+
+                                        <th className="border border-slate-400 font-normal">20%</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {studentList.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="28" className="py-8 text-center text-slate-400 italic text-[10px] border border-slate-350">
-                                                No se encontraron estudiantes para este curso. Selecciona otro curso.
-                                            </td>
-                                        </tr>
+                                        Array.from({ length: 22 }).map((_, index) => (
+                                            <tr key={index} className="text-center font-normal" style={{ height: '0.4cm' }}>
+                                                <td className="border border-slate-300 font-bold text-[6.5px]">{index + 1}</td>
+                                                <td className="border border-slate-300 text-left px-1.5"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                                <td className="border border-slate-300"></td>
+                                            </tr>
+                                        ))
                                     ) : (
-                                        studentList.map((student, index) => {
-                                            const gradeData = grades[student.id];
+                                        studentList.map((st, index) => {
+                                            const gradeData = grades ? grades[st.id] : null;
                                             const finalGrade = gradeData ? Number(gradeData.grade) : null;
+                                            const displayName = st.lastName && st.firstName 
+                                                ? `${st.lastName} ${st.firstName}` 
+                                                : st.name;
 
                                             return (
-                                                <tr 
-                                                    key={student.id} 
-                                                    className="border-b border-slate-350 text-center font-bold text-slate-800 hover:bg-slate-50" 
-                                                    style={{ height: '0.42cm' }}
-                                                >
-                                                    <td className="border border-slate-300 text-slate-500 font-extrabold text-[6.5px]">{index + 1}</td>
-                                                    <td className="px-1 text-left font-black uppercase text-[6.5px] truncate border border-slate-300 leading-none">
-                                                        {student.lastName && student.firstName 
-                                                            ? `${student.lastName} ${student.firstName}` 
-                                                            : student.name}
+                                                <tr key={st.id} className="text-center font-normal hover:bg-slate-50/20" style={{ height: '0.4cm' }}>
+                                                    <td className="border border-slate-300 font-bold text-[6.5px]">{index + 1}</td>
+                                                    <td className="border border-slate-300 text-left px-1.5 font-bold uppercase truncate text-[6.5px] text-slate-900">
+                                                        {displayName}
                                                     </td>
-                                                    
-                                                    {/* Casillas de control de asistencia vacías */}
                                                     <td className="border border-slate-300"></td>
                                                     <td className="border border-slate-300"></td>
                                                     <td className="border border-slate-300"></td>
@@ -577,7 +614,7 @@ export default function PrintPlanilla() {
                             <h2 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
                                 <FileText size={16} className="text-indigo-600" /> Planilla Auxiliar de Calificaciones y Asistencia (Horizontal)
                             </h2>
-                            <p className="text-[10px] text-gray-500">Imprime planillas en tamaño Oficio (33 x 22 cm) de forma individual o por lote del docente.</p>
+                            <p className="text-[10px] text-gray-500">Imprime planillas en tamaño Oficio (33 x 22 cm) individuales o en lote masivo por Curso, Docente o Colegio.</p>
                         </div>
                     </div>
 
@@ -596,17 +633,17 @@ export default function PrintPlanilla() {
 
                         <button 
                             onClick={handlePrint}
-                            disabled={printMode === 'batch' && loadedBatchData.length === 0}
+                            disabled={printMode !== 'single' && loadedBatchData.length === 0}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2 rounded-2xl transition text-xs shadow-md shadow-indigo-600/15 flex items-center gap-1.5 disabled:opacity-50"
                         >
                             <Printer size={15} /> 
-                            {printMode === 'batch' ? `Imprimir Lote (${loadedBatchData.length} planillas)` : 'Imprimir Planilla'}
+                            {printMode !== 'single' ? `Imprimir Lote (${loadedBatchData.length} planillas)` : 'Imprimir Planilla'}
                         </button>
                     </div>
                 </div>
 
-                {/* Selector de Modo de Impresión */}
-                <div className="flex border-b border-gray-100 gap-2">
+                {/* Selector de Modo de Impresión Masiva */}
+                <div className="flex border-b border-gray-100 gap-2 flex-wrap">
                     <button
                         onClick={() => setPrintMode('single')}
                         className={`pb-2 px-4 font-bold text-xs border-b-2 transition-all ${
@@ -618,6 +655,16 @@ export default function PrintPlanilla() {
                         Planilla Única
                     </button>
                     <button
+                        onClick={() => setPrintMode('course')}
+                        className={`pb-2 px-4 font-bold text-xs border-b-2 transition-all flex items-center gap-1 ${
+                            printMode === 'course' 
+                                ? 'border-indigo-600 text-indigo-600' 
+                                : 'border-transparent text-gray-450 hover:text-gray-600'
+                        }`}
+                    >
+                        <Layers size={14} /> Impresión por Curso
+                    </button>
+                    <button
                         onClick={() => setPrintMode('batch')}
                         className={`pb-2 px-4 font-bold text-xs border-b-2 transition-all ${
                             printMode === 'batch' 
@@ -625,7 +672,17 @@ export default function PrintPlanilla() {
                                 : 'border-transparent text-gray-450 hover:text-gray-600'
                         }`}
                     >
-                        Impresión por Lote (Docente)
+                        Impresión por Docente
+                    </button>
+                    <button
+                        onClick={() => setPrintMode('all_courses')}
+                        className={`pb-2 px-4 font-bold text-xs border-b-2 transition-all flex items-center gap-1 ${
+                            printMode === 'all_courses' 
+                                ? 'border-indigo-600 text-indigo-600' 
+                                : 'border-transparent text-gray-450 hover:text-gray-600'
+                        }`}
+                    >
+                        <Grid size={14} /> Todas las Planillas del Colegio
                     </button>
                 </div>
 
@@ -683,27 +740,54 @@ export default function PrintPlanilla() {
                     </div>
                 )}
 
-                {/* Configuración Modo Lote */}
-                {printMode === 'batch' && (
+                {/* Configuración Modos Masivos / Lote */}
+                {printMode !== 'single' && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Seleccionar Docente (Correo)</label>
-                                <select 
-                                    className="w-full bg-gray-55 border border-gray-150 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
-                                    value={selectedTeacher}
-                                    onChange={(e) => setSelectedTeacher(e.target.value)}
-                                    disabled={loadingBatch}
-                                >
-                                    {teachersList.length === 0 ? (
-                                        <option value="">No hay docentes vinculados a planillas</option>
-                                    ) : (
-                                        teachersList.map(email => (
-                                            <option key={email} value={email}>{email}</option>
-                                        ))
-                                    )}
-                                </select>
-                            </div>
+                            {printMode === 'batch' && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Seleccionar Docente (Correo)</label>
+                                    <select 
+                                        className="w-full bg-gray-55 border border-gray-150 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                                        value={selectedTeacher}
+                                        onChange={(e) => setSelectedTeacher(e.target.value)}
+                                        disabled={loadingBatch}
+                                    >
+                                        {teachersList.length === 0 ? (
+                                            <option value="">No hay docentes vinculados a planillas</option>
+                                        ) : (
+                                            teachersList.map(email => (
+                                                <option key={email} value={email}>{email}</option>
+                                            ))
+                                        )}
+                                    </select>
+                                </div>
+                            )}
+
+                            {printMode === 'course' && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Seleccionar Curso</label>
+                                    <select 
+                                        className="w-full bg-gray-55 border border-gray-150 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                                        value={selectedCourse}
+                                        onChange={(e) => setSelectedCourse(e.target.value)}
+                                        disabled={loadingBatch}
+                                    >
+                                        {courses.map(c => (
+                                            <option key={c} value={c}>Curso {c} (Todas las Asignaturas)</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {printMode === 'all_courses' && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Cursos Afectados</label>
+                                    <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700">
+                                        🎓 {courses.length} Cursos ({batchClasses.length} Planillas totales)
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Periodo Escolar</label>
@@ -729,7 +813,7 @@ export default function PrintPlanilla() {
                                     {loadingBatch ? (
                                         <><Loader2 className="animate-spin" size={14} /> Cargando Lote...</>
                                     ) : (
-                                        <><RefreshCw size={14} /> Cargar Lote de Planillas</>
+                                        <><RefreshCw size={14} /> Cargar Lote ({batchClasses.filter(c => c.checked).length} Planillas)</>
                                     )}
                                 </button>
                             </div>
@@ -744,7 +828,7 @@ export default function PrintPlanilla() {
                             
                             <div className="max-h-36 overflow-y-auto space-y-1.5 pr-2">
                                 {batchClasses.length === 0 ? (
-                                    <div className="text-[10px] text-gray-400 italic">No hay asignaturas vinculadas a este docente. Agrega algunas usando la herramienta de abajo.</div>
+                                    <div className="text-[10px] text-gray-400 italic">No hay asignaturas seleccionadas.</div>
                                 ) : (
                                     batchClasses.map((item, idx) => (
                                         <div key={idx} className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-gray-150">
@@ -829,9 +913,9 @@ export default function PrintPlanilla() {
                 ) : loadedBatchData.length === 0 ? (
                     <div className="printable-sheet bg-slate-700/20 flex flex-col justify-center items-center text-center p-12 text-slate-350 no-print border-dashed border-2 border-slate-500/35 shadow-none rounded-3xl">
                         <FileText className="text-slate-400 mb-3" size={40} />
-                        <h4 className="text-xs font-bold text-slate-300">Lote de Planillas vacío</h4>
+                        <h4 className="text-xs font-bold text-slate-300">Lote de Planillas sin cargar</h4>
                         <p className="text-[10px] text-slate-400 max-w-sm font-semibold leading-normal mt-1">
-                            Selecciona un docente o agrega asignaturas manualmente arriba, luego haz clic en "Cargar Lote de Planillas" para previsualizarlas antes de imprimir.
+                            Haz clic en "Cargar Lote de Planillas" para previsualizar y compilar las planillas antes de imprimir o guardar en PDF.
                         </p>
                     </div>
                 ) : (

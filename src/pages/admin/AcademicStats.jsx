@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
     ArrowLeft, Loader2, TrendingUp, Award, Users, 
-    BookOpen, AlertTriangle, Sparkles, BarChart2, CheckCircle2 
+    BookOpen, AlertTriangle, Sparkles, BarChart2, CheckCircle2, Printer,
+    Filter, Calendar, ShieldAlert, Target, GraduationCap, Flame, Star, ChevronRight
 } from 'lucide-react';
 
 export default function AcademicStats() {
@@ -13,25 +14,27 @@ export default function AcademicStats() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
-    // Filter state
+    // Filtros
     const [selectedCourse, setSelectedCourse] = useState("");
+    const [selectedPeriod, setSelectedPeriod] = useState("ALL");
     const [coursesList, setCoursesList] = useState([]);
 
-    // Raw datasets
+    // Datasets
     const [rawStudents, setRawStudents] = useState([]);
     const [rawGrades, setRawGrades] = useState([]);
 
-    // Computed Stats for display (filtered or global)
+    // Estadísticas Calculadas
     const [stats, setStats] = useState({
         globalAverage: 0,
         passingRate: 0,
         excellentRate: 0,
         studentsAtRiskCount: 0,
-        totalStudents: 0
+        totalStudents: 0,
+        totalGradesRegistered: 0,
+        totalSubjects: 0
     });
 
     const [resettingGrades, setResettingGrades] = useState(false);
-
     const [courseAverages, setCourseAverages] = useState([]);
     const [subjectAverages, setSubjectAverages] = useState([]);
     const [performanceDistribution, setPerformanceDistribution] = useState({
@@ -43,7 +46,7 @@ export default function AcademicStats() {
     const [topStudents, setTopStudents] = useState([]);
     const [studentsAtRiskList, setStudentsAtRiskList] = useState([]);
 
-    // 1. Initial Data Fetch
+    // 1. Carga inicial de datos desde Firestore
     useEffect(() => {
         if (!currentUser) return;
 
@@ -56,7 +59,6 @@ export default function AcademicStats() {
                 const isDemo = currentUser.uid.startsWith('fake-');
 
                 if (!isDemo) {
-                    // Fetch real firestore collections
                     const sSnap = await getDocs(collection(db, 'students'));
                     const gSnap = await getDocs(collection(db, 'grades'));
 
@@ -64,14 +66,13 @@ export default function AcademicStats() {
                     gradesData = gSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 }
 
-                // Fallback to high-quality generated dataset if database is empty or isDemo
+                // Generar datos simulados de respaldo si la base de datos está vacía
                 if (studentsData.length === 0 || gradesData.length === 0) {
                     const courses = ['601', '602', '701', '702', '801', '802', '901', '902', '1001', '1002', '1101', '1102'];
-                    const subjects = ['Matemáticas', 'Español', 'Inglés', 'C. Naturales (Biología)', 'Sociales', 'Física', 'Química'];
+                    const subjects = ['Matemáticas', 'Español y Literatura', 'Inglés', 'C. Naturales (Biología)', 'C Sociales Filosofía', 'C. Naturales (Física)', 'C Naturales (Química)', 'Ed Ética y Valores', 'Ed Física', 'Tecnología e Informática', 'Artes plásticas'];
                     const firstNames = ['Juan', 'María', 'Carlos', 'Sofía', 'Andrés', 'Mateo', 'Valentina', 'Santiago', 'Camila', 'Felipe', 'Lucía', 'Diego', 'Paula', 'Nicolás', 'Gabriela', 'Alejandro'];
                     const lastNames = ['Pérez', 'García', 'López', 'Rodríguez', 'Gómez', 'Martínez', 'Sánchez', 'Díaz', 'Hernández', 'Álvarez', 'Torres', 'Ramírez', 'Ruiz', 'Castro', 'Morales', 'Suárez'];
 
-                    // Generate ~80 students
                     for (let i = 1; i <= 80; i++) {
                         const sId = `s-mock-${i}`;
                         const course = courses[Math.floor(Math.random() * courses.length)];
@@ -89,33 +90,31 @@ export default function AcademicStats() {
                             photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${fName}${i}`
                         });
 
-                        // Generate random grades per student across subjects
                         subjects.forEach(subject => {
-                            // Grade logic skewed to realistic averages
-                            let baseGrade = 60 + Math.floor(Math.random() * 38); // 60 to 98
-                            if (Math.random() < 0.1) baseGrade = 40 + Math.floor(Math.random() * 25); // Some lower grades
+                            let baseGrade = 65 + Math.floor(Math.random() * 33); // 65 a 98
+                            if (Math.random() < 0.12) baseGrade = 45 + Math.floor(Math.random() * 25); // algunas notas bajas
 
-                            gradesData.push({
-                                id: `g-mock-${sId}-${subject}`,
-                                student_id: sId,
-                                subject,
-                                grade: baseGrade,
-                                period: 1 + Math.floor(Math.random() * 3)
+                            [1, 2].forEach(p => {
+                                gradesData.push({
+                                    id: `g-mock-${sId}-${subject}-p${p}`,
+                                    student_id: sId,
+                                    subject,
+                                    grade: baseGrade,
+                                    period: p
+                                });
                             });
                         });
                     }
                 }
 
-                // Populate raw states
                 setRawStudents(studentsData);
                 setRawGrades(gradesData);
 
-                // Populate courses list
                 const coursesFound = [...new Set(studentsData.map(s => s.grade))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
                 setCoursesList(coursesFound);
 
             } catch (err) {
-                console.error("Error computing analytics:", err);
+                console.error("Error cargando estadísticas académicas:", err);
             } finally {
                 setLoading(false);
             }
@@ -124,25 +123,24 @@ export default function AcademicStats() {
         fetchAcademicData();
     }, [currentUser]);
 
+    // Limpieza de notas de prueba para un curso
     const handleResetCourseGrades = async () => {
         if (!selectedCourse) return;
-        const confirmReset = window.confirm(`⚠️ ATENCIÓN ⚠️\n\n¿Estás seguro de que deseas eliminar permanentemente TODAS las calificaciones de los estudiantes del Curso ${selectedCourse}?\n\nEsta acción borrará las notas de todas las asignaturas (incluyendo Español e Inglés iniciales de prueba) y te permitirá ingresar notas desde cero.`);
+        const confirmReset = window.confirm(`⚠️ ATENCIÓN ⚠️\n\n¿Estás seguro de que deseas eliminar permanentemente TODAS las calificaciones del Curso ${selectedCourse}?\n\nEsta acción borrará las notas para iniciar registros limpios.`);
         if (!confirmReset) return;
 
         setResettingGrades(true);
         try {
-            // 1. Obtener alumnos del curso seleccionado
             const qStudents = query(collection(db, 'students'), where('grade', '==', selectedCourse));
             const sSnap = await getDocs(qStudents);
             const studentIds = sSnap.docs.map(doc => doc.id);
 
             if (studentIds.length === 0) {
-                alert("No hay estudiantes registrados en este curso.");
+                alert("No hay estudiantes en este curso.");
                 setResettingGrades(false);
                 return;
             }
 
-            // 2. Obtener y borrar calificaciones de estos estudiantes
             let deletedCount = 0;
             const batch = writeBatch(db);
 
@@ -159,9 +157,8 @@ export default function AcademicStats() {
                 await batch.commit();
             }
 
-            alert(`Se eliminaron con éxito ${deletedCount} calificaciones del Curso ${selectedCourse}. Ahora puedes digitar las notas desde cero.`);
+            alert(`Se eliminaron con éxito ${deletedCount} calificaciones del Curso ${selectedCourse}.`);
 
-            // Recargar datos locales
             const sSnapAll = await getDocs(collection(db, 'students'));
             const gSnapAll = await getDocs(collection(db, 'grades'));
             setRawStudents(sSnapAll.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -169,106 +166,141 @@ export default function AcademicStats() {
 
         } catch (error) {
             console.error("Error al restablecer calificaciones:", error);
-            alert("Ocurrió un error al eliminar las calificaciones: " + error.message);
+            alert("Error al eliminar calificaciones: " + error.message);
         } finally {
             setResettingGrades(false);
         }
     };
 
-    // 2. Calculations Effect (runs on data load or when course filter changes)
+    // 2. Efecto de cálculos estadísticos dinámicos
     useEffect(() => {
         if (rawStudents.length === 0) return;
 
-        // Map students to sum calculations
+        // Filtrar notas por periodo si aplica
+        let activeGrades = rawGrades;
+        if (selectedPeriod !== "ALL") {
+            activeGrades = rawGrades.filter(g => String(g.period) === String(selectedPeriod));
+        }
+
+        // Mapear estudiantes a objeto de cálculos
         const studentsMap = {};
         rawStudents.forEach(student => {
             studentsMap[student.id] = {
                 ...student,
+                subjectsMap: {},
                 gradesSum: 0,
-                gradesCount: 0
+                gradesCount: 0,
+                failedSubjectsCount: 0
             };
         });
 
-        // Accumulate grades calculations
         const overallSubjectStats = {};
         const filteredSubjectStats = {};
         const courseStats = {};
 
-        rawGrades.forEach(gradeDoc => {
+        activeGrades.forEach(gradeDoc => {
             const studentId = gradeDoc.student_id;
             const gradeVal = Number(gradeDoc.grade);
             const subject = gradeDoc.subject;
 
             if (studentsMap[studentId]) {
-                studentsMap[studentId].gradesSum += gradeVal;
-                studentsMap[studentId].gradesCount += 1;
+                const stObj = studentsMap[studentId];
+                stObj.gradesSum += gradeVal;
+                stObj.gradesCount += 1;
+
+                if (!stObj.subjectsMap[subject]) {
+                    stObj.subjectsMap[subject] = { sum: 0, count: 0 };
+                }
+                stObj.subjectsMap[subject].sum += gradeVal;
+                stObj.subjectsMap[subject].count += 1;
             }
 
-            // Subject calculations (global reference)
             if (!overallSubjectStats[subject]) {
-                overallSubjectStats[subject] = { sum: 0, count: 0 };
+                overallSubjectStats[subject] = { sum: 0, count: 0, totalFailed: 0 };
             }
             overallSubjectStats[subject].sum += gradeVal;
             overallSubjectStats[subject].count += 1;
         });
 
-        // Compute student averages
+        // Calcular promedios por estudiante y materias reprobadas
         const analyzedStudents = Object.values(studentsMap).map(s => {
             const avg = s.gradesCount > 0 ? Number((s.gradesSum / s.gradesCount).toFixed(2)) : 0;
+            
+            let failedCount = 0;
+            Object.entries(s.subjectsMap).forEach(([subjName, subjObj]) => {
+                const subjAvg = subjObj.count > 0 ? subjObj.sum / subjObj.count : 0;
+                if (subjAvg < 75) {
+                    failedCount++;
+                }
+            });
+
             return {
                 ...s,
-                average: avg
+                average: avg,
+                failedSubjectsCount: failedCount
             };
         }).filter(s => s.gradesCount > 0);
 
-        // Course comparative averages (always computed over all students to render the full comparative course chart)
+        // Promedios por curso (Comparativo)
         analyzedStudents.forEach(s => {
             const gradeName = s.grade;
             if (!courseStats[gradeName]) {
-                courseStats[gradeName] = { sum: 0, count: 0 };
+                courseStats[gradeName] = { sum: 0, count: 0, riskCount: 0 };
             }
             courseStats[gradeName].sum += s.average;
             courseStats[gradeName].count += 1;
+            if (s.failedSubjectsCount > 0 || s.average < 75) {
+                courseStats[gradeName].riskCount += 1;
+            }
         });
 
-        const coursesArray = Object.entries(courseStats).map(([grade, stats]) => ({
+        const coursesArray = Object.entries(courseStats).map(([grade, cStats]) => ({
             grade,
-            average: Number((stats.sum / stats.count).toFixed(2)),
-            studentCount: stats.count
+            average: Number((cStats.sum / cStats.count).toFixed(1)),
+            studentCount: cStats.count,
+            riskCount: cStats.riskCount
         })).sort((a, b) => a.grade.localeCompare(b, undefined, { numeric: true }));
 
         setCourseAverages(coursesArray);
 
-        // Filter students by selected course for specific panel reports
+        // Filtrar estudiantes por curso seleccionado
         const finalStudentsToAnalyze = selectedCourse 
             ? analyzedStudents.filter(s => s.grade === selectedCourse) 
             : analyzedStudents;
 
         const finalStudentIds = new Set(finalStudentsToAnalyze.map(s => s.id));
 
-        // Compute filtered subject averages
-        rawGrades.forEach(gradeDoc => {
+        // Asignaturas filtradas
+        activeGrades.forEach(gradeDoc => {
             if (finalStudentIds.has(gradeDoc.student_id)) {
                 const gradeVal = Number(gradeDoc.grade);
                 const subject = gradeDoc.subject;
                 if (!filteredSubjectStats[subject]) {
-                    filteredSubjectStats[subject] = { sum: 0, count: 0 };
+                    filteredSubjectStats[subject] = { sum: 0, count: 0, lowCount: 0 };
                 }
                 filteredSubjectStats[subject].sum += gradeVal;
                 filteredSubjectStats[subject].count += 1;
+                if (gradeVal < 75) {
+                    filteredSubjectStats[subject].lowCount += 1;
+                }
             }
         });
 
-        const subjectsArray = Object.entries(
-            selectedCourse ? filteredSubjectStats : overallSubjectStats
-        ).map(([subject, stats]) => ({
-            subject,
-            average: Number((stats.sum / stats.count).toFixed(2))
-        })).sort((a, b) => b.average - a.average);
+        const targetSubjectStats = selectedCourse ? filteredSubjectStats : overallSubjectStats;
+
+        const subjectsArray = Object.entries(targetSubjectStats).map(([subject, sStats]) => {
+            const avg = Number((sStats.sum / sStats.count).toFixed(1));
+            return {
+                subject,
+                average: avg,
+                totalNotes: sStats.count,
+                lowCount: sStats.lowCount || 0
+            };
+        }).sort((a, b) => b.average - a.average);
 
         setSubjectAverages(subjectsArray);
 
-        // Calculate specific stats variables for current scope (filtered or global)
+        // Indicadores consolidados
         const totalStudents = finalStudentsToAnalyze.length;
         let globalSum = 0;
         let passingCount = 0;
@@ -280,244 +312,322 @@ export default function AcademicStats() {
 
         finalStudentsToAnalyze.forEach(s => {
             globalSum += s.average;
-            if (s.average >= 75) passingCount++;
+            if (s.average >= 75 && s.failedSubjectsCount === 0) passingCount++;
             if (s.average >= 95) excellentCount++;
-            if (s.average < 75) {
+            if (s.average < 75 || s.failedSubjectsCount > 0) {
                 riskCount++;
                 riskList.push(s);
             }
 
-            // Distribution logic
             if (s.average >= 95) distribution.superior++;
             else if (s.average >= 80) distribution.alto++;
             else if (s.average >= 75) distribution.basico++;
             else distribution.bajo++;
         });
 
-        const globalAverage = totalStudents > 0 ? Number((globalSum / totalStudents).toFixed(2)) : 0;
+        const globalAverage = totalStudents > 0 ? Number((globalSum / totalStudents).toFixed(1)) : 0;
         const passingRate = totalStudents > 0 ? Number(((passingCount / totalStudents) * 100).toFixed(1)) : 0;
         const excellentRate = totalStudents > 0 ? Number(((excellentCount / totalStudents) * 100).toFixed(1)) : 0;
 
         const sortedStudents = [...finalStudentsToAnalyze].sort((a, b) => b.average - a.average);
-        const honorRoll = sortedStudents.slice(0, 5);
+        const honorRoll = sortedStudents.slice(0, 10);
 
-        // Update states
         setStats({
             globalAverage,
             passingRate,
             excellentRate,
             studentsAtRiskCount: riskCount,
-            totalStudents
+            totalStudents,
+            totalGradesRegistered: activeGrades.length,
+            totalSubjects: subjectsArray.length
         });
+
         setPerformanceDistribution(distribution);
         setTopStudents(honorRoll);
-        setStudentsAtRiskList(riskList.sort((a, b) => a.average - b.average).slice(0, 10));
+        setStudentsAtRiskList(riskList.sort((a, b) => b.failedSubjectsCount - a.failedSubjectsCount || a.average - b.average));
 
-    }, [rawStudents, rawGrades, selectedCourse]);
+    }, [rawStudents, rawGrades, selectedCourse, selectedPeriod]);
 
     if (loading) {
         return (
             <div className="min-h-[60vh] flex flex-col justify-center items-center gap-3">
-                <Loader2 className="animate-spin text-indigo-600" size={32} />
-                <p className="text-sm text-gray-500 font-semibold">Generando reportes estadísticos...</p>
+                <Loader2 className="animate-spin text-indigo-600" size={36} />
+                <p className="text-sm text-slate-500 font-bold tracking-wide">Compilando estadísticas generales del plantel...</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 animate-fade-in pb-12">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
+        <div className="space-y-8 animate-fade-in pb-16 select-none">
+            {/* Header Principal */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-2xl relative overflow-hidden">
+                <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div className="relative z-10 space-y-1">
                     <button 
                         onClick={() => navigate('/')}
-                        className="flex items-center gap-1.5 text-xs font-extrabold text-indigo-650 hover:underline mb-2 tracking-wide uppercase"
+                        className="flex items-center gap-1.5 text-[11px] font-extrabold text-indigo-300 hover:text-white transition tracking-wider uppercase mb-2"
                     >
-                        <ArrowLeft size={14} /> Volver al Tablero
+                        <ArrowLeft size={14} /> Regresar al Tablero
                     </button>
-                    <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
-                        <BarChart2 className="text-indigo-650" size={28} /> Estadísticas y Análisis Académico
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3 text-white">
+                        <BarChart2 className="text-indigo-400" size={32} /> Estadísticas y Análisis Académico Institucional
                     </h1>
-                    <p className="text-xs text-gray-400 font-bold tracking-wide mt-1 uppercase">Institución Educativa Nueva América de Suba (INAS)</p>
+                    <p className="text-xs text-indigo-200 font-medium max-w-xl">
+                        Tablero analítico con métricas completas de rendimiento, ranking de mejor a peor resultado y materias reprobadas INAS 2026.
+                    </p>
+                </div>
+
+                <div className="relative z-10 flex flex-wrap gap-3">
+                    <Link
+                        to="/admin/consolidado-print"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-2xl transition text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-2 shrink-0 border border-indigo-400/30 active-press"
+                    >
+                        <Printer size={16} /> Ver Consolidado e Imprimir PDF
+                    </Link>
                 </div>
             </div>
 
-            {/* Filter pills */}
-            <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-3">
-                <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Seleccionar Curso de Análisis</label>
-                    {selectedCourse && (
-                        <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded-lg uppercase">
-                            Analizando Curso {selectedCourse}
-                        </span>
-                    )}
+            {/* Barra de Filtros Interactivos (Curso y Periodo) */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                        <Filter className="text-indigo-600" size={18} />
+                        <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Filtros de Análisis Académico</h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span>Evaluados: <strong className="text-slate-900">{stats.totalStudents} Estudiantes</strong></span>
+                        <span>•</span>
+                        <span>Calificaciones: <strong className="text-indigo-600">{stats.totalGradesRegistered} notas</strong></span>
+                    </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={() => setSelectedCourse("")}
-                        className={`px-3.5 py-2 rounded-xl font-bold text-xs border shadow-sm transition active-press ${
-                            selectedCourse === ""
-                                ? "bg-indigo-600 border-indigo-600 text-white"
-                                : "bg-white hover:bg-slate-50 border-slate-100 text-slate-600"
-                        }`}
-                    >
-                        Todos los Cursos
-                    </button>
-                    {coursesList.map(course => (
-                        <button
-                            key={course}
-                            onClick={() => setSelectedCourse(course)}
-                            className={`px-3.5 py-2 rounded-xl font-bold text-xs border shadow-sm transition active-press ${
-                                selectedCourse === course
-                                    ? "bg-indigo-600 border-indigo-600 text-white"
-                                    : "bg-white hover:bg-slate-50 border-slate-100 text-slate-600"
-                            }`}
-                        >
-                            Curso {course}
-                        </button>
-                    ))}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* Selector de Periodo */}
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Periodo Escolar</label>
+                        <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/60">
+                            {[
+                                { id: "ALL", label: "🗓️ Todos" },
+                                { id: "1", label: "P1" },
+                                { id: "2", label: "P2" },
+                                { id: "3", label: "P3" },
+                                { id: "4", label: "P4" }
+                            ].map(p => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => setSelectedPeriod(p.id)}
+                                    className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition ${
+                                        selectedPeriod === p.id 
+                                            ? 'bg-white text-indigo-600 shadow-sm' 
+                                            : 'text-slate-500 hover:text-slate-900'
+                                    }`}
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Selector de Cursos (Pills) */}
+                    <div className="lg:col-span-2 space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Grado / Curso</label>
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                            <button
+                                onClick={() => setSelectedCourse("")}
+                                className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
+                                    selectedCourse === ""
+                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                                        : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
+                                }`}
+                            >
+                                🎓 Todos
+                            </button>
+                            {coursesList.map(c => (
+                                <button
+                                    key={c}
+                                    onClick={() => setSelectedCourse(c)}
+                                    className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
+                                        selectedCourse === c
+                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                                            : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
+                                    }`}
+                                >
+                                    Curso {c}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
+
                 {selectedCourse && (
-                    <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
-                        <p className="text-[11px] text-gray-400 font-semibold leading-normal">
-                            ¿Las calificaciones del Curso {selectedCourse} contienen notas ficticias del cargador inicial? Puedes limpiarlas para empezar desde cero con tus notas reales.
-                        </p>
+                    <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                        <span className="text-slate-500 font-semibold">
+                            ¿Necesitas limpiar las notas de prueba del <strong>Curso {selectedCourse}</strong>?
+                        </span>
                         <button
                             onClick={handleResetCourseGrades}
                             disabled={resettingGrades}
-                            className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100/50 rounded-xl font-bold text-xs transition active-press flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl font-bold transition flex items-center gap-1.5 shrink-0 disabled:opacity-50"
                         >
-                            {resettingGrades ? (
-                                <><Loader2 size={12} className="animate-spin" /> Limpiando...</>
-                            ) : (
-                                "Limpiar Notas de Prueba"
-                            )}
+                            {resettingGrades ? <Loader2 size={12} className="animate-spin" /> : "Limpiar Notas de Prueba"}
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Metrics cards row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Promedio General */}
-                <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover-elevate">
-                    <div className="w-11 h-11 bg-indigo-50 text-indigo-650 rounded-xl flex items-center justify-center shrink-0">
-                        <TrendingUp size={22} />
+            {/* Tarjetas KPI de Métricas Académicas Clave */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {/* 1. Promedio General */}
+                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+                    <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-xl"></div>
+                    <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Promedio General</span>
+                        <div className="p-2 bg-indigo-500/20 rounded-2xl text-indigo-300">
+                            <TrendingUp size={20} />
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Promedio {selectedCourse ? 'del Curso' : 'General'}</p>
-                        <p className="text-2xl font-extrabold text-slate-800 mt-0.5">{stats.globalAverage} <span className="text-xs text-gray-400 font-normal">/100</span></p>
-                    </div>
-                </div>
-
-                {/* Tasa de Aprobación */}
-                <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover-elevate">
-                    <div className="w-11 h-11 bg-green-50 text-green-600 rounded-xl flex items-center justify-center shrink-0">
-                        <CheckCircle2 size={22} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Tasa de Aprobación</p>
-                        <p className="text-2xl font-extrabold text-slate-800 mt-0.5">{stats.passingRate}%</p>
+                    <div className="mt-4">
+                        <div className="text-3xl font-black">{stats.globalAverage} <span className="text-xs text-indigo-300 font-medium">/ 100 pts</span></div>
+                        <p className="text-[10px] text-indigo-200 mt-1 font-medium">
+                            {selectedCourse ? `Grado ${selectedCourse}` : 'Promedio global del plantel'}
+                        </p>
                     </div>
                 </div>
 
-                {/* Alumnos Excelente */}
-                <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover-elevate">
-                    <div className="w-11 h-11 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
-                        <Award size={22} />
+                {/* 2. Tasa de Aprobación */}
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                    <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tasa de Aprobación</span>
+                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-2xl">
+                            <CheckCircle2 size={20} />
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Desempeño Excelente</p>
-                        <p className="text-2xl font-extrabold text-slate-800 mt-0.5">{stats.excellentRate}%</p>
+                    <div className="mt-4">
+                        <div className="text-3xl font-black text-slate-900">{stats.passingRate}%</div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
+                            <div style={{ width: `${stats.passingRate}%` }} className="bg-emerald-500 h-full rounded-full transition-all duration-500"></div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Alumnos en Riesgo */}
-                <div className={`border rounded-2xl p-5 shadow-sm flex items-center gap-4 hover-elevate transition ${
-                    stats.studentsAtRiskCount > 0 
-                        ? 'bg-rose-50/20 border-rose-100/50' 
-                        : 'bg-white border-slate-100'
+                {/* 3. Cuadro de Excelencia */}
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                    <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Excelente (Superior &ge;95)</span>
+                        <div className="p-2 bg-amber-50 text-amber-500 rounded-2xl">
+                            <Star size={20} />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <div className="text-3xl font-black text-slate-900">{stats.excellentRate}%</div>
+                        <p className="text-[10px] text-slate-400 mt-1 font-semibold">
+                            {performanceDistribution.superior} estudiantes en nivel Superior
+                        </p>
+                    </div>
+                </div>
+
+                {/* 4. Estudiantes en Riesgo */}
+                <div className={`border rounded-3xl p-6 shadow-sm flex flex-col justify-between transition ${
+                    stats.studentsAtRiskCount > 0 ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-200/80'
                 }`}>
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                        stats.studentsAtRiskCount > 0 ? 'bg-rose-100 text-rose-600' : 'bg-gray-50 text-gray-400'
-                    }`}>
-                        <AlertTriangle size={22} />
+                    <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Alumnos en Riesgo</span>
+                        <div className={`p-2 rounded-2xl ${stats.studentsAtRiskCount > 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-400'}`}>
+                            <AlertTriangle size={20} />
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Alumnos en Riesgo</p>
-                        <p className={`text-2xl font-extrabold mt-0.5 ${stats.studentsAtRiskCount > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
-                            {stats.studentsAtRiskCount} <span className="text-xs text-gray-400 font-normal">estudiantes</span>
+                    <div className="mt-4">
+                        <div className={`text-3xl font-black ${stats.studentsAtRiskCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                            {stats.studentsAtRiskCount} <span className="text-xs font-bold text-slate-400">alumnos</span>
+                        </div>
+                        <p className="text-[10px] text-rose-500 font-bold mt-1">
+                            {stats.studentsAtRiskCount > 0 ? 'Tienen 1 o más materias perdidas (<75)' : 'Sin alertas de reprobación'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* Main Graphs Layout */}
+            {/* Layout Principal de Gráficos e Indicadores */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Comparativo de Cursos (Bar Chart SVG) */}
-                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm lg:col-span-2 space-y-6">
-                    <div>
-                        <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                            <Users className="text-indigo-650" size={18} /> Rendimiento Comparado por Cursos
-                        </h3>
-                        <p className="text-xs text-gray-400 mt-0.5">Comparación de calificaciones promedio finales entre grados. {selectedCourse && 'Tu curso seleccionado está resaltado.'}</p>
+                
+                {/* 1. Gráfico Comparativo por Cursos */}
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-sm lg:col-span-2 space-y-6">
+                    <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row gap-2 border-b pb-4 border-slate-100">
+                        <div>
+                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                                <GraduationCap className="text-indigo-600" size={20} /> Comparativo de Rendimiento por Cursos
+                            </h3>
+                            <p className="text-xs text-slate-400 font-medium mt-0.5">
+                                Promedio general por grado. Haz clic en una barra para filtrar las estadísticas.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                            <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full inline-block"></span> Aprobado (&ge;75)
+                            <span className="w-2.5 h-2.5 bg-rose-500 rounded-full inline-block ml-2"></span> Reprobado (&lt;75)
+                        </div>
                     </div>
 
-                    {/* SVG Chart Wrapper */}
-                    <div className="relative w-full h-72 border border-slate-100 rounded-xl bg-slate-50/30 p-4">
+                    {/* Gráfico de Barras Dinámico con Gradiente e Interacción */}
+                    <div className="relative w-full h-80 border border-slate-100 rounded-2xl bg-slate-50/50 p-4 pt-8">
                         {courseAverages.length === 0 ? (
-                            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">Sin datos de grados registrados.</div>
+                            <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 font-bold">
+                                No hay datos de grados para mostrar.
+                            </div>
                         ) : (
-                            <div className="w-full h-full flex flex-col justify-between">
-                                {/* Grid Lines & Bars */}
-                                <div className="relative flex-1 flex items-end gap-1.5 sm:gap-3.5 pt-6 pb-2 px-2 overflow-x-auto min-w-0 scrollbar-none">
-                                    {/* Horizontal Guidelines */}
-                                    <div className="absolute inset-x-0 top-1/4 border-t border-slate-100/80 pointer-events-none"></div>
-                                    <div className="absolute inset-x-0 top-2/4 border-t border-slate-100/80 pointer-events-none"></div>
-                                    <div className="absolute inset-x-0 top-3/4 border-t border-slate-100/80 pointer-events-none"></div>
-                                    
-                                    {courseAverages.map(course => {
-                                        // Calculate percentage height
-                                        const pct = (course.average / 100) * 100;
-                                        // Color logic
-                                        const isPassing = course.average >= 75;
-                                        const barColor = isPassing ? 'bg-indigo-600' : 'bg-rose-500';
-                                        
-                                        // Highlighting selected course logic
-                                        const isSelected = selectedCourse === course.grade;
-                                        const isActiveBar = selectedCourse === "" || isSelected;
+                            <div className="w-full h-full flex flex-col justify-between relative">
+                                {/* Línea de Meta Institucional (75 pts) */}
+                                <div className="absolute inset-x-0 top-[25%] border-t-2 border-dashed border-emerald-500/50 pointer-events-none z-10 flex justify-end pr-2">
+                                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                        Meta Aprobatoria: 75 pts
+                                    </span>
+                                </div>
+
+                                <div className="relative flex-1 flex items-end gap-2 sm:gap-4 pt-4 pb-2 px-2 overflow-x-auto scrollbar-none">
+                                    {courseAverages.map(cObj => {
+                                        const pct = Math.min(100, Math.max(0, cObj.average));
+                                        const isPassing = cObj.average >= 75;
+                                        const isSelected = selectedCourse === cObj.grade;
+                                        const isActive = selectedCourse === "" || isSelected;
 
                                         return (
                                             <div 
-                                                key={course.grade} 
-                                                onClick={() => setSelectedCourse(course.grade === selectedCourse ? "" : course.grade)}
-                                                className="flex-1 min-w-[36px] flex flex-col items-center h-full justify-end group relative cursor-pointer"
+                                                key={cObj.grade}
+                                                onClick={() => setSelectedCourse(selectedCourse === cObj.grade ? "" : cObj.grade)}
+                                                className="flex-1 min-w-[42px] flex flex-col items-center h-full justify-end group relative cursor-pointer"
                                             >
-                                                {/* Tooltip on hover */}
-                                                <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 pointer-events-none transition duration-150 transform -translate-y-1 bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-lg z-20 whitespace-nowrap font-bold text-center">
-                                                    Prom: {course.average}<br/>
-                                                    {course.studentCount} Alum.
+                                                {/* Tooltip Dinámico */}
+                                                <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 pointer-events-none transition duration-200 transform -translate-y-1 bg-slate-900 text-white text-[10px] p-2 rounded-xl shadow-xl z-30 whitespace-nowrap font-bold text-center">
+                                                    <div>Grado {cObj.grade}</div>
+                                                    <div className="text-indigo-300">Prom: {cObj.average} pts</div>
+                                                    <div className="text-slate-400 font-medium">{cObj.studentCount} estudiantes</div>
                                                 </div>
 
-                                                {/* Numerical Average Value indicator */}
-                                                <span className={`text-[10px] font-bold mb-1 transition-colors ${
-                                                    isSelected ? 'text-indigo-600 scale-110' : 'text-gray-500 group-hover:text-indigo-650'
+                                                {/* Valor sobre la barra */}
+                                                <span className={`text-[10px] font-black mb-1 transition-transform ${
+                                                    isSelected ? 'text-indigo-600 scale-125' : 'text-slate-600 group-hover:text-indigo-600'
                                                 }`}>
-                                                    {course.average.toFixed(0)}
+                                                    {cObj.average}
                                                 </span>
-                                                
-                                                {/* Bar element */}
+
+                                                {/* Elemento de la Barra */}
                                                 <div 
-                                                    style={{ height: `${pct * 0.75}%` }} 
-                                                    className={`w-full rounded-t-md transition-all duration-350 group-hover:scale-x-[1.03] group-hover:brightness-105 ${barColor} shadow-inner-soft ${
-                                                        isActiveBar ? 'opacity-100' : 'opacity-30'
-                                                    } ${isSelected ? 'ring-2 ring-indigo-600 ring-offset-2' : ''}`}
+                                                    style={{ height: `${pct * 0.72}%` }}
+                                                    className={`w-full rounded-t-xl transition-all duration-300 ${
+                                                        isPassing 
+                                                            ? 'bg-gradient-to-t from-indigo-700 to-indigo-500' 
+                                                            : 'bg-gradient-to-t from-rose-600 to-rose-400'
+                                                    } ${isActive ? 'opacity-100' : 'opacity-30'} ${
+                                                        isSelected ? 'ring-4 ring-indigo-600/30 scale-x-105' : 'hover:brightness-110'
+                                                    }`}
                                                 ></div>
 
-                                                {/* Label */}
-                                                <span className={`text-[10px] tracking-wide mt-2 block ${
-                                                    isSelected ? 'font-extrabold text-indigo-600' : 'font-semibold text-gray-400'
-                                                }`}>{course.grade}</span>
+                                                {/* Etiqueta del Curso */}
+                                                <span className={`text-[10px] mt-2 block font-extrabold ${
+                                                    isSelected ? 'text-indigo-600' : 'text-slate-500'
+                                                }`}>
+                                                    {cObj.grade}
+                                                </span>
                                             </div>
                                         );
                                     })}
@@ -527,64 +637,18 @@ export default function AcademicStats() {
                     </div>
                 </div>
 
-                {/* Distribución de Desempeños y Podio Honor */}
-                <div className="space-y-6">
-                    {/* Honor Roll */}
-                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
-                        <div>
-                            <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                <Award className="text-amber-500" size={18} /> {selectedCourse ? `Cuadro de Honor - Curso ${selectedCourse}` : 'Podio de Excelencia Académica'}
-                            </h3>
-                            <p className="text-xs text-gray-400 mt-0.5">Top 5 estudiantes con mejor promedio {selectedCourse ? 'de este curso' : 'del plantel'}.</p>
-                        </div>
-
-                        <div className="space-y-3.5">
-                            {topStudents.length === 0 ? (
-                                <div className="text-center py-6 text-xs text-gray-400">Sin datos de estudiantes.</div>
-                            ) : (
-                                topStudents.map((student, idx) => {
-                                    const medals = [
-                                        { icon: '🥇', bg: 'bg-amber-50 border-amber-100 text-amber-600' },
-                                        { icon: '🥈', bg: 'bg-slate-50 border-slate-100 text-slate-500' },
-                                        { icon: '🥉', bg: 'bg-orange-50 border-orange-100 text-orange-600' }
-                                    ];
-                                    const style = medals[idx] || { icon: `${idx + 1}.`, bg: 'bg-gray-50/50 border-gray-100/50 text-gray-500' };
-
-                                    return (
-                                        <div key={student.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100/50 hover:bg-slate-50/50 transition">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className={`w-7 h-7 rounded-lg border font-bold text-xs flex items-center justify-center shrink-0 ${style.bg}`}>
-                                                    {style.icon}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-slate-800 truncate">{student.name}</p>
-                                                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Curso {student.grade}</p>
-                                                </div>
-                                            </div>
-                                            <span className="text-xs font-extrabold text-indigo-655 bg-indigo-50/70 border border-indigo-100/50 px-2 py-0.5 rounded-lg shrink-0">
-                                                {student.average}
-                                            </span>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Performance Level Distribution & Subject performance */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Distribución de Desempeños por Rangos */}
-                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between space-y-4">
+                {/* 2. Distribución de Nivel de Desempeño (MEN) */}
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-6">
                     <div>
-                        <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                            <Sparkles className="text-indigo-650" size={18} /> Rango de Desempeños {selectedCourse && `- Curso ${selectedCourse}`}
+                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                            <Target className="text-indigo-600" size={20} /> Escala de Desempeño Escolar
                         </h3>
-                        <p className="text-xs text-gray-400 mt-0.5">Distribución de estudiantes del {selectedCourse ? 'curso' : 'plantel'} por escala nacional.</p>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5">
+                            Distribución de estudiantes {selectedCourse ? `del Curso ${selectedCourse}` : 'del colegio'} por nivel.
+                        </p>
                     </div>
 
-                    {/* Stacked Percentage Bar */}
+                    {/* Barra de Distribución Porcentual Apilada */}
                     <div className="space-y-4">
                         {(() => {
                             const total = stats.totalStudents || 1;
@@ -595,31 +659,41 @@ export default function AcademicStats() {
 
                             return (
                                 <>
-                                    {/* Visual Bar */}
-                                    <div className="w-full h-4 rounded-full overflow-hidden flex shadow-inner">
-                                        <div style={{ width: `${supPct}%` }} className="bg-emerald-500 h-full hover:opacity-90 transition-opacity" title={`Superior: ${supPct}%`}></div>
-                                        <div style={{ width: `${altoPct}%` }} className="bg-indigo-600 h-full hover:opacity-90 transition-opacity" title={`Alto: ${altoPct}%`}></div>
-                                        <div style={{ width: `${basPct}%` }} className="bg-amber-500 h-full hover:opacity-90 transition-opacity" title={`Básico: ${basPct}%`}></div>
-                                        <div style={{ width: `${bajPct}%` }} className="bg-rose-500 h-full hover:opacity-90 transition-opacity" title={`Bajo: ${bajPct}%`}></div>
+                                    <div className="w-full h-5 rounded-full overflow-hidden flex shadow-inner p-0.5 bg-slate-100">
+                                        <div style={{ width: `${supPct}%` }} className="bg-emerald-500 h-full rounded-l-full transition-all" title={`Superior: ${supPct}%`}></div>
+                                        <div style={{ width: `${altoPct}%` }} className="bg-indigo-600 h-full transition-all" title={`Alto: ${altoPct}%`}></div>
+                                        <div style={{ width: `${basPct}%` }} className="bg-amber-500 h-full transition-all" title={`Básico: ${basPct}%`}></div>
+                                        <div style={{ width: `${bajPct}%` }} className="bg-rose-500 h-full rounded-r-full transition-all" title={`Bajo: ${bajPct}%`}></div>
                                     </div>
 
-                                    {/* Description list */}
-                                    <div className="grid grid-cols-2 gap-3 pt-2 text-[11px] leading-tight font-semibold">
-                                        <div className="flex items-center gap-2 text-slate-700">
-                                            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shrink-0"></span>
-                                            <span>Superior ({supPct}%): <strong>{performanceDistribution.superior}</strong></span>
+                                    {/* Leyenda de Niveles */}
+                                    <div className="space-y-2.5 pt-2 text-xs font-bold">
+                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
+                                            <span className="flex items-center gap-2 text-emerald-800">
+                                                <span className="w-3 h-3 bg-emerald-500 rounded-full"></span> Superior (95-100)
+                                            </span>
+                                            <span className="text-slate-900 font-black">{performanceDistribution.superior} <span className="text-[10px] text-slate-400 font-medium">({supPct}%)</span></span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-slate-700">
-                                            <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full shrink-0"></span>
-                                            <span>Alto ({altoPct}%): <strong>{performanceDistribution.alto}</strong></span>
+
+                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
+                                            <span className="flex items-center gap-2 text-indigo-800">
+                                                <span className="w-3 h-3 bg-indigo-600 rounded-full"></span> Alto (80-94)
+                                            </span>
+                                            <span className="text-slate-900 font-black">{performanceDistribution.alto} <span className="text-[10px] text-slate-400 font-medium">({altoPct}%)</span></span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-slate-700">
-                                            <span className="w-2.5 h-2.5 bg-amber-500 rounded-full shrink-0"></span>
-                                            <span>Básico ({basPct}%): <strong>{performanceDistribution.basico}</strong></span>
+
+                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
+                                            <span className="flex items-center gap-2 text-amber-800">
+                                                <span className="w-3 h-3 bg-amber-500 rounded-full"></span> Básico (75-79)
+                                            </span>
+                                            <span className="text-slate-900 font-black">{performanceDistribution.basico} <span className="text-[10px] text-slate-400 font-medium">({basPct}%)</span></span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-slate-700">
-                                            <span className="w-2.5 h-2.5 bg-rose-500 rounded-full shrink-0"></span>
-                                            <span>Bajo ({bajPct}%): <strong>{performanceDistribution.bajo}</strong></span>
+
+                                        <div className="flex justify-between items-center bg-rose-50/50 border border-rose-100 p-2 rounded-xl">
+                                            <span className="flex items-center gap-2 text-rose-700">
+                                                <span className="w-3 h-3 bg-rose-500 rounded-full"></span> Bajo (&lt;75)
+                                            </span>
+                                            <span className="text-rose-700 font-black">{performanceDistribution.bajo} <span className="text-[10px] text-slate-400 font-medium">({bajPct}%)</span></span>
                                         </div>
                                     </div>
                                 </>
@@ -627,35 +701,52 @@ export default function AcademicStats() {
                         })()}
                     </div>
                 </div>
+            </div>
 
-                {/* Rendimiento por Asignatura (Horizontal Bar Comparison) */}
-                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm lg:col-span-2 space-y-4">
-                    <div>
-                        <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                            <BookOpen className="text-indigo-650" size={18} /> Promedio por Asignatura {selectedCourse && `- Curso ${selectedCourse}`}
-                        </h3>
-                        <p className="text-xs text-gray-400 mt-0.5">Identificación de materias críticas en el {selectedCourse ? 'curso' : 'colegio'}.</p>
+            {/* Layout Secundario: Asignaturas Críticas + Podio Honor */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                {/* Rendimiento por Asignatura (Dificultad Académica) */}
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-sm lg:col-span-2 space-y-6">
+                    <div className="flex justify-between items-start sm:items-center border-b pb-4 border-slate-100">
+                        <div>
+                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                                <BookOpen className="text-indigo-600" size={20} /> Desempeño por Asignatura {selectedCourse && `- Curso ${selectedCourse}`}
+                            </h3>
+                            <p className="text-xs text-slate-400 font-medium mt-0.5">
+                                Promedio acumulado por materia. Permite identificar las materias más críticas.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-3.5">
                         {subjectAverages.length === 0 ? (
-                            <div className="text-center py-8 text-xs text-gray-400">Sin datos de materias.</div>
+                            <div className="text-center py-8 text-xs text-slate-400 font-bold">No hay asignaturas registradas.</div>
                         ) : (
-                            subjectAverages.map(subject => {
-                                const isPassing = subject.average >= 75;
+                            subjectAverages.map(subj => {
+                                const isPassing = subj.average >= 75;
                                 const barColor = isPassing ? 'bg-indigo-600' : 'bg-rose-500';
-                                
+
                                 return (
-                                    <div key={subject.subject} className="space-y-1">
-                                        <div className="flex justify-between text-xs font-bold">
-                                            <span className="text-slate-700 truncate">{subject.subject}</span>
-                                            <span className={isPassing ? 'text-indigo-600' : 'text-rose-600'}>{subject.average.toFixed(1)} <span className="text-[10px] text-gray-400 font-normal">/100</span></span>
+                                    <div key={subj.subject} className="space-y-1 bg-slate-50/60 p-3 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center text-xs font-bold">
+                                            <span className="text-slate-800 font-bold truncate max-w-[200px] sm:max-w-xs">{subj.subject}</span>
+                                            <div className="flex items-center gap-2">
+                                                {subj.lowCount > 0 && (
+                                                    <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                                                        ⚠️ {subj.lowCount} perdidas
+                                                    </span>
+                                                )}
+                                                <span className={`font-black text-xs ${isPassing ? 'text-indigo-650' : 'text-rose-600'}`}>
+                                                    {subj.average} <span className="text-[9px] text-slate-400 font-normal">/100</span>
+                                                </span>
+                                            </div>
                                         </div>
-                                        
-                                        {/* Progress track bar */}
-                                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+
+                                        {/* Barra de Progresión */}
+                                        <div className="w-full h-2.5 bg-slate-200/70 rounded-full overflow-hidden">
                                             <div 
-                                                style={{ width: `${subject.average}%` }} 
+                                                style={{ width: `${subj.average}%` }}
                                                 className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                                             ></div>
                                         </div>
@@ -665,42 +756,122 @@ export default function AcademicStats() {
                         )}
                     </div>
                 </div>
+
+                {/* Cuadro de Honor / Top 10 Estudiantes */}
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6">
+                    <div>
+                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                            <Award className="text-amber-500" size={20} /> Cuadro de Honor {selectedCourse ? `- Grado ${selectedCourse}` : 'Institucional'}
+                        </h3>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5">
+                            Los 10 mejores promedios generales.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                        {topStudents.length === 0 ? (
+                            <div className="text-center py-8 text-xs text-slate-400 font-bold">Sin registros disponibles.</div>
+                        ) : (
+                            topStudents.map((st, idx) => {
+                                const rank = idx + 1;
+                                const isTop3 = rank <= 3;
+
+                                return (
+                                    <div 
+                                        key={st.id} 
+                                        className={`flex items-center justify-between p-3 rounded-2xl border transition ${
+                                            isTop3 
+                                                ? 'bg-amber-50/50 border-amber-200/80' 
+                                                : 'bg-slate-50/60 border-slate-100 hover:bg-slate-100/50'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                                                rank === 1 ? 'bg-amber-400 text-amber-950 shadow-md shadow-amber-400/30' :
+                                                rank === 2 ? 'bg-slate-300 text-slate-900' :
+                                                rank === 3 ? 'bg-amber-700 text-amber-50' : 'bg-slate-200 text-slate-700'
+                                            }`}>
+                                                {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
+                                            </span>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-black text-slate-900 truncate">{st.name}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase">Grado {st.grade}</p>
+                                            </div>
+                                        </div>
+
+                                        <span className="text-xs font-black text-indigo-900 bg-white border border-indigo-100 px-2.5 py-1 rounded-xl shadow-xs shrink-0">
+                                            {st.average}
+                                        </span>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
             </div>
 
-            {/* Risk Management / Alert List */}
-            <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
-                <div>
-                    <h3 className="text-base font-bold text-rose-600 flex items-center gap-2">
-                        <AlertTriangle size={20} /> Alerta Académica: Estudiantes con Rendimiento Crítico {selectedCourse && `- Curso ${selectedCourse}`}
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Alumnos con promedio inferior a la nota aprobatoria (75/100) en el {selectedCourse ? 'curso' : 'plantel'}.</p>
+            {/* Módulo de Alerta Académica: Estudiantes con Materias Pérdidas */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-4 border-slate-100">
+                    <div>
+                        <h3 className="text-base font-black text-rose-600 flex items-center gap-2">
+                            <ShieldAlert size={22} /> Alerta Académica: Alumnos con Asignaturas Reprobadas {selectedCourse && `- Curso ${selectedCourse}`}
+                        </h3>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5">
+                            Listado prioritario para coordinadores y directores de grupo de estudiantes en riesgo académico.
+                        </p>
+                    </div>
+
+                    <Link 
+                        to="/admin/consolidado-print"
+                        className="text-xs font-extrabold text-rose-600 hover:text-rose-700 flex items-center gap-1 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100"
+                    >
+                        Ver Consolidado Completo <ChevronRight size={14} />
+                    </Link>
                 </div>
 
                 {studentsAtRiskList.length === 0 ? (
-                    <div className="text-center py-8 bg-green-50/20 border border-green-100/50 rounded-xl text-green-700 text-xs font-semibold">
-                        🎉 ¡Excelente! No se registran alumnos con promedio inferior a 75 en {selectedCourse ? `el Curso ${selectedCourse}` : 'la institución'}.
+                    <div className="text-center py-10 bg-emerald-50/40 border border-emerald-200/60 rounded-2xl text-emerald-800 text-xs font-extrabold">
+                        🎉 ¡Excelente! No se registran alumnos con materias reprobadas en {selectedCourse ? `el Curso ${selectedCourse}` : 'el colegio'}.
                     </div>
                 ) : (
-                    <div className="overflow-x-auto rounded-xl border border-slate-100">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
                         <table className="w-full border-collapse text-left text-xs">
                             <thead>
-                                <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider">
+                                <tr className="bg-slate-900 text-white font-bold text-[10px] uppercase tracking-wider">
                                     <th className="p-3.5 pl-5">Código</th>
                                     <th className="p-3.5">Estudiante</th>
                                     <th className="p-3.5">Curso</th>
-                                    <th className="p-3.5 text-right pr-5">Promedio Final</th>
+                                    <th className="p-3.5 text-center">Materias Pérdidas (&lt;75)</th>
+                                    <th className="p-3.5 text-right pr-5">Promedio General</th>
+                                    <th className="p-3.5 text-center">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100 font-medium">
                                 {studentsAtRiskList.map(student => (
-                                    <tr key={student.id} className="hover:bg-slate-50/40 transition">
-                                        <td className="p-3.5 pl-5 font-mono text-gray-500">{student.id_code}</td>
-                                        <td className="p-3.5 font-bold text-slate-800">{student.name}</td>
-                                        <td className="p-3.5 font-bold text-slate-600 uppercase">Grado {student.grade}</td>
+                                    <tr key={student.id} className="hover:bg-slate-50/60 transition">
+                                        <td className="p-3.5 pl-5 font-mono text-slate-500 font-semibold">{student.id_code}</td>
+                                        <td className="p-3.5 font-bold text-slate-900">{student.name}</td>
+                                        <td className="p-3.5 font-bold text-slate-700 uppercase">Grado {student.grade}</td>
+                                        <td className="p-3.5 text-center">
+                                            <span className="inline-flex items-center gap-1 font-black text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full text-xs">
+                                                ⚠️ {student.failedSubjectsCount} materia(s)
+                                            </span>
+                                        </td>
                                         <td className="p-3.5 text-right pr-5">
-                                            <span className="font-extrabold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-lg">
+                                            <span className={`font-black text-xs px-2.5 py-1 rounded-xl ${
+                                                student.average < 75 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-900'
+                                            }`}>
                                                 {student.average}
                                             </span>
+                                        </td>
+                                        <td className="p-3.5 text-center">
+                                            <Link 
+                                                to={`/admin/boletin-print/${student.id}`}
+                                                className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition inline-flex items-center gap-1"
+                                            >
+                                                <BookOpen size={12} /> Ver Boletín
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))}
