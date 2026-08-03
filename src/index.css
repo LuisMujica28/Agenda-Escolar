@@ -149,3 +149,29 @@
 .shadow-inner-soft {
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03);
 }
+
+@media print {
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  aside, nav, header, button, .no-print {
+    display: none !important;
+  }
+  .printable-honor-roll {
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .printable-diploma-page {
+    border: 2px solid #b45309 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 1.2cm !important;
+    page-break-after: always !important;
+  }
+}

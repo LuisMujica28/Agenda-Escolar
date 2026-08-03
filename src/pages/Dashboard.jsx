@@ -7,7 +7,7 @@ import {
     Loader2, BookOpen, Calendar as CalendarIcon, ClipboardList, 
     MessageSquare, User, FileText, Award, Star, Bell, 
     ChevronRight, CheckCircle2, AlertTriangle, TrendingUp,
-    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send
+    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send, UserMinus, UserCheck
 } from 'lucide-react';
 import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS, MOCK_PARENTS } from '../lib/mockData';
 import CircularDetailModal from '../components/CircularDetailModal';
@@ -170,6 +170,22 @@ export default function Dashboard() {
     const [circularNumber, setCircularNumber] = useState(36);
     const [currentTime, setCurrentTime] = useState('');
     const [importPlanillasCount, setImportPlanillasCount] = useState(12);
+    const [recentActivitiesList, setRecentActivitiesList] = useState([]);
+
+    const formatRelativeTime = (created_at) => {
+        if (!created_at) return 'Reciente';
+        const date = created_at?.seconds ? new Date(created_at.seconds * 1000) : new Date(created_at);
+        if (isNaN(date.getTime())) return 'Reciente';
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 1) return 'Hace un momento';
+        if (diffMins < 60) return `Hace ${diffMins} min`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `Hace ${diffHours} h`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `Hace ${diffDays} d`;
+    };
 
     // Admin Student Manage States
     const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -390,6 +406,25 @@ export default function Dashboard() {
         } catch (err) {
             console.error("Error al eliminar estudiante:", err);
             alert("Error al eliminar estudiante: " + err.message);
+        }
+    };
+
+    const handleToggleStudentStatus = async (student) => {
+        const isRetirado = student.status === 'retirado';
+        const newStatus = isRetirado ? 'activo' : 'retirado';
+        const displayName = student.lastName && student.firstName ? `${student.lastName} ${student.firstName}` : student.name;
+        const confirmMsg = isRetirado
+            ? `¿Confirmas REACTIVAR a ${displayName} como Alumno Activo?`
+            : `¿Confirmas marcar a ${displayName} como RETIRADO?\n\nSus notas y boletines permanecerán 100% intactos para expedir certificados o boletines, pero NO aparecerá en las estadísticas académicas ni rankings.`;
+
+        if (window.confirm(confirmMsg)) {
+            try {
+                await updateDoc(doc(db, 'students', student.id), { status: newStatus });
+                setAdminStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: newStatus } : s));
+            } catch (err) {
+                console.error("Error al cambiar estado del estudiante:", err);
+                alert("Error al actualizar el estado del estudiante.");
+            }
         }
     };
 
@@ -652,54 +687,101 @@ export default function Dashboard() {
                         }
                     }
                 } else if (userRole === 'teacher') {
-                    if (currentUser.uid.startsWith('fake-')) {
-                        setTotalStudentsCount(35);
-                        setMyTasksCount(4);
-                    } else {
-                        // Total de estudiantes
-                        const sSnap = await getDocs(collection(db, 'students'));
-                        setTotalStudentsCount(sSnap.size);
+                    const sSnap = await getDocs(collection(db, 'students'));
+                    setTotalStudentsCount(sSnap.size);
 
-                        // Tareas creadas por este profesor
-                        const qTasks = query(collection(db, 'tasks'), where('teacher_id', '==', currentUser.uid));
-                        const tSnap = await getDocs(qTasks);
-                        setMyTasksCount(tSnap.size);
-                    }
+                    const qTasks = query(collection(db, 'tasks'), where('teacher_id', '==', currentUser.uid));
+                    const tSnap = await getDocs(qTasks);
+                    setMyTasksCount(tSnap.size);
                 } else if (userRole === 'admin') {
-                    if (currentUser.uid.startsWith('fake-')) {
-                        setTotalStudentsCount(35);
-                        setTotalUsersCount(40);
+                    const sSnap = await getDocs(collection(db, 'students'));
+                    const studentsList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setTotalStudentsCount(sSnap.size);
+                    setAdminStudents(studentsList);
+
+                    const uSnap = await getDocs(collection(db, 'users'));
+                    setTotalUsersCount(uSnap.size);
+
+                    const gSnap = await getDocs(collection(db, 'grades'));
+                    const gradesList = gSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setAdminGrades(gradesList);
+
+                    // Obtener cursos de la colección 'courses'
+                    const cSnap = await getDocs(collection(db, 'courses'));
+                    let coursesList = [];
+                    if (!cSnap.empty) {
+                        coursesList = cSnap.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
                     } else {
-                        const sSnap = await getDocs(collection(db, 'students'));
-                        const studentsList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        setTotalStudentsCount(sSnap.size);
-                        setAdminStudents(studentsList);
-
-                        const uSnap = await getDocs(collection(db, 'users'));
-                        setTotalUsersCount(uSnap.size);
-
-                        const gSnap = await getDocs(collection(db, 'grades'));
-                        const gradesList = gSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        setAdminGrades(gradesList);
-
-                        // Obtener cursos de la colección 'courses'
-                        const cSnap = await getDocs(collection(db, 'courses'));
-                        let coursesList = [];
-                        if (!cSnap.empty) {
-                            coursesList = cSnap.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                        } else {
-                            // Inicializar/Sembrar colección courses si está vacía
-                            const list = studentsList.map(s => s.grade).filter(Boolean);
-                            const unique = Array.from(new Set(list));
-                            for (const c of unique) {
-                                await setDoc(doc(db, 'courses', c), { created_at: new Date() });
-                            }
-                            coursesList = unique.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                        const list = studentsList.map(s => s.grade).filter(Boolean);
+                        const unique = Array.from(new Set(list));
+                        for (const c of unique) {
+                            await setDoc(doc(db, 'courses', c), { created_at: new Date() });
                         }
-                        setAdminCourses(coursesList);
-                        if (coursesList.length > 0 && !selectedAdminCourse) {
-                            setSelectedAdminCourse(coursesList[0]);
+                        coursesList = unique.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    }
+                    setAdminCourses(coursesList);
+                    if (coursesList.length > 0 && !selectedAdminCourse) {
+                        setSelectedAdminCourse(coursesList[0]);
+                    }
+
+                    // 5. Cargar Actividades Recientes en tiempo real de Firestore
+                    try {
+                        const actList = [];
+                        const qAudit = query(collection(db, 'audit_logs'), orderBy('created_at', 'desc'), limit(5));
+                        const auditSnap = await getDocs(qAudit);
+                        if (!auditSnap.empty) {
+                            auditSnap.docs.forEach(doc => {
+                                const data = doc.data();
+                                actList.push({ id: doc.id, ...data });
+                            });
                         }
+
+                        if (actList.length < 5) {
+                            // Circulares enviadas recientemente
+                            const qCircs = query(collection(db, 'circulars'), orderBy('created_at', 'desc'), limit(3));
+                            const cSnap = await getDocs(qCircs);
+                            cSnap.docs.forEach(doc => {
+                                const d = doc.data();
+                                if (!actList.some(a => a.subtitle === d.title || a.title?.includes(d.title))) {
+                                    actList.push({
+                                        id: doc.id,
+                                        title: `Circular #${d.circular_number || 'Oficial'} publicada`,
+                                        subtitle: d.title || (d.target_course ? `Curso ${d.target_course}` : 'Toda la institución'),
+                                        created_at: d.created_at || new Date(),
+                                        iconType: 'send',
+                                        colorClass: 'bg-blue-50 border-blue-100 text-blue-600'
+                                    });
+                                }
+                            });
+
+                            // Estudiantes agregados recientemente
+                            const qStuds = query(collection(db, 'students'), limit(3));
+                            const sSnap = await getDocs(qStuds);
+                            sSnap.docs.forEach(doc => {
+                                const d = doc.data();
+                                const sName = d.lastName && d.firstName ? `${d.lastName} ${d.firstName}` : (d.name || 'Estudiante');
+                                if (!actList.some(a => a.subtitle?.includes(sName))) {
+                                    actList.push({
+                                        id: doc.id,
+                                        title: `Nuevo estudiante registrado`,
+                                        subtitle: `${sName} (${d.grade || 'General'})`,
+                                        created_at: d.created_at || new Date(),
+                                        iconType: 'user',
+                                        colorClass: 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                                    });
+                                }
+                            });
+                        }
+
+                        actList.sort((a, b) => {
+                            const timeA = a.created_at?.seconds ? a.created_at.seconds * 1000 : new Date(a.created_at || 0).getTime();
+                            const timeB = b.created_at?.seconds ? b.created_at.seconds * 1000 : new Date(b.created_at || 0).getTime();
+                            return timeB - timeA;
+                        });
+
+                        setRecentActivitiesList(actList.slice(0, 5));
+                    } catch (actErr) {
+                        console.warn("Error al cargar actividades en vivo:", actErr);
                     }
                 }
 
@@ -1192,43 +1274,77 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:w-auto shrink-0">
-                            {/* Card 1: Circulares Pendientes */}
-                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-650 flex items-center justify-center shrink-0">
-                                    <Sparkles size={16} />
-                                </div>
-                                <div className="leading-tight text-left">
-                                    <p className="text-xs font-black text-slate-700">2</p>
-                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5">Circulares pendientes</p>
-                                </div>
-                            </div>
-                            {/* Card 2: Eventos Programados */}
-                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-red-50 text-red-650 flex items-center justify-center shrink-0">
-                                    <CalendarIcon size={16} />
-                                </div>
-                                <div className="leading-tight text-left">
-                                    <p className="text-xs font-black text-slate-700">1</p>
-                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5">Evento programado</p>
-                                </div>
-                            </div>
-                            {/* Card 3: Alumnos Totales */}
-                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 w-full lg:w-auto shrink-0">
+                            {/* Card 1: Alumnos Totales */}
+                            <div className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                    <Users size={16} />
+                                    <Users size={15} />
                                 </div>
-                                <div className="leading-tight text-left">
-                                    <p className="text-xs font-black text-slate-700">{totalStudentsCount}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5">Alumnos totales</p>
+                                <div className="leading-tight text-left min-w-0">
+                                    <div className="flex items-center gap-1">
+                                        <p className="text-xs font-black text-slate-700">{totalStudentsCount}</p>
+                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+8%</span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Alumnos totales</p>
                                 </div>
                             </div>
-                            {/* Card 4: Reloj */}
-                            <div className="bg-white border border-slate-200/60 p-3 rounded-xl shadow-sm flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                                    <CalendarIcon size={16} />
+
+                            {/* Card 2: Cuentas Registradas */}
+                            <div className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                    <Users size={15} />
                                 </div>
-                                <div className="leading-tight text-left">
+                                <div className="leading-tight text-left min-w-0">
+                                    <div className="flex items-center gap-1">
+                                        <p className="text-xs font-black text-slate-700">{totalUsersCount}</p>
+                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+12%</span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Cuentas reg.</p>
+                                </div>
+                            </div>
+
+                            {/* Card 3: Circulares Publicadas */}
+                            <div 
+                                onClick={handleOpenCircularsModal}
+                                className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer hover:border-orange-300 transition active-press"
+                                title="Ver historial de circulares"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                                    <Bell size={15} />
+                                </div>
+                                <div className="leading-tight text-left min-w-0">
+                                    <div className="flex items-center gap-1">
+                                        <p className="text-xs font-black text-slate-700">{circulars.length}</p>
+                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+50%</span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Circulares pub.</p>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Planillas Importadas */}
+                            <div 
+                                onClick={() => navigate('/teacher/sync-grades')}
+                                className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer hover:border-purple-300 transition active-press"
+                                title="Ir a Planilla Digital"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-650 flex items-center justify-center shrink-0">
+                                    <FileText size={15} />
+                                </div>
+                                <div className="leading-tight text-left min-w-0">
+                                    <div className="flex items-center gap-1">
+                                        <p className="text-xs font-black text-slate-700">{importPlanillasCount}</p>
+                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+20%</span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Planillas imp.</p>
+                                </div>
+                            </div>
+
+                            {/* Card 5: Reloj / Fecha */}
+                            <div className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                                    <CalendarIcon size={15} />
+                                </div>
+                                <div className="leading-tight text-left min-w-0">
                                     <p className="text-[9px] text-slate-500 font-extrabold whitespace-nowrap leading-tight">
                                         {currentTime.split(' de ')[0] || 'Hoy'}
                                     </p>
@@ -1236,109 +1352,6 @@ export default function Dashboard() {
                                         {currentTime.split(' a la')[1] || currentTime.split(' ').slice(-2).join(' ') || ''}
                                     </p>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Tarjetas Analíticas con Mini-Gráficos */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* Card 1: Alumnos Totales */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1 text-left">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ALUMNOS TOTALES</p>
-                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{totalStudentsCount}</p>
-                                </div>
-                                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                    <Users size={20} />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-1 z-10">
-                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                                    +8% vs. mes anterior
-                                </span>
-                                {/* Sparkline SVG */}
-                                <svg className="w-24 h-8 text-blue-550 shrink-0" viewBox="0 0 100 30" fill="none">
-                                    <path d="M0 25 C 20 20, 40 28, 60 15 C 80 5, 90 10, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <path d="M0 25 C 20 20, 40 28, 60 15 C 80 5, 90 10, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* Card 2: Cuentas Registradas */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1 text-left">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CUENTAS REGISTRADAS</p>
-                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{totalUsersCount}</p>
-                                </div>
-                                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                                    <Users size={20} />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-1 z-10">
-                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                                    +12% vs. mes anterior
-                                </span>
-                                {/* Sparkline SVG */}
-                                <svg className="w-24 h-8 text-emerald-550 shrink-0" viewBox="0 0 100 30" fill="none">
-                                    <path d="M0 22 C 20 25, 40 12, 60 18 C 80 8, 90 5, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <path d="M0 22 C 20 25, 40 12, 60 18 C 80 8, 90 5, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* Card 3: Circulares Publicadas */}
-                        <div 
-                            onClick={handleOpenCircularsModal}
-                            className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden cursor-pointer hover:shadow-md hover:border-orange-200 transition active-press"
-                            title="Haz clic para ver el historial y acuses de circulares publicadas"
-                        >
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1 text-left">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CIRCULARES PUBLICADAS</p>
-                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{circulars.length}</p>
-                                </div>
-                                <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
-                                    <Bell size={20} />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-1 z-10">
-                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                                    +50% vs. mes anterior
-                                </span>
-                                {/* Sparkline SVG */}
-                                <svg className="w-24 h-8 text-orange-500 shrink-0" viewBox="0 0 100 30" fill="none">
-                                    <path d="M0 28 C 20 22, 40 26, 60 14 C 80 18, 90 10, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <path d="M0 28 C 20 22, 40 26, 60 14 C 80 18, 90 10, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* Card 4: Planillas Importadas */}
-                        <div 
-                            onClick={() => navigate('/teacher/sync-grades')}
-                            className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-3 relative overflow-hidden cursor-pointer hover:shadow-md hover:border-purple-200 transition active-press"
-                            title="Haz clic para acceder a la Planilla Digital de Notas"
-                        >
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1 text-left">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PLANILLAS IMPORTADAS</p>
-                                    <p className="text-3xl font-black text-slate-800 tracking-tight">{importPlanillasCount}</p>
-                                </div>
-                                <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-650 flex items-center justify-center shrink-0">
-                                    <FileText size={20} />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-1 z-10">
-                                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                                    +20% vs. mes anterior
-                                </span>
-                                {/* Sparkline SVG */}
-                                <svg className="w-24 h-8 text-purple-550 shrink-0" viewBox="0 0 100 30" fill="none">
-                                    <path d="M0 24 C 20 20, 40 28, 60 12 C 80 15, 90 5, 100 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <path d="M0 24 C 20 20, 40 28, 60 12 C 80 15, 90 5, 100 2 L 100 30 L 0 30 Z" fill="currentColor" fillOpacity="0.05" />
-                                </svg>
                             </div>
                         </div>
                     </div>
@@ -1453,66 +1466,45 @@ export default function Dashboard() {
                                 </button>
                             </div>
                             
-                            <div className="flex-1 flex flex-col gap-4 justify-center pr-1 overflow-y-auto max-h-[340px]">
-                                {/* Log 1 */}
-                                <div className="flex gap-3 text-left">
-                                    <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                                        <Send size={14} />
-                                    </div>
-                                    <div className="leading-tight">
-                                        <h5 className="text-xs font-black text-slate-700">Circular #{circularNumber} publicada</h5>
-                                        <p className="text-[9px] text-slate-450 mt-0.5">Reunión de Padres de Familia</p>
-                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 5 min</span>
-                                    </div>
-                                </div>
+                            <div className="flex-1 flex flex-col gap-4 justify-start pr-1 overflow-y-auto max-h-[340px]">
+                                {recentActivitiesList.length === 0 ? (
+                                    <p className="text-xs text-slate-400 font-semibold italic text-center py-8">
+                                        Sin actividades recientes en el sistema.
+                                    </p>
+                                ) : (
+                                    recentActivitiesList.map((act) => {
+                                        const colorClass = act.colorClass || (
+                                            act.iconType === 'send' || act.type === 'circular' ? 'bg-blue-50 border-blue-100 text-blue-600' :
+                                            act.iconType === 'upload' || act.type === 'import' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                                            act.iconType === 'user' || act.type === 'student' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                                            act.iconType === 'clipboard' || act.type === 'grade' ? 'bg-purple-50 border-purple-100 text-purple-600' :
+                                            'bg-orange-50 border-orange-100 text-orange-500'
+                                        );
 
-                                {/* Log 2 */}
-                                <div className="flex gap-3 text-left">
-                                    <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                                        <Upload size={14} />
-                                    </div>
-                                    <div className="leading-tight">
-                                        <h5 className="text-xs font-black text-slate-700">Archivo de estudiantes importado</h5>
-                                        <p className="text-[9px] text-slate-450 mt-0.5">grado_1001.csv</p>
-                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 25 min</span>
-                                    </div>
-                                </div>
+                                        const renderIcon = () => {
+                                            if (act.iconType === 'send' || act.type === 'circular') return <Send size={14} />;
+                                            if (act.iconType === 'upload' || act.type === 'import') return <Upload size={14} />;
+                                            if (act.iconType === 'clipboard' || act.type === 'grade') return <ClipboardList size={14} />;
+                                            if (act.iconType === 'user' || act.type === 'student') return <Users size={14} />;
+                                            return <Printer size={14} />;
+                                        };
 
-                                {/* Log 3 */}
-                                <div className="flex gap-3 text-left">
-                                    <div className="w-8 h-8 rounded-full bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                                        <ClipboardList size={14} />
-                                    </div>
-                                    <div className="leading-tight">
-                                        <h5 className="text-xs font-black text-slate-700">Notas de grado 1001 actualizadas</h5>
-                                        <p className="text-[9px] text-slate-450 mt-0.5">Matemáticas - Primer periodo</p>
-                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 1 hora</span>
-                                    </div>
-                                </div>
-
-                                {/* Log 4 */}
-                                <div className="flex gap-3 text-left">
-                                    <div className="w-8 h-8 rounded-full bg-orange-50 border border-orange-100 text-orange-500 flex items-center justify-center shrink-0">
-                                        <Printer size={14} />
-                                    </div>
-                                    <div className="leading-tight">
-                                        <h5 className="text-xs font-black text-slate-700">Planilla de control generada</h5>
-                                        <p className="text-[9px] text-slate-450 mt-0.5">Asistencia general - 19/07/2026</p>
-                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 2 horas</span>
-                                    </div>
-                                </div>
-
-                                {/* Log 5 */}
-                                <div className="flex gap-3 text-left">
-                                    <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                                        <Users size={14} />
-                                    </div>
-                                    <div className="leading-tight">
-                                        <h5 className="text-xs font-black text-slate-700">Nuevo usuario registrado</h5>
-                                        <p className="text-[9px] text-slate-450 mt-0.5">Docente: Juan Pérez</p>
-                                        <span className="text-[8px] text-slate-400 font-bold mt-1 block">Hace 3 horas</span>
-                                    </div>
-                                </div>
+                                        return (
+                                            <div key={act.id} className="flex gap-3 text-left">
+                                                <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${colorClass}`}>
+                                                    {renderIcon()}
+                                                </div>
+                                                <div className="leading-tight min-w-0 flex-1">
+                                                    <h5 className="text-xs font-black text-slate-700 truncate">{act.title}</h5>
+                                                    <p className="text-[9px] text-slate-450 mt-0.5 truncate">{act.subtitle}</p>
+                                                    <span className="text-[8px] text-slate-400 font-bold mt-1 block">
+                                                        {formatRelativeTime(act.created_at)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
 
@@ -1733,55 +1725,72 @@ export default function Dashboard() {
                                             return (
                                                 <div 
                                                     key={student.id} 
-                                                    className="border border-gray-100 rounded-2xl p-4 hover:border-indigo-100 hover:bg-indigo-50/5 transition flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm bg-white"
+                                                    className={`border rounded-2xl p-4 hover:shadow-md transition flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm ${
+                                                        student.status === 'retirado' ? 'bg-rose-50/20 border-rose-200' : 'bg-white border-gray-100 hover:border-indigo-100'
+                                                    }`}
                                                 >
                                                     {/* Perfil del Estudiante */}
                                                     <div className="flex items-center gap-3 shrink-0">
-                                                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-indigo-50 border border-indigo-100/50 flex items-center justify-center">
+                                                        <div className={`w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center ${
+                                                            student.status === 'retirado' ? 'bg-rose-100 border-rose-200' : 'bg-indigo-50 border-indigo-100/50'
+                                                        }`}>
                                                             {student.photo_url ? (
                                                                 <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
                                                             ) : (
-                                                                <span className="text-indigo-600 font-extrabold text-sm">{student.name.charAt(0)}</span>
+                                                                <span className={`font-extrabold text-sm ${student.status === 'retirado' ? 'text-rose-600' : 'text-indigo-600'}`}>
+                                                                    {student.name.charAt(0)}
+                                                                </span>
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-xs font-extrabold text-gray-800 leading-tight">
-                                                                {student.lastName && student.firstName 
-                                                                    ? `${student.lastName} ${student.firstName}` 
-                                                                    : student.name}
-                                                            </h4>
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="text-xs font-extrabold text-gray-800 leading-tight">
+                                                                    {student.lastName && student.firstName 
+                                                                        ? `${student.lastName} ${student.firstName}` 
+                                                                        : student.name}
+                                                                </h4>
+                                                                {student.status === 'retirado' && (
+                                                                    <span className="text-[9px] bg-rose-100 text-rose-700 font-black px-2 py-0.5 rounded-full border border-rose-200">
+                                                                        RETIRADO
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <span className="text-[10px] text-gray-400 font-mono font-medium block mt-0.5">{student.id_code}</span>
                                                         </div>
                                                     </div>
 
                                                     {/* Notas por Materia */}
                                                     <div className="flex-1 flex flex-wrap gap-2 md:justify-center">
-                                                        {studentGrades.length === 0 ? (
+                                                        {studentGrades.filter(g => Number(g.grade) > 0).length === 0 ? (
                                                             <span className="text-[10px] text-gray-400 font-semibold italic bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
                                                                 Sin notas registradas
                                                             </span>
                                                         ) : (
-                                                            studentGrades.map(gradeDoc => {
-                                                                const gradeValue = Number(gradeDoc.grade);
-                                                                const isPassing = gradeValue >= 75;
-                                                                return (
-                                                                    <div 
-                                                                        key={gradeDoc.id}
-                                                                        className={`text-[10px] font-bold px-2.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all shadow-sm ${
-                                                                            isPassing 
-                                                                                ? 'bg-emerald-50/40 text-emerald-700 border-emerald-100/55' 
-                                                                                : 'bg-rose-50/40 text-rose-700 border-rose-100/55'
-                                                                        }`}
-                                                                    >
-                                                                        <span className="text-gray-400 font-medium">{gradeDoc.subject}:</span>
-                                                                        <span className="font-extrabold">{gradeValue}</span>
-                                                                    </div>
-                                                                );
-                                                            })
+                                                            studentGrades
+                                                                .filter(g => Number(g.grade) > 0)
+                                                                .sort((a, b) => a.subject.localeCompare(b.subject) || (Number(a.period) || 1) - (Number(b.period) || 1))
+                                                                .map(gradeDoc => {
+                                                                    const gradeValue = Number(gradeDoc.grade);
+                                                                    const isPassing = gradeValue >= 75;
+                                                                    const periodLabel = gradeDoc.period ? `P${gradeDoc.period}` : 'P1';
+                                                                    return (
+                                                                        <div 
+                                                                            key={gradeDoc.id}
+                                                                            className={`text-[10px] font-bold px-2.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all shadow-sm ${
+                                                                                isPassing 
+                                                                                    ? 'bg-emerald-50/40 text-emerald-700 border-emerald-100/55' 
+                                                                                    : 'bg-rose-50/40 text-rose-700 border-rose-100/55'
+                                                                            }`}
+                                                                        >
+                                                                            <span className="text-gray-400 font-medium">{gradeDoc.subject} ({periodLabel}):</span>
+                                                                            <span className="font-extrabold">{gradeValue}</span>
+                                                                        </div>
+                                                                    );
+                                                                })
                                                         )}
                                                     </div>
 
-                                                    {/* Acción de Boletín */}
+                                                    {/* Acción de Boletín y Cambio de Estado */}
                                                     <div className="shrink-0 flex items-center justify-end gap-2">
                                                         <Link 
                                                             to={`/admin/boletin/${student.id}`}
@@ -1795,13 +1804,29 @@ export default function Dashboard() {
                                                         >
                                                             <Printer size={12} /> Imprimir Oficio
                                                         </Link>
+                                                        
+                                                        {/* Botón de Cambiar Estado (Activo / Retirado) - Exclusivo Administrador */}
+                                                        {userRole === 'admin' && (
+                                                            <button 
+                                                                onClick={() => handleToggleStudentStatus(student)}
+                                                                className={`text-[10px] font-extrabold p-2 rounded-xl border transition shrink-0 ${
+                                                                    student.status === 'retirado'
+                                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                                                        : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
+                                                                }`}
+                                                                title={student.status === 'retirado' ? "Reactivar Alumno Activo" : "Marcar Alumno como Retirado"}
+                                                            >
+                                                                {student.status === 'retirado' ? <UserCheck size={13} /> : <UserMinus size={13} />}
+                                                            </button>
+                                                        )}
+
                                                         <button 
-                                                             onClick={() => handleStartEdit(student)}
-                                                             className="text-[10px] font-extrabold text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 p-2 rounded-xl transition shrink-0"
-                                                             title="Modificar Estudiante"
-                                                         >
-                                                             <Edit size={13} />
-                                                         </button>
+                                                            onClick={() => handleStartEdit(student)}
+                                                            className="text-[10px] font-extrabold text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 p-2 rounded-xl transition shrink-0"
+                                                            title="Modificar Estudiante"
+                                                        >
+                                                            <Edit size={13} />
+                                                        </button>
                                                         <button 
                                                             onClick={() => handleDeleteStudent(student.id, student.name)}
                                                             className="text-[10px] font-extrabold text-rose-600 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 p-2 rounded-xl transition shrink-0"
@@ -1823,7 +1848,10 @@ export default function Dashboard() {
 
             {/* Modal de Registro de Nuevo Estudiante */}
             {showAddStudentModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div 
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowAddStudentModal(false); }}
+                >
                     <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col gap-4 animate-scale-in max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b pb-3">
                             <h3 className="text-sm font-black text-gray-800 flex items-center gap-2">
@@ -1948,7 +1976,10 @@ export default function Dashboard() {
 
             {/* Modal para ver y gestionar Circulares Enviadas */}
             {showCircularsModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div 
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowCircularsModal(false); }}
+                >
                     <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col gap-4 animate-scale-in max-h-[85vh]">
                         <div className="flex justify-between items-center border-b pb-3 shrink-0">
                             <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -27,6 +27,21 @@ function Layout({ children }) {
   const { currentUser, userRole, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+
+  // Reset sidebar state on route change and window resize
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!currentUser) return <Navigate to="/login" />;
 
@@ -264,7 +279,7 @@ function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex">
+    <div className="min-h-screen bg-slate-50/20 flex">
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white hidden md:flex flex-col border-r border-slate-800/40 shrink-0 sticky top-0 h-screen z-30">
         {/* Sidebar Header: Solo Escudo y Nombre Institucional (Sin la palabra INAS) */}
@@ -319,6 +334,7 @@ function Layout({ children }) {
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
+          style={{ display: window.innerWidth >= 768 ? 'none' : 'block' }}
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -406,7 +422,7 @@ function Layout({ children }) {
         </header>
 
         {/* Dynamic Children Panel */}
-        <main className="flex-1 p-6 md:p-8 bg-slate-50/50 overflow-y-auto">
+        <main className="flex-1 p-6 md:p-8 bg-slate-50/20 overflow-y-auto">
           <div className="max-w-6xl w-full mx-auto">
             {children}
           </div>

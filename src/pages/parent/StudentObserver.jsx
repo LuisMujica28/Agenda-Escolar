@@ -410,7 +410,10 @@ export default function StudentObserver() {
 
             {/* Modal para ver el Manual de Convivencia en Línea */}
             {showManualModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div 
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowManualModal(false); }}
+                >
                     <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col gap-4 animate-scale-in max-h-[85vh] text-left">
                         <div className="flex justify-between items-center border-b pb-3 shrink-0">
                             <div className="flex items-center gap-2">

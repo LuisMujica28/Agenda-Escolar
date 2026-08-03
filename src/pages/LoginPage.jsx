@@ -41,6 +41,9 @@ export default function LoginPage() {
                     </div>
                     <h1 className="text-3xl font-extrabold text-white tracking-tight">INAS</h1>
                     <p className="text-slate-400 text-sm font-semibold tracking-wide uppercase">Instituto Nueva América de Suba</p>
+                    <p className="text-indigo-300/80 text-[10.5px] italic max-w-sm mx-auto font-medium leading-tight">
+                        “Ciudadanos productivos desde la construcción de proyectos de vida con calidad y responsabilidad ambiental”
+                    </p>
                 </div>
 
                 {/* Tarjeta de Formulario */}
@@ -101,14 +104,53 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <div className="border-t border-slate-800 pt-4 flex flex-col items-center gap-2.5 text-xs text-slate-400">
+                    {/* Botones de Acceso Rápido de Prueba */}
+                    <div className="border-t border-slate-800/80 pt-4 space-y-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-center">Accesos Rápidos de Prueba en 1 Clic</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEmail('padre@demo.com');
+                                    setPassword('123456');
+                                    login('padre@demo.com', '123456').then(() => navigate('/'));
+                                }}
+                                className="px-2 py-2 bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/30 text-indigo-200 text-[11px] font-bold rounded-xl transition text-center"
+                            >
+                                👨‍👩‍👧 Padre / Alumno
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEmail('profe@demo.com');
+                                    setPassword('123456');
+                                    login('profe@demo.com', '123456').then(() => navigate('/'));
+                                }}
+                                className="px-2 py-2 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/30 text-purple-200 text-[11px] font-bold rounded-xl transition text-center"
+                            >
+                                👨‍🏫 Profesor
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEmail('admin@demo.com');
+                                    setPassword('123456');
+                                    login('admin@demo.com', '123456').then(() => navigate('/'));
+                                }}
+                                className="px-2 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-[11px] font-bold rounded-xl transition text-center"
+                            >
+                                ⚙️ Admin
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-slate-800 pt-3 flex flex-col items-center gap-2 text-xs text-slate-400">
                         <Link 
                             to="/seed" 
                             className="text-indigo-400 hover:underline flex items-center gap-1 font-bold"
                         >
                             <Database size={14} /> Inicializar base de datos del curso 1001
                         </Link>
-                        <span>¿Olvidaste tu contraseña? Contacta a soporte técnico.</span>
                     </div>
                 </div>
             </div>

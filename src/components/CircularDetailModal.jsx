@@ -108,11 +108,14 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
     };
 
     const paperStyles = paperSize === 'letter'
-        ? { width: '100%', maxWidth: '22cm', minHeight: '27cm', aspectRatio: '22/27' }
-        : { width: '100%', maxWidth: '22cm', minHeight: '33cm', aspectRatio: '22/33' };
+        ? { width: '100%', maxWidth: '21.6cm', minHeight: '27cm', aspectRatio: '21.6/27' }
+        : { width: '100%', maxWidth: '21.6cm', minHeight: '33cm', aspectRatio: '21.6/33' };
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 no-print animate-fade-in">
+        <div 
+            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 no-print animate-fade-in"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
             {/* Estilos dinámicos de impresión para forzar Carta u Oficio en la impresora física */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media print {
@@ -126,7 +129,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
                         position: absolute !important;
                         left: 0 !important;
                         top: 0 !important;
-                        width: 22cm !important;
+                        width: 21.6cm !important;
                         height: ${paperSize === 'letter' ? '27cm' : '33cm'} !important;
                         margin: 0 !important;
                         padding: 1.5cm !important;
@@ -134,7 +137,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
                         border: none !important;
                     }
                     @page {
-                        size: 22cm ${paperSize === 'letter' ? '27cm' : '33cm'};
+                        size: 21.6cm ${paperSize === 'letter' ? '27cm' : '33cm'};
                         margin: 0;
                     }
                 }
@@ -267,9 +270,16 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
 
                             {/* Cuerpo del Mensaje */}
                             <div className="mt-4">
-                                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-serif text-justify">
-                                    {circular.body}
-                                </p>
+                                {circular.body && (circular.body.includes('<') && circular.body.includes('>')) ? (
+                                    <div 
+                                        className="text-xs text-slate-700 leading-relaxed font-serif text-justify circular-body-html space-y-2"
+                                        dangerouslySetInnerHTML={{ __html: circular.body }}
+                                    />
+                                ) : (
+                                    <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-serif text-justify">
+                                        {circular.body}
+                                    </p>
+                                )}
                             </div>
                         </div>
 

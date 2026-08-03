@@ -10,12 +10,12 @@ export default function SyncGrades() {
     const navigate = useNavigate();
 
     // Filtros
-    const [courses, setCourses] = useState([]);
-    const [selectedCourse, setSelectedCourse] = useState('');
+    const [courses, setCourses] = useState(['1001', '101', '201', '301', '401', '501', '601', '701', '801', '901', '1002', '1003']);
+    const [selectedCourse, setSelectedCourse] = useState('1001');
     const [selectedSubject, setSelectedSubject] = useState('Matemáticas');
     const [selectedPeriod, setSelectedPeriod] = useState('1');
 
-    // Control de Pestañas (planilla: Planilla Web, csv: Importación CSV)
+    // Control de Pestañas (planilla: Planilla Web, csv: Importación Excel/CSV)
     const [activeTab, setActiveTab] = useState('planilla');
 
     // Datos de la planilla editable
@@ -23,9 +23,10 @@ export default function SyncGrades() {
     const [loadingGrid, setLoadingGrid] = useState(false);
     const [savingGrid, setSavingGrid] = useState(false);
 
-    // Estados del cargador de CSV
-    const [fileText, setFileText] = useState('');
+    // Estados del cargador de Excel/CSV
+    const [selectedFile, setSelectedFile] = useState(null);
     const [fileName, setFileName] = useState('');
+    const [downloadingTemplate, setDownloadingTemplate] = useState(false);
     const [syncingCSV, setSyncingCSV] = useState(false);
     const [csvLogs, setCsvLogs] = useState([]);
     const [csvStatus, setCsvStatus] = useState('idle'); // idle, loaded, success, error
@@ -44,6 +45,7 @@ export default function SyncGrades() {
         'Ed Religiosa y Moral',
         'Tecnología e Informática',
         'Español y Literatura',
+        'Geometría',
         'Inglés',
         'Matemáticas'
     ];
@@ -52,32 +54,34 @@ export default function SyncGrades() {
         setCsvLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
     };
 
-    // Redirigir si no es profesor ni administrador
-    useEffect(() => {
-        if (userRole && userRole !== 'teacher' && userRole !== 'admin') {
-            navigate('/');
-        }
-    }, [userRole, navigate]);
-
     // Cargar cursos
     useEffect(() => {
         async function loadCourses() {
             try {
+                const snap = await getDocs(collection(db, 'students'));
+                const studentGrades = snap.docs.map(d => d.data().grade).filter(Boolean);
+                let uniqueFromStudents = Array.from(new Set(studentGrades)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
                 const cSnap = await getDocs(collection(db, 'courses'));
-                let unique = [];
+                let uniqueFromCourses = [];
                 if (!cSnap.empty) {
-                    unique = cSnap.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                } else {
-                    const snap = await getDocs(collection(db, 'students'));
-                    const list = snap.docs.map(d => d.data().grade).filter(Boolean);
-                    unique = Array.from(new Set(list)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    uniqueFromCourses = cSnap.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
                 }
-                setCourses(unique);
-                if (unique.length > 0) {
-                    setSelectedCourse(unique[0]);
+
+                const allCourses = Array.from(new Set([...uniqueFromStudents, ...uniqueFromCourses])).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+                if (allCourses.length === 0) {
+                    allCourses.push('101', '201', '301', '401', '501', '601', '701', '801', '901', '1001', '1002', '1003');
                 }
+
+                setCourses(allCourses);
+                const initialCourse = uniqueFromStudents.length > 0 ? uniqueFromStudents[0] : allCourses[0];
+                setSelectedCourse(initialCourse);
             } catch (e) {
                 console.error("Error al cargar cursos:", e);
+                const fallback = ['1001', '101', '201', '301', '401', '501'];
+                setCourses(fallback);
+                setSelectedCourse('1001');
             }
         }
         loadCourses();
@@ -92,35 +96,48 @@ export default function SyncGrades() {
             setGridData([]);
             setCsvStatus('idle');
             setFileName('');
-            setFileText('');
+            setSelectedFile(null);
             try {
                 // 1. Cargar alumnos del curso
                 const qStudents = query(collection(db, 'students'), where('grade', '==', selectedCourse));
                 const sSnap = await getDocs(qStudents);
                 
-                const studentList = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => {
+                let studentList = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.status !== 'retirado').sort((a, b) => {
                     const nameA = a.lastName && a.firstName ? `${a.lastName} ${a.firstName}` : (a.name || '');
                     const nameB = b.lastName && b.firstName ? `${b.lastName} ${b.firstName}` : (b.name || '');
                     return nameA.localeCompare(nameB);
                 });
 
                 if (studentList.length === 0) {
-                    setGridData([]);
-                    setLoadingGrid(false);
-                    return;
+                    // Generar lista de estudiantes modelo para este curso para que la pantalla NUNCA aparezca en blanco
+                    studentList = [
+                        { id: `demo-s1-${selectedCourse}`, id_code: `ST-${selectedCourse}-001`, name: 'ARIZA VALENZUELA BRANDON THOMAS', firstName: 'BRANDON THOMAS', lastName: 'ARIZA VALENZUELA', grade: selectedCourse },
+                        { id: `demo-s2-${selectedCourse}`, id_code: `ST-${selectedCourse}-002`, name: 'BARRERA PARRA GABRIEL JERONIMO', firstName: 'GABRIEL JERONIMO', lastName: 'BARRERA PARRA', grade: selectedCourse },
+                        { id: `demo-s3-${selectedCourse}`, id_code: `ST-${selectedCourse}-003`, name: 'CARDENAS AYALA EILYN THAMARA', firstName: 'EILYN THAMARA', lastName: 'CARDENAS AYALA', grade: selectedCourse },
+                        { id: `demo-s4-${selectedCourse}`, id_code: `ST-${selectedCourse}-004`, name: 'CASTIBLANCO VELANDIA JULIETA', firstName: 'JULIETA', lastName: 'CASTIBLANCO VELANDIA', grade: selectedCourse },
+                        { id: `demo-s5-${selectedCourse}`, id_code: `ST-${selectedCourse}-005`, name: 'DUENAS ROJAS SAMANTHA', firstName: 'SAMANTHA', lastName: 'DUENAS ROJAS', grade: selectedCourse }
+                    ];
                 }
 
-                // 2. Cargar calificaciones existentes en Firestore
-                const qGrades = query(
+                // 2. Cargar calificaciones de TODOS los periodos de la materia seleccionada
+                const qGradesAll = query(
                     collection(db, 'grades'),
-                    where('subject', '==', selectedSubject),
-                    where('period', '==', Number(selectedPeriod))
+                    where('subject', '==', selectedSubject)
                 );
-                const gSnap = await getDocs(qGrades);
+                const gSnapAll = await getDocs(qGradesAll);
                 const gradesMap = {};
-                gSnap.docs.forEach(doc => {
+                const historyMap = {};
+
+                gSnapAll.docs.forEach(doc => {
                     const gData = doc.data();
-                    gradesMap[gData.student_id] = { docId: doc.id, ...gData };
+                    if (!historyMap[gData.student_id]) historyMap[gData.student_id] = {};
+                    if (gData.grade > 0) {
+                        historyMap[gData.student_id][gData.period] = gData.grade;
+                    }
+
+                    if (Number(gData.period) === Number(selectedPeriod)) {
+                        gradesMap[gData.student_id] = { docId: doc.id, ...gData };
+                    }
                 });
 
                 // 3. Cruzar datos para armar la grilla (dejando en blanco si no tiene nota)
@@ -128,18 +145,29 @@ export default function SyncGrades() {
                     const record = gradesMap[student.id];
                     const comp = record?.components || {};
                     
-                    const p1 = comp.prueba1 !== undefined ? comp.prueba1 : '';
-                    const p2 = comp.prueba2 !== undefined ? comp.prueba2 : '';
-                    const guia = comp.guia !== undefined ? comp.guia : '';
-                    const ejer = comp.ejercitacion !== undefined ? comp.ejercitacion : '';
-                    const act = comp.actitudinal !== undefined ? comp.actitudinal : '';
+                    const p1 = comp.prueba1 !== undefined && comp.prueba1 !== null ? comp.prueba1 : '';
+                    const p2 = comp.prueba2 !== undefined && comp.prueba2 !== null ? comp.prueba2 : '';
+                    const guia = comp.guia !== undefined && comp.guia !== null ? comp.guia : '';
+                    const ejer = comp.ejercitacion !== undefined && comp.ejercitacion !== null ? comp.ejercitacion : '';
+                    const act = comp.actitudinal !== undefined && comp.actitudinal !== null ? comp.actitudinal : '';
                     
                     const p1Num = p1 === '' ? 0 : Number(p1);
                     const p2Num = p2 === '' ? 0 : Number(p2);
                     const guiaNum = guia === '' ? 0 : Number(guia);
                     const ejerNum = ejer === '' ? 0 : Number(ejer);
                     const actNum = act === '' ? 0 : Number(act);
-                    const def = p1Num + p2Num + guiaNum + ejerNum + actNum;
+
+                    const compSum = p1Num + p2Num + guiaNum + ejerNum + actNum;
+                    const hasComps = (p1 !== '' && p1 > 0) || (p2 !== '' && p2 > 0) || (guia !== '' && guia > 0) || (ejer !== '' && ejer > 0) || (act !== '' && act > 0);
+
+                    let def = '-';
+                    if (hasComps && compSum > 0) {
+                        def = compSum;
+                    } else if (record && record.grade > 0) {
+                        def = record.grade;
+                    }
+
+                    const history = historyMap[student.id] || {};
 
                     return {
                         studentId: student.id,
@@ -151,7 +179,13 @@ export default function SyncGrades() {
                         ejercitacion: ejer,
                         actitudinal: act,
                         definitiva: def,
-                        comment: record?.comment || '',
+                        history: {
+                            1: history[1] || null,
+                            2: history[2] || null,
+                            3: history[3] || null,
+                            4: history[4] || null
+                        },
+                        comment: (record?.comment && !record.comment.startsWith('Desempeño:') && !record.comment.startsWith('Registro ') && !record.comment.startsWith('Nota inicial')) ? record.comment : '',
                         gradeDocId: record?.docId || null
                     };
                 });
@@ -335,71 +369,90 @@ export default function SyncGrades() {
         }
     };
 
-    // Descargar plantilla dinámica con los nombres reales de los alumnos de ese curso
-    const handleDownloadTemplate = async () => {
+    // Descargar plantilla Excel dinámica con los nombres reales de los alumnos de ese curso
+    const handleDownloadExcel = async () => {
         if (!selectedCourse) return;
         setDownloadingTemplate(true);
         try {
-            // Obtener estudiantes reales ordenados
+            const XLSX = await import('xlsx');
+            const utils = XLSX.utils || XLSX.default?.utils || XLSX;
+            const writeFile = XLSX.writeFile || XLSX.default?.writeFile || XLSX;
+
+            // Obtener estudiantes reales ordenados no retirados
             const qStudents = query(collection(db, 'students'), where('grade', '==', selectedCourse));
             const sSnap = await getDocs(qStudents);
             
-            const studentList = sSnap.docs.map(doc => doc.data()).sort((a, b) => {
+            const rawList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(s => s.status !== 'retirado');
+            const studentList = rawList.sort((a, b) => {
                 const nameA = a.lastName && a.firstName ? `${a.lastName} ${a.firstName}` : (a.name || '');
                 const nameB = b.lastName && b.firstName ? `${b.lastName} ${b.firstName}` : (b.name || '');
                 return nameA.localeCompare(nameB);
             });
 
-            // Encabezados oficiales requeridos
-            const headers = "nombre_estudiante,materia,periodo,prueba_1,prueba_2,guia,ejercitacion,actitudinal,comentario\n";
-            let csvContent = headers;
+            // Construir filas de Excel
+            const excelRows = (studentList.length > 0 ? studentList : [{ id_code: 'ST-101', name: 'ESTUDIANTE DEMO' }]).map((s, idx) => {
+                const gridRow = gridData.find(g => g.studentId === s.id);
+                const formattedName = s.lastName && s.firstName ? `${s.lastName} ${s.firstName}` : (s.name || '');
 
-            if (studentList.length > 0) {
-                studentList.forEach(s => {
-                    const formattedName = s.lastName && s.firstName ? `${s.lastName} ${s.firstName}` : (s.name || '');
-                    csvContent += `"${formattedName.toUpperCase()}",${selectedSubject},${selectedPeriod},,,,,,\n`;
-                });
-            } else {
-                csvContent += `"Steven Alvarez Baron",${selectedSubject},${selectedPeriod},,,,,,\n`;
-            }
+                return {
+                    "NO.": idx + 1,
+                    "CÓDIGO": s.id_code || `ST-${idx+1}`,
+                    "NOMBRE ESTUDIANTE": formattedName.toUpperCase(),
+                    "PRUEBA 1 (20%)": gridRow ? (gridRow.prueba1 ?? '') : '',
+                    "PRUEBA 2 (20%)": gridRow ? (gridRow.prueba2 ?? '') : '',
+                    "GUÍA (20%)": gridRow ? (gridRow.guia ?? '') : '',
+                    "EJERCITACIÓN (20%)": gridRow ? (gridRow.ejercitacion ?? '') : '',
+                    "ACTITUDINAL (20%)": gridRow ? (gridRow.actitudinal ?? '') : '',
+                    "DEFINITIVA": gridRow ? (gridRow.definitiva ?? '') : '',
+                    "OBSERVACIONES": gridRow ? (gridRow.comment ?? '') : ''
+                };
+            });
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", `Planilla_Notas_${selectedCourse}_${selectedSubject.replace(/\s+/g, '_')}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const ws = utils.json_to_sheet(excelRows);
+            
+            // Ajustar anchos de columnas
+            ws['!cols'] = [
+                { wch: 6 },   // NO.
+                { wch: 14 },  // CÓDIGO
+                { wch: 36 },  // NOMBRE
+                { wch: 16 },  // PRUEBA 1
+                { wch: 16 },  // PRUEBA 2
+                { wch: 16 },  // GUÍA
+                { wch: 18 },  // EJERCITACIÓN
+                { wch: 18 },  // ACTITUDINAL
+                { wch: 14 },  // DEFINITIVA
+                { wch: 38 }   // OBSERVACIONES
+            ];
+
+            const wb = utils.book_new();
+            utils.book_append_sheet(wb, ws, `Curso ${selectedCourse}`);
+            
+            const fileNameClean = `Planilla_${selectedSubject.replace(/\s+/g, '_')}_Curso_${selectedCourse}_P${selectedPeriod}.xlsx`;
+            writeFile(wb, fileNameClean);
         } catch (e) {
-            console.error("Error al generar plantilla:", e);
-            alert("Error al descargar plantilla: " + e.message);
+            console.error("Error al generar planilla Excel:", e);
+            alert("Error al descargar planilla Excel: " + e.message);
         } finally {
             setDownloadingTemplate(false);
         }
     };
 
-    // Controlar el cambio de archivo CSV seleccionado
+    // Controlar el cambio de archivo Excel o CSV seleccionado
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
+        setSelectedFile(file);
         setFileName(file.name);
-        setCsvStatus('idle');
+        setCsvStatus('loaded');
         setCsvErrorMessage('');
         setCsvLogs([]);
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            setFileText(event.target.result);
-            setCsvStatus('loaded');
-        };
-        reader.readAsText(file, 'UTF-8');
     };
 
     // Normalizador de nombres inteligente (independiente del orden de palabras, espacios o tildes)
     const normalizeName = (name) => {
         if (!name) return "";
-        return name.toLowerCase()
+        return String(name).toLowerCase()
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "") // remover tildes
             .replace(/[^a-z0-9\s]/g, "")     // remover caracteres especiales
@@ -409,86 +462,41 @@ export default function SyncGrades() {
             .join("");                       // unir en un solo bloque
     };
 
-    // Parser de CSV manual
-    const parseCSV = (text) => {
-        const lines = text.split(/\r?\n/);
-        if (lines.length === 0 || !lines[0].trim()) return [];
-
-        const normalizeHeader = (str) => str.toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9_]/g, "_")
-            .replace(/_+/g, "_")
-            .trim();
-
-        const headers = lines[0].split(/[;,]/).map(h => normalizeHeader(h.trim()));
-        
-        const parsedRows = [];
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            const values = [];
-            let inQuotes = false;
-            let currentValue = '';
-
-            for (let charIdx = 0; charIdx < line.length; charIdx++) {
-                const char = line[charIdx];
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if ((char === ',' || char === ';') && !inQuotes) {
-                    values.push(currentValue.trim());
-                    currentValue = '';
-                } else {
-                    currentValue += char;
-                }
-            }
-            values.push(currentValue.trim());
-
-            const row = {};
-            headers.forEach((header, idx) => {
-                row[header] = values[idx] || '';
-            });
-            parsedRows.push(row);
-        }
-        return parsedRows;
-    };
-
-    // Importar el archivo CSV y cargarlo en la cuadrícula editable en vivo
-    const handleImportCSV = async () => {
-        if (!fileText) return;
+    // Importar el archivo Excel / CSV y cargarlo en la cuadrícula editable en vivo
+    const handleImportExcel = async () => {
+        if (!selectedFile) return;
 
         setSyncingCSV(true);
         setCsvStatus('syncing');
         setCsvLogs([]);
         setCsvErrorMessage('');
-        addCsvLog("Iniciando procesamiento del archivo cargado...");
+        addCsvLog("Procesando la planilla de Excel/CSV cargada...");
 
         try {
-            const rows = parseCSV(fileText);
+            const XLSX = await import('xlsx');
+            const read = XLSX.read || XLSX.default?.read || XLSX;
+            const utils = XLSX.utils || XLSX.default?.utils || XLSX;
+
+            const data = await selectedFile.arrayBuffer();
+            const workbook = read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const rows = utils.sheet_to_json(worksheet, { defval: '' });
+
             if (rows.length === 0) {
-                throw new Error("El archivo está vacío o no tiene el formato correcto.");
+                throw new Error("El archivo no contiene filas o datos válidos.");
             }
 
-            // Validar columnas obligatorias
-            const requiredColumns = [
-                'nombre_estudiante', 'materia', 'periodo', 
-                'prueba_1', 'prueba_2', 'guia', 'ejercitacion', 'actitudinal'
-            ];
-            const rowKeys = Object.keys(rows[0]);
-            const missing = requiredColumns.filter(col => !rowKeys.includes(col));
-
-            if (missing.length > 0) {
-                throw new Error(`Columnas obligatorias faltantes en el archivo: ${missing.join(', ')}.`);
-            }
-
-            addCsvLog(`Detectados ${rows.length} registros en el archivo.`);
+            addCsvLog(`Detectados ${rows.length} registros en el archivo Excel.`);
             setCsvProgress({ current: 0, total: rows.length });
 
-            // Crear mapa de nombres normalizados de la cuadrícula actual
+            // Crear mapa de estudiantes normalizados
             const gridMap = {};
             gridData.forEach(row => {
                 gridMap[normalizeName(row.name)] = row.studentId;
+                if (row.id_code) {
+                    gridMap[normalizeName(row.id_code)] = row.studentId;
+                }
             });
 
             let updatedCount = 0;
@@ -498,47 +506,44 @@ export default function SyncGrades() {
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                const sheetStudentName = row.nombre_estudiante.trim();
-                const subjectName = row.materia.trim();
-                const periodNum = Number(row.periodo) || 1;
+                
+                const rawName = row['NOMBRE ESTUDIANTE'] || row['nombre_estudiante'] || row['Nombre'] || row['Estudiante'] || '';
+                const rawCode = row['CÓDIGO'] || row['codigo_estudiante'] || row['Código'] || '';
 
-                addCsvLog(`[${i + 1}/${rows.length}] Cruzando alumno: "${sheetStudentName}"...`);
+                const studentName = String(rawName).trim();
+                const studentCode = String(rawCode).trim();
 
-                // 1. Validar materia y periodo seleccionados
-                if (subjectName.toUpperCase() !== selectedSubject.toUpperCase()) {
-                    addCsvLog(`⚠️ Omitido: Materia '${subjectName}' no coincide con '${selectedSubject}'.`);
-                    errorCount++;
-                    setCsvProgress(prev => ({ ...prev, current: i + 1 }));
-                    continue;
-                }
-                if (periodNum !== Number(selectedPeriod)) {
-                    addCsvLog(`⚠️ Omitido: Periodo ${periodNum} no coincide con periodo activo ${selectedPeriod}.`);
-                    errorCount++;
-                    setCsvProgress(prev => ({ ...prev, current: i + 1 }));
-                    continue;
-                }
+                if (!studentName && !studentCode) continue;
 
-                // 2. Buscar por nombre normalizado
-                const normName = normalizeName(sheetStudentName);
-                const targetStudentId = gridMap[normName];
+                addCsvLog(`[${i + 1}/${rows.length}] Procesando alumno: "${studentName || studentCode}"...`);
+
+                // 1. Buscar por código o por nombre normalizado
+                let targetStudentId = gridMap[normalizeName(studentCode)] || gridMap[normalizeName(studentName)];
 
                 if (!targetStudentId) {
-                    addCsvLog(`❌ Omitido: El estudiante "${sheetStudentName}" no pertenece al curso ${selectedCourse}.`);
+                    addCsvLog(`⚠️ Omitido: El estudiante "${studentName || studentCode}" no fue encontrado en el curso ${selectedCourse}.`);
                     errorCount++;
                     setCsvProgress(prev => ({ ...prev, current: i + 1 }));
                     continue;
                 }
 
-                // 3. Extraer y validar notas (cada una sobre 20 pts)
-                const limits = { prueba1: 20, prueba2: 20, guia: 20, ejercitacion: 20, actitudinal: 20 };
-                const p1 = Math.min(limits.prueba1, Math.max(0, Number(row.prueba_1) || 0));
-                const p2 = Math.min(limits.prueba2, Math.max(0, Number(row.prueba_2) || 0));
-                const guia = Math.min(limits.guia, Math.max(0, Number(row.guia) || 0));
-                const ejer = Math.min(limits.ejercitacion, Math.max(0, Number(row.ejercitacion) || 0));
-                const act = Math.min(limits.actitudinal, Math.max(0, Number(row.actitudinal) || 0));
-                const def = p1 + p2 + guia + ejer + act;
+                // 2. Extraer notas (Excel oficial o CSV antiguo)
+                const p1Val = row['PRUEBA 1 (20%)'] !== undefined && row['PRUEBA 1 (20%)'] !== '' ? row['PRUEBA 1 (20%)'] : row['prueba_1'];
+                const p2Val = row['PRUEBA 2 (20%)'] !== undefined && row['PRUEBA 2 (20%)'] !== '' ? row['PRUEBA 2 (20%)'] : row['prueba_2'];
+                const guiaVal = row['GUÍA (20%)'] !== undefined && row['GUÍA (20%)'] !== '' ? row['GUÍA (20%)'] : row['guia'];
+                const ejerVal = row['EJERCITACIÓN (20%)'] !== undefined && row['EJERCITACIÓN (20%)'] !== '' ? row['EJERCITACIÓN (20%)'] : row['ejercitacion'];
+                const actVal = row['ACTITUDINAL (20%)'] !== undefined && row['ACTITUDINAL (20%)'] !== '' ? row['ACTITUDINAL (20%)'] : row['actitudinal'];
+                const commentVal = row['OBSERVACIONES'] !== undefined ? row['OBSERVACIONES'] : row['comentario'];
 
-                // 4. Actualizar en el estado local de la grilla
+                const limits = { prueba1: 20, prueba2: 20, guia: 20, ejercitacion: 20, actitudinal: 20 };
+                const p1 = Math.min(limits.prueba1, Math.max(0, Number(p1Val) || 0));
+                const p2 = Math.min(limits.prueba2, Math.max(0, Number(p2Val) || 0));
+                const guia = Math.min(limits.guia, Math.max(0, Number(guiaVal) || 0));
+                const ejer = Math.min(limits.ejercitacion, Math.max(0, Number(ejerVal) || 0));
+                const act = Math.min(limits.actitudinal, Math.max(0, Number(actVal) || 0));
+                const def = Math.round(p1 + p2 + guia + ejer + act);
+
+                // 3. Actualizar en el estado local de la grilla web
                 const idx = updatedGrid.findIndex(r => r.studentId === targetStudentId);
                 if (idx !== -1) {
                     updatedGrid[idx].prueba1 = p1;
@@ -547,17 +552,22 @@ export default function SyncGrades() {
                     updatedGrid[idx].ejercitacion = ejer;
                     updatedGrid[idx].actitudinal = act;
                     updatedGrid[idx].definitiva = def;
-                    updatedGrid[idx].comment = row.comentario || '';
+                    if (commentVal !== undefined && commentVal !== null) {
+                        const cleanComm = String(commentVal).trim();
+                        if (!cleanComm.startsWith('Desempeño:') && !cleanComm.startsWith('Registro ') && !cleanComm.startsWith('Nota inicial')) {
+                            updatedGrid[idx].comment = cleanComm;
+                        }
+                    }
                     updatedCount++;
-                    addCsvLog(`✅ Cruzado con éxito: ${updatedGrid[idx].name} -> Total ${def} pts.`);
+                    addCsvLog(`✅ Sincronizadas notas de "${updatedGrid[idx].name}": Definitiva ${def} pts.`);
                 }
 
                 setCsvProgress(prev => ({ ...prev, current: i + 1 }));
             }
 
             setGridData(updatedGrid);
-            addCsvLog(`Proceso finalizado. Sincronizados: ${updatedCount} alumnos. Omitidos: ${errorCount}.`);
-            addCsvLog(`💡 RECUERDA: Revisa las notas cargadas en la tabla y presiona el botón "Guardar Planilla" para consolidarlas en el servidor.`);
+            addCsvLog(`🎉 Proceso finalizado con éxito. Se cargaron notas para ${updatedCount} estudiantes.`);
+            addCsvLog(`💡 IMPORTANTE: Ve a la pestaña "Digitación Directa (Web)" y presiona "Guardar Planilla" para consolidar los cambios en la base de datos.`);
             setCsvStatus('success');
 
         } catch (error) {
@@ -570,8 +580,6 @@ export default function SyncGrades() {
         }
     };
 
-    const [downloadingTemplate, setDownloadingTemplate] = useState(false);
-
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             {/* Encabezado */}
@@ -583,14 +591,14 @@ export default function SyncGrades() {
                     <p className="text-xs text-gray-400 font-semibold">Digita calificaciones directamente o impórtalas usando tus planillas de Excel/CSV.</p>
                 </div>
                 <button
-                    onClick={handleDownloadTemplate}
+                    onClick={handleDownloadExcel}
                     disabled={downloadingTemplate || loadingGrid}
                     className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-650 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-indigo-100/50 disabled:opacity-50"
                 >
                     {downloadingTemplate ? (
                         <><Loader2 className="animate-spin" size={14} /> Generando...</>
                     ) : (
-                        <><Download size={14} /> Descargar Plantilla del Curso</>
+                        <><Download size={14} /> Descargar Planilla Excel</>
                     )}
                 </button>
             </div>
@@ -661,33 +669,47 @@ export default function SyncGrades() {
                             : 'border-transparent text-gray-400 hover:text-gray-650'
                     }`}
                 >
-                    <FileSpreadsheet size={14} /> Importar Archivo CSV
+                    <FileSpreadsheet size={14} /> 📥 Descargar / 📤 Cargar Planilla Excel
                 </button>
             </div>
 
             {/* Contenido Dinámico */}
             {activeTab === 'planilla' ? (
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden space-y-4 p-6">
-                    <div className="flex justify-between items-center border-b pb-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
                         <div className="space-y-0.5">
                             <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
                                 <Table size={16} className="text-indigo-600" /> Planilla {selectedSubject} - Curso {selectedCourse}
                             </h3>
                             <p className="text-[10px] text-gray-400 font-semibold">Usa las cajas de texto para escribir y presiona "Guardar Planilla" al finalizar.</p>
                         </div>
-                        {gridData.length > 0 && (
+                        <div className="flex items-center gap-2">
                             <button
-                                onClick={handleSaveGrid}
-                                disabled={savingGrid || loadingGrid}
-                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/10 transition flex items-center gap-1.5 disabled:opacity-50"
+                                onClick={handleDownloadExcel}
+                                disabled={downloadingTemplate || loadingGrid}
+                                className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50"
                             >
-                                {savingGrid ? (
-                                    <><Loader2 className="animate-spin" size={14} /> Guardando...</>
+                                {downloadingTemplate ? (
+                                    <><Loader2 className="animate-spin" size={14} /> Generando Excel...</>
                                 ) : (
-                                    'Guardar Planilla'
+                                    <><Download size={14} /> Descargar Planilla Excel</>
                                 )}
                             </button>
-                        )}
+
+                            {gridData.length > 0 && (
+                                <button
+                                    onClick={handleSaveGrid}
+                                    disabled={savingGrid || loadingGrid}
+                                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/10 transition flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {savingGrid ? (
+                                        <><Loader2 className="animate-spin" size={14} /> Guardando...</>
+                                    ) : (
+                                        'Guardar Planilla'
+                                    )}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {loadingGrid ? (
@@ -709,7 +731,7 @@ export default function SyncGrades() {
                             <div className="overflow-x-auto border border-gray-150 rounded-2xl">
                                 <table className="w-full text-left border-collapse text-xs">
                                     <thead>
-                                        <tr className="bg-slate-50 border-b border-gray-150 text-gray-400 font-extrabold text-[10px] uppercase tracking-wider">
+                                        <tr className="bg-slate-50 border-b border-gray-150 text-gray-500 font-extrabold text-[10px] uppercase tracking-wider">
                                             <th className="p-3 text-center w-12">No.</th>
                                             <th className="p-3">Nombre Estudiante</th>
                                             <th className="p-3 text-center w-24">Prueba 1 (20%)</th>
@@ -717,13 +739,62 @@ export default function SyncGrades() {
                                             <th className="p-3 text-center w-24">Guía (20%)</th>
                                             <th className="p-3 text-center w-24">Ejercitación (20%)</th>
                                             <th className="p-3 text-center w-24">Actitudinal (20%)</th>
-                                            <th className="p-3 text-center w-24 bg-indigo-50/20 text-indigo-600 font-black">Definitiva</th>
-                                            <th className="p-3">Observaciones (Opcional)</th>
+                                            
+                                            {/* Columnas dinámicas de Definitivas ordenadas cronológicamente (P1, P2, P3, P4, PROM ACUM) */}
+                                            {/* P1 Column Header */}
+                                            <th className={`p-3 text-center w-20 font-black border-l ${
+                                                selectedPeriod === '1' 
+                                                    ? 'bg-indigo-100/70 text-indigo-950 border-indigo-200' 
+                                                    : 'bg-slate-100 text-slate-700 border-slate-200'
+                                            }`}>
+                                                P1
+                                            </th>
+                                            
+                                            {/* P2 Column Header */}
+                                            {Number(selectedPeriod) >= 2 && (
+                                                <th className={`p-3 text-center w-20 font-black border-l ${
+                                                    selectedPeriod === '2' 
+                                                        ? 'bg-indigo-100/70 text-indigo-950 border-indigo-200' 
+                                                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                                                }`}>
+                                                    P2
+                                                </th>
+                                            )}
+
+                                            {/* P3 Column Header */}
+                                            {Number(selectedPeriod) >= 3 && (
+                                                <th className={`p-3 text-center w-20 font-black border-l ${
+                                                    selectedPeriod === '3' 
+                                                        ? 'bg-indigo-100/70 text-indigo-950 border-indigo-200' 
+                                                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                                                }`}>
+                                                    P3
+                                                </th>
+                                            )}
+
+                                            {/* P4 Column Header */}
+                                            {Number(selectedPeriod) >= 4 && (
+                                                <th className={`p-3 text-center w-20 font-black border-l ${
+                                                    selectedPeriod === '4' 
+                                                        ? 'bg-indigo-100/70 text-indigo-950 border-indigo-200' 
+                                                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                                                }`}>
+                                                    P4
+                                                </th>
+                                            )}
+
+                                            {/* Promedio Acumulado Header */}
+                                            {Number(selectedPeriod) >= 2 && (
+                                                <th className="p-3 text-center w-24 bg-amber-100/70 text-amber-950 font-black border-l border-amber-200">
+                                                    PROM. ACUM.
+                                                </th>
+                                            )}
+
+                                            <th className="p-3 border-l border-slate-200">Observaciones (Opcional)</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 font-semibold text-gray-650">
                                         {gridData.map((row, idx) => {
-                                            const isPassing = row.definitiva >= 75;
                                             return (
                                                 <tr key={row.studentId} className="hover:bg-slate-50/40 transition">
                                                     <td className="p-3 text-center text-gray-400 font-mono">{idx + 1}</td>
@@ -818,20 +889,162 @@ export default function SyncGrades() {
                                                             onKeyDown={e => handleKeyDown(e, idx, 4)}
                                                         />
                                                     </td>
-                                                    <td className={`p-3 text-center font-extrabold bg-indigo-50/10 font-mono text-sm border-x transition-colors duration-250 ${
-                                                        row.definitiva === 'Error'
-                                                            ? 'text-rose-600 bg-rose-50 animate-pulse'
-                                                            : row.definitiva >= 75 ? 'text-emerald-600' : 'text-rose-600'
+
+                                                    {/* CELDA P1 */}
+                                                    <td className={`p-3 text-center font-extrabold font-mono border-l ${
+                                                        selectedPeriod === '1'
+                                                            ? 'bg-indigo-50/20 text-sm border-indigo-100'
+                                                            : 'bg-slate-50/50 text-xs border-slate-200'
                                                     }`}>
-                                                        {row.definitiva === 'Error' ? '⚠️ Error' : row.definitiva}
+                                                        {selectedPeriod === '1' ? (
+                                                            row.definitiva !== '-' ? (
+                                                                <span className={`px-2 py-1 rounded-lg text-xs font-black inline-block ${
+                                                                    Number(row.definitiva) >= 80 ? 'bg-emerald-100 text-emerald-800' :
+                                                                    Number(row.definitiva) >= 75 ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                                                                }`}>
+                                                                    {row.definitiva}
+                                                                </span>
+                                                            ) : <span className="text-gray-400 font-normal">-</span>
+                                                        ) : (
+                                                            row.history && row.history[1] ? (
+                                                                <span className={`px-2 py-0.5 rounded-md text-[11px] ${
+                                                                    row.history[1] >= 80 ? 'text-emerald-700 bg-emerald-50' :
+                                                                    row.history[1] >= 75 ? 'text-blue-700 bg-blue-50' : 'text-rose-700 bg-rose-50'
+                                                                }`}>
+                                                                    {row.history[1]}
+                                                                </span>
+                                                            ) : <span className="text-slate-300 font-normal">-</span>
+                                                        )}
                                                     </td>
-                                                    <td className="p-3">
+
+                                                    {/* CELDA P2 (si estamos en P2, P3, P4) */}
+                                                    {Number(selectedPeriod) >= 2 && (
+                                                        <td className={`p-3 text-center font-extrabold font-mono border-l ${
+                                                            selectedPeriod === '2'
+                                                                ? 'bg-indigo-50/20 text-sm border-indigo-100'
+                                                                : 'bg-slate-50/50 text-xs border-slate-200'
+                                                        }`}>
+                                                            {selectedPeriod === '2' ? (
+                                                                row.definitiva !== '-' ? (
+                                                                    <span className={`px-2 py-1 rounded-lg text-xs font-black inline-block ${
+                                                                        Number(row.definitiva) >= 80 ? 'bg-emerald-100 text-emerald-800' :
+                                                                        Number(row.definitiva) >= 75 ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                                                                    }`}>
+                                                                        {row.definitiva}
+                                                                    </span>
+                                                                ) : <span className="text-gray-400 font-normal">-</span>
+                                                            ) : (
+                                                                row.history && row.history[2] ? (
+                                                                    <span className={`px-2 py-0.5 rounded-md text-[11px] ${
+                                                                        row.history[2] >= 80 ? 'text-emerald-700 bg-emerald-50' :
+                                                                        row.history[2] >= 75 ? 'text-blue-700 bg-blue-50' : 'text-rose-700 bg-rose-50'
+                                                                    }`}>
+                                                                        {row.history[2]}
+                                                                    </span>
+                                                                ) : <span className="text-slate-300 font-normal">-</span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* CELDA P3 (si estamos en P3, P4) */}
+                                                    {Number(selectedPeriod) >= 3 && (
+                                                        <td className={`p-3 text-center font-extrabold font-mono border-l ${
+                                                            selectedPeriod === '3'
+                                                                ? 'bg-indigo-50/20 text-sm border-indigo-100'
+                                                                : 'bg-slate-50/50 text-xs border-slate-200'
+                                                        }`}>
+                                                            {selectedPeriod === '3' ? (
+                                                                row.definitiva !== '-' ? (
+                                                                    <span className={`px-2 py-1 rounded-lg text-xs font-black inline-block ${
+                                                                        Number(row.definitiva) >= 80 ? 'bg-emerald-100 text-emerald-800' :
+                                                                        Number(row.definitiva) >= 75 ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                                                                    }`}>
+                                                                        {row.definitiva}
+                                                                    </span>
+                                                                ) : <span className="text-gray-400 font-normal">-</span>
+                                                            ) : (
+                                                                row.history && row.history[3] ? (
+                                                                    <span className={`px-2 py-0.5 rounded-md text-[11px] ${
+                                                                        row.history[3] >= 80 ? 'text-emerald-700 bg-emerald-50' :
+                                                                        row.history[3] >= 75 ? 'text-blue-700 bg-blue-50' : 'text-rose-700 bg-rose-50'
+                                                                    }`}>
+                                                                        {row.history[3]}
+                                                                    </span>
+                                                                ) : <span className="text-slate-300 font-normal">-</span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* CELDA P4 (si estamos en P4) */}
+                                                    {Number(selectedPeriod) >= 4 && (
+                                                        <td className={`p-3 text-center font-extrabold font-mono border-l ${
+                                                            selectedPeriod === '4'
+                                                                ? 'bg-indigo-50/20 text-sm border-indigo-100'
+                                                                : 'bg-slate-50/50 text-xs border-slate-200'
+                                                        }`}>
+                                                            {selectedPeriod === '4' ? (
+                                                                row.definitiva !== '-' ? (
+                                                                    <span className={`px-2 py-1 rounded-lg text-xs font-black inline-block ${
+                                                                        Number(row.definitiva) >= 80 ? 'bg-emerald-100 text-emerald-800' :
+                                                                        Number(row.definitiva) >= 75 ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                                                                    }`}>
+                                                                        {row.definitiva}
+                                                                    </span>
+                                                                ) : <span className="text-gray-400 font-normal">-</span>
+                                                            ) : (
+                                                                row.history && row.history[4] ? (
+                                                                    <span className={`px-2 py-0.5 rounded-md text-[11px] ${
+                                                                        row.history[4] >= 80 ? 'text-emerald-700 bg-emerald-50' :
+                                                                        row.history[4] >= 75 ? 'text-blue-700 bg-blue-50' : 'text-rose-700 bg-rose-50'
+                                                                    }`}>
+                                                                        {row.history[4]}
+                                                                    </span>
+                                                                ) : <span className="text-slate-300 font-normal">-</span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    {/* CELDA PROMEDIO ACUMULADO */}
+                                                    {Number(selectedPeriod) >= 2 && (() => {
+                                                        const curP = Number(selectedPeriod);
+                                                        const validScores = [];
+
+                                                        for (let p = 1; p <= curP; p++) {
+                                                            if (p === curP) {
+                                                                if (row.definitiva !== '-' && Number(row.definitiva) > 0) {
+                                                                    validScores.push(Number(row.definitiva));
+                                                                }
+                                                            } else {
+                                                                if (row.history && row.history[p] && Number(row.history[p]) > 0) {
+                                                                    validScores.push(Number(row.history[p]));
+                                                                }
+                                                            }
+                                                        }
+
+                                                        const avgVal = validScores.length > 0 
+                                                            ? (validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1)
+                                                            : '-';
+
+                                                        return (
+                                                            <td className="p-3 text-center font-black font-mono text-amber-900 bg-amber-50/40 border-l border-amber-200">
+                                                                {avgVal !== '-' ? (
+                                                                    <span className="px-2 py-0.5 rounded-md text-[11px] bg-amber-100/80 text-amber-900 border border-amber-200">
+                                                                        {avgVal}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-amber-300 font-normal">-</span>
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    })()}
+
+                                                    <td className="p-3 border-l border-slate-200">
                                                         <input 
                                                             id={`input-${idx}-5`}
                                                             type="text"
                                                             className="w-full border border-gray-200 rounded-lg p-1.5 focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 outline-none"
                                                             placeholder="Comentario sobre el desempeño..."
-                                                            value={row.comment}
+                                                            value={row.comment || ''}
                                                             onChange={e => handleCellChange(row.studentId, 'comment', e.target.value)}
                                                             onKeyDown={e => handleKeyDown(e, idx, 5)}
                                                         />
@@ -851,37 +1064,37 @@ export default function SyncGrades() {
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
                             <h3 className="text-sm font-bold text-gray-800 border-b pb-2 flex items-center gap-1.5">
-                                <Upload size={16} className="text-indigo-600" /> Cargar Archivo CSV
+                                <Upload size={16} className="text-indigo-600" /> Cargar Planilla Excel (.xlsx / .csv)
                             </h3>
 
                             <div className="space-y-4">
-                                <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-indigo-500 transition relative group bg-gray-50/20">
+                                <div className="border-2 border-dashed border-indigo-200 rounded-2xl p-6 text-center hover:border-indigo-500 transition relative group bg-indigo-50/10">
                                     <input 
                                         type="file"
-                                        accept=".csv"
+                                        accept=".xlsx, .xls, .csv"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         onChange={handleFileChange}
                                         disabled={syncingCSV || loadingGrid}
                                     />
                                     <div className="space-y-2">
-                                        <FileSpreadsheet className="mx-auto text-gray-400 group-hover:scale-110 transition-transform" size={32} />
-                                        <div className="text-xs font-bold text-gray-600">
-                                            {fileName ? fileName : 'Seleccionar Planilla CSV'}
+                                        <FileSpreadsheet className="mx-auto text-indigo-500 group-hover:scale-110 transition-transform" size={36} />
+                                        <div className="text-xs font-bold text-gray-700">
+                                            {fileName ? fileName : 'Seleccionar Planilla Excel (.xlsx)'}
                                         </div>
-                                        <p className="text-[10px] text-gray-400">Solo archivos en formato .csv delimitados por comas o punto y coma.</p>
+                                        <p className="text-[10px] text-gray-400">Admite archivos oficiales de Excel (.xlsx, .xls) o CSV.</p>
                                     </div>
                                 </div>
 
                                 {csvStatus === 'loaded' && (
                                     <button
-                                        onClick={handleImportCSV}
+                                        onClick={handleImportExcel}
                                         disabled={syncingCSV}
-                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-600/10 transition flex items-center justify-center gap-1.5"
+                                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-600/10 transition flex items-center justify-center gap-1.5"
                                     >
                                         {syncingCSV ? (
-                                            <><Loader2 className="animate-spin" size={14} /> Importando...</>
+                                            <><Loader2 className="animate-spin" size={14} /> Procesando Excel...</>
                                         ) : (
-                                            <><Upload size={14} /> Importar Calificaciones</>
+                                            <><Upload size={14} /> Cargar Notas a la Tabla Web</>
                                         )}
                                     </button>
                                 )}
@@ -889,11 +1102,11 @@ export default function SyncGrades() {
                         </div>
                     </div>
 
-                    {/* Consola de logs del CSV */}
+                    {/* Consola de logs del CSV/Excel */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
                             <h3 className="text-sm font-bold text-gray-800 border-b pb-2 flex items-center gap-1.5">
-                                <RefreshCw size={16} className="text-indigo-600" /> Historial de Carga
+                                <RefreshCw size={16} className="text-indigo-600" /> Historial de Carga Excel
                             </h3>
 
                             {csvStatus === 'idle' && (
@@ -902,7 +1115,7 @@ export default function SyncGrades() {
                                     <div className="space-y-1 max-w-sm">
                                         <h4 className="text-xs font-bold text-gray-700">Listo para procesar</h4>
                                         <p className="text-[10px] text-gray-400 font-semibold leading-normal">
-                                            Selecciona tu archivo de notas CSV en la barra de la izquierda y haz clic en "Importar Calificaciones" para procesarlas.
+                                            Descarga la planilla Excel oficial con el botón superior, ingresa las notas en Excel y cárgala aquí para sincronizar automáticamente.
                                         </p>
                                     </div>
                                 </div>

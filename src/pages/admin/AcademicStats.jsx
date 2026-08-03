@@ -6,7 +6,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
     ArrowLeft, Loader2, TrendingUp, Award, Users, 
     BookOpen, AlertTriangle, Sparkles, BarChart2, CheckCircle2, Printer,
-    Filter, Calendar, ShieldAlert, Target, GraduationCap, Flame, Star, ChevronRight
+    Filter, Calendar, ShieldAlert, Target, GraduationCap, Flame, Star, ChevronRight,
+    Medal, Crown, AlertCircle, FileText, Search, Trophy, Compass, Check
 } from 'lucide-react';
 
 export default function AcademicStats() {
@@ -14,10 +15,18 @@ export default function AcademicStats() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
+    // Pestaña Activa: 'overview', 'course_ranking', 'subject_ranking', 'global_ranking', 'honor_roll_print', 'diplomas_print'
+    const [activeTab, setActiveTab] = useState('overview');
+
     // Filtros
     const [selectedCourse, setSelectedCourse] = useState("");
     const [selectedPeriod, setSelectedPeriod] = useState("ALL");
+    const [selectedSubjectFilter, setSelectedSubjectFilter] = useState("ALL");
     const [coursesList, setCoursesList] = useState([]);
+    const [subjectsList, setSubjectsList] = useState([]);
+
+    // Curso seleccionado para impresión de Cuadro de Honor / Diplomas
+    const [printSelectedCourse, setPrintSelectedCourse] = useState("");
 
     // Datasets
     const [rawStudents, setRawStudents] = useState([]);
@@ -29,6 +38,7 @@ export default function AcademicStats() {
         passingRate: 0,
         excellentRate: 0,
         studentsAtRiskCount: 0,
+        studentsYellowZoneCount: 0,
         totalStudents: 0,
         totalGradesRegistered: 0,
         totalSubjects: 0
@@ -43,8 +53,17 @@ export default function AcademicStats() {
         basico: 0,
         bajo: 0
     });
+
+    // Listas de Diagnóstico y Rankings
     const [topStudents, setTopStudents] = useState([]);
     const [studentsAtRiskList, setStudentsAtRiskList] = useState([]);
+    const [yellowZoneList, setYellowZoneList] = useState([]);
+    const [courseRankingsMap, setCourseRankingsMap] = useState({});
+    const [subjectRankingsMap, setSubjectRankingsMap] = useState({});
+    const [globalRankingsList, setGlobalRankingsList] = useState([]);
+    const [topSubjectObj, setTopSubjectObj] = useState(null);
+    const [lowestSubjectObj, setLowestSubjectObj] = useState(null);
+    const [logoError, setLogoError] = useState(false);
 
     // 1. Carga inicial de datos desde Firestore
     useEffect(() => {
@@ -56,20 +75,16 @@ export default function AcademicStats() {
                 let studentsData = [];
                 let gradesData = [];
 
-                const isDemo = currentUser.uid.startsWith('fake-');
+                const sSnap = await getDocs(collection(db, 'students'));
+                const gSnap = await getDocs(collection(db, 'grades'));
 
-                if (!isDemo) {
-                    const sSnap = await getDocs(collection(db, 'students'));
-                    const gSnap = await getDocs(collection(db, 'grades'));
-
-                    studentsData = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    gradesData = gSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                }
+                studentsData = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                gradesData = gSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 // Generar datos simulados de respaldo si la base de datos está vacía
                 if (studentsData.length === 0 || gradesData.length === 0) {
-                    const courses = ['601', '602', '701', '702', '801', '802', '901', '902', '1001', '1002', '1101', '1102'];
-                    const subjects = ['Matemáticas', 'Español y Literatura', 'Inglés', 'C. Naturales (Biología)', 'C Sociales Filosofía', 'C. Naturales (Física)', 'C Naturales (Química)', 'Ed Ética y Valores', 'Ed Física', 'Tecnología e Informática', 'Artes plásticas'];
+                    const courses = ['701', '801', '802', '901', '1001', '1101'];
+                    const subjects = ['Matemáticas', 'Geometría', 'Español y Literatura', 'Inglés', 'C. Naturales (Biología)', 'C Sociales Filosofía', 'C. Naturales (Física)', 'C Naturales (Química)', 'Ed Ética y Valores', 'Ed Física', 'Tecnología e Informática', 'Artes plásticas'];
                     const firstNames = ['Juan', 'María', 'Carlos', 'Sofía', 'Andrés', 'Mateo', 'Valentina', 'Santiago', 'Camila', 'Felipe', 'Lucía', 'Diego', 'Paula', 'Nicolás', 'Gabriela', 'Alejandro'];
                     const lastNames = ['Pérez', 'García', 'López', 'Rodríguez', 'Gómez', 'Martínez', 'Sánchez', 'Díaz', 'Hernández', 'Álvarez', 'Torres', 'Ramírez', 'Ruiz', 'Castro', 'Morales', 'Suárez'];
 
@@ -91,8 +106,8 @@ export default function AcademicStats() {
                         });
 
                         subjects.forEach(subject => {
-                            let baseGrade = 65 + Math.floor(Math.random() * 33); // 65 a 98
-                            if (Math.random() < 0.12) baseGrade = 45 + Math.floor(Math.random() * 25); // algunas notas bajas
+                            let baseGrade = 65 + Math.floor(Math.random() * 33);
+                            if (Math.random() < 0.12) baseGrade = 45 + Math.floor(Math.random() * 25);
 
                             [1, 2].forEach(p => {
                                 gradesData.push({
@@ -112,6 +127,12 @@ export default function AcademicStats() {
 
                 const coursesFound = [...new Set(studentsData.map(s => s.grade))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
                 setCoursesList(coursesFound);
+                if (coursesFound.length > 0) {
+                    setPrintSelectedCourse(coursesFound[0]);
+                }
+
+                const subjectsFound = [...new Set(gradesData.map(g => g.subject))].filter(Boolean).sort();
+                setSubjectsList(subjectsFound);
 
             } catch (err) {
                 console.error("Error cargando estadísticas académicas:", err);
@@ -126,8 +147,17 @@ export default function AcademicStats() {
     // Limpieza de notas de prueba para un curso
     const handleResetCourseGrades = async () => {
         if (!selectedCourse) return;
-        const confirmReset = window.confirm(`⚠️ ATENCIÓN ⚠️\n\n¿Estás seguro de que deseas eliminar permanentemente TODAS las calificaciones del Curso ${selectedCourse}?\n\nEsta acción borrará las notas para iniciar registros limpios.`);
-        if (!confirmReset) return;
+
+        const confirmationText = window.prompt(
+            `⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE todas las calificaciones guardadas del Curso ${selectedCourse}.\n\nPara confirmar, escribe exactamente la palabra "BORRAR" en el cuadro de abajo:`
+        );
+
+        if (!confirmationText || confirmationText.trim().toUpperCase() !== 'BORRAR') {
+            if (confirmationText !== null) {
+                alert('Acción cancelada: La palabra de confirmación no coincide.');
+            }
+            return;
+        }
 
         setResettingGrades(true);
         try {
@@ -172,7 +202,7 @@ export default function AcademicStats() {
         }
     };
 
-    // 2. Efecto de cálculos estadísticos dinámicos
+    // 2. Efecto de cálculos estadísticos dinámicos y Rankings
     useEffect(() => {
         if (rawStudents.length === 0) return;
 
@@ -182,9 +212,11 @@ export default function AcademicStats() {
             activeGrades = rawGrades.filter(g => String(g.period) === String(selectedPeriod));
         }
 
-        // Mapear estudiantes a objeto de cálculos
+        // Mapear solo estudiantes ACTIVOS (excluyendo retirados) a objeto de cálculos
+        const activeStudentsOnly = rawStudents.filter(s => s.status !== 'retirado');
+
         const studentsMap = {};
-        rawStudents.forEach(student => {
+        activeStudentsOnly.forEach(student => {
             studentsMap[student.id] = {
                 ...student,
                 subjectsMap: {},
@@ -202,6 +234,8 @@ export default function AcademicStats() {
             const studentId = gradeDoc.student_id;
             const gradeVal = Number(gradeDoc.grade);
             const subject = gradeDoc.subject;
+
+            if (isNaN(gradeVal) || gradeVal <= 0) return;
 
             if (studentsMap[studentId]) {
                 const stObj = studentsMap[studentId];
@@ -229,7 +263,7 @@ export default function AcademicStats() {
             let failedCount = 0;
             Object.entries(s.subjectsMap).forEach(([subjName, subjObj]) => {
                 const subjAvg = subjObj.count > 0 ? subjObj.sum / subjObj.count : 0;
-                if (subjAvg < 75) {
+                if (subjAvg > 0 && subjAvg < 75) {
                     failedCount++;
                 }
             });
@@ -240,6 +274,54 @@ export default function AcademicStats() {
                 failedSubjectsCount: failedCount
             };
         }).filter(s => s.gradesCount > 0);
+
+        // Escalafón / Ranking Institucional Global
+        const globalRanked = [...analyzedStudents].sort((a, b) => b.average - a.average).map((st, idx) => ({
+            ...st,
+            globalRank: idx + 1
+        }));
+        setGlobalRankingsList(globalRanked);
+
+        // Rankings por Salón / Curso
+        const courseMapRankings = {};
+        coursesList.forEach(crs => {
+            const courseSts = globalRanked.filter(s => s.grade === crs).sort((a, b) => b.average - a.average);
+            courseMapRankings[crs] = courseSts.map((st, idx) => ({
+                ...st,
+                courseRank: idx + 1
+            }));
+        });
+        setCourseRankingsMap(courseMapRankings);
+
+        // Rankings por Asignatura
+        const subjRankings = {};
+        activeGrades.forEach(gradeDoc => {
+            const gradeVal = Number(gradeDoc.grade);
+            if (isNaN(gradeVal) || gradeVal <= 0) return;
+            const subject = gradeDoc.subject;
+            const stObj = rawStudents.find(s => s.id === gradeDoc.student_id);
+            if (!stObj) return;
+
+            if (!subjRankings[subject]) {
+                subjRankings[subject] = [];
+            }
+            subjRankings[subject].push({
+                studentId: stObj.id,
+                name: stObj.name,
+                firstName: stObj.firstName,
+                lastName: stObj.lastName,
+                grade: stObj.grade,
+                id_code: stObj.id_code,
+                photo_url: stObj.photo_url,
+                gradeValue: gradeVal,
+                period: gradeDoc.period
+            });
+        });
+
+        Object.keys(subjRankings).forEach(subj => {
+            subjRankings[subj].sort((a, b) => b.gradeValue - a.gradeValue);
+        });
+        setSubjectRankingsMap(subjRankings);
 
         // Promedios por curso (Comparativo)
         analyzedStudents.forEach(s => {
@@ -265,8 +347,8 @@ export default function AcademicStats() {
 
         // Filtrar estudiantes por curso seleccionado
         const finalStudentsToAnalyze = selectedCourse 
-            ? analyzedStudents.filter(s => s.grade === selectedCourse) 
-            : analyzedStudents;
+            ? globalRanked.filter(s => s.grade === selectedCourse) 
+            : globalRanked;
 
         const finalStudentIds = new Set(finalStudentsToAnalyze.map(s => s.id));
 
@@ -274,6 +356,7 @@ export default function AcademicStats() {
         activeGrades.forEach(gradeDoc => {
             if (finalStudentIds.has(gradeDoc.student_id)) {
                 const gradeVal = Number(gradeDoc.grade);
+                if (isNaN(gradeVal) || gradeVal <= 0) return;
                 const subject = gradeDoc.subject;
                 if (!filteredSubjectStats[subject]) {
                     filteredSubjectStats[subject] = { sum: 0, count: 0, lowCount: 0 };
@@ -300,577 +383,637 @@ export default function AcademicStats() {
 
         setSubjectAverages(subjectsArray);
 
+        if (subjectsArray.length > 0) {
+            setTopSubjectObj(subjectsArray[0]);
+            setLowestSubjectObj(subjectsArray[subjectsArray.length - 1]);
+        }
+
         // Indicadores consolidados
         const totalStudents = finalStudentsToAnalyze.length;
         let globalSum = 0;
         let passingCount = 0;
         let excellentCount = 0;
         let riskCount = 0;
+        let yellowCount = 0;
 
-        const distribution = { superior: 0, alto: 0, basico: 0, bajo: 0 };
-        const riskList = [];
+        const dist = { superior: 0, alto: 0, basico: 0, bajo: 0 };
 
-        finalStudentsToAnalyze.forEach(s => {
-            globalSum += s.average;
-            if (s.average >= 75 && s.failedSubjectsCount === 0) passingCount++;
-            if (s.average >= 95) excellentCount++;
-            if (s.average < 75 || s.failedSubjectsCount > 0) {
-                riskCount++;
-                riskList.push(s);
+        finalStudentsToAnalyze.forEach(st => {
+            globalSum += st.average;
+            
+            if (st.average >= 95) {
+                dist.superior++;
+                excellentCount++;
+            } else if (st.average >= 80) {
+                dist.alto++;
+            } else if (st.average >= 75) {
+                dist.basico++;
+            } else {
+                dist.bajo++;
             }
 
-            if (s.average >= 95) distribution.superior++;
-            else if (s.average >= 80) distribution.alto++;
-            else if (s.average >= 75) distribution.basico++;
-            else distribution.bajo++;
+            if (st.failedSubjectsCount === 0 && st.average >= 75) {
+                passingCount++;
+            }
+
+            if (st.failedSubjectsCount >= 2 || st.average < 75) {
+                riskCount++;
+            } else if (st.failedSubjectsCount === 1 || (st.average >= 75 && st.average < 79)) {
+                yellowCount++;
+            }
         });
 
-        const globalAverage = totalStudents > 0 ? Number((globalSum / totalStudents).toFixed(1)) : 0;
-        const passingRate = totalStudents > 0 ? Number(((passingCount / totalStudents) * 100).toFixed(1)) : 0;
-        const excellentRate = totalStudents > 0 ? Number(((excellentCount / totalStudents) * 100).toFixed(1)) : 0;
-
-        const sortedStudents = [...finalStudentsToAnalyze].sort((a, b) => b.average - a.average);
-        const honorRoll = sortedStudents.slice(0, 10);
+        const gAvg = totalStudents > 0 ? (globalSum / totalStudents).toFixed(1) : "0.0";
+        const passRate = totalStudents > 0 ? ((passingCount / totalStudents) * 100).toFixed(0) : 0;
+        const excRate = totalStudents > 0 ? ((excellentCount / totalStudents) * 100).toFixed(0) : 0;
 
         setStats({
-            globalAverage,
-            passingRate,
-            excellentRate,
+            globalAverage: gAvg,
+            passingRate: passRate,
+            excellentRate: excRate,
             studentsAtRiskCount: riskCount,
+            studentsYellowZoneCount: yellowCount,
             totalStudents,
             totalGradesRegistered: activeGrades.length,
             totalSubjects: subjectsArray.length
         });
 
-        setPerformanceDistribution(distribution);
-        setTopStudents(honorRoll);
-        setStudentsAtRiskList(riskList.sort((a, b) => b.failedSubjectsCount - a.failedSubjectsCount || a.average - b.average));
+        setPerformanceDistribution(dist);
 
-    }, [rawStudents, rawGrades, selectedCourse, selectedPeriod]);
+        // Cuadro de Honor Top
+        const sortedTop = [...finalStudentsToAnalyze].sort((a, b) => b.average - a.average);
+        setTopStudents(sortedTop.slice(0, 10));
+
+        // Estudiantes en Riesgo (Zona Roja: 2 o más materias reprobadas o promedio < 75)
+        const sortedRisk = [...finalStudentsToAnalyze]
+            .filter(s => s.failedSubjectsCount >= 2 || s.average < 75)
+            .sort((a, b) => a.average - b.average);
+        setStudentsAtRiskList(sortedRisk);
+
+        // Estudiantes en Zona Amarilla (Alerta Preventiva: 1 materia en bajo O promedio al borde 75-78 pts)
+        const sortedYellow = [...finalStudentsToAnalyze]
+            .filter(s => (s.failedSubjectsCount === 1) || (s.failedSubjectsCount === 0 && s.average >= 75 && s.average < 79))
+            .sort((a, b) => a.average - b.average);
+        setYellowZoneList(sortedYellow);
+
+    }, [rawStudents, rawGrades, selectedCourse, selectedPeriod, coursesList]);
 
     if (loading) {
         return (
-            <div className="min-h-[60vh] flex flex-col justify-center items-center gap-3">
-                <Loader2 className="animate-spin text-indigo-600" size={36} />
-                <p className="text-sm text-slate-500 font-bold tracking-wide">Compilando estadísticas generales del plantel...</p>
+            <div className="p-12 flex flex-col items-center justify-center min-h-[60vh]">
+                <Loader2 className="animate-spin text-indigo-600 mb-3" size={40} />
+                <p className="text-sm font-extrabold text-slate-600">Calculando analíticas y escalafones académicos...</p>
             </div>
         );
     }
 
+    const targetCourseForPrint = printSelectedCourse || selectedCourse || (coursesList.length > 0 ? coursesList[0] : '701');
+    const honorRollStudentsPrint = (courseRankingsMap[targetCourseForPrint] || []).slice(0, 5);
+    const topThreeDiplomasPrint = (courseRankingsMap[targetCourseForPrint] || []).slice(0, 3);
+
     return (
-        <div className="space-y-8 animate-fade-in pb-16 select-none">
-            {/* Header Principal */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-2xl relative overflow-hidden">
-                <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                
-                <div className="relative z-10 space-y-1">
+        <div className="max-w-7xl mx-auto space-y-6 pb-12">
+            
+            {/* Header de Navegación y Título */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-4">
                     <button 
-                        onClick={() => navigate('/')}
-                        className="flex items-center gap-1.5 text-[11px] font-extrabold text-indigo-300 hover:text-white transition tracking-wider uppercase mb-2"
+                        onClick={() => navigate('/dashboard')}
+                        className="p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition border border-slate-200/60 active-press"
+                        title="Volver al Tablero Principal"
                     >
-                        <ArrowLeft size={14} /> Regresar al Tablero
+                        <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3 text-white">
-                        <BarChart2 className="text-indigo-400" size={32} /> Estadísticas y Análisis Académico Institucional
-                    </h1>
-                    <p className="text-xs text-indigo-200 font-medium max-w-xl">
-                        Tablero analítico con métricas completas de rendimiento, ranking de mejor a peor resultado y materias reprobadas INAS 2026.
-                    </p>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                                Instituto Nueva América de Suba
+                            </span>
+                        </div>
+                        <h1 className="text-xl font-black text-slate-900 tracking-tight mt-0.5">
+                            Estadísticas & Rankings Académicos
+                        </h1>
+                    </div>
                 </div>
 
-                <div className="relative z-10 flex flex-wrap gap-3">
-                    <Link
-                        to="/admin/consolidado-print"
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-2xl transition text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-2 shrink-0 border border-indigo-400/30 active-press"
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        onClick={() => setActiveTab('honor_roll_print')}
+                        className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-2xl shadow-md transition flex items-center gap-2 active-press"
                     >
-                        <Printer size={16} /> Ver Consolidado e Imprimir PDF
-                    </Link>
+                        <Printer size={15} /> Cuadro de Honor
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('diplomas_print')}
+                        className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs rounded-2xl shadow-md transition flex items-center gap-2 active-press"
+                    >
+                        <Award size={15} /> Diplomas de Excelencia (Top 3)
+                    </button>
                 </div>
             </div>
 
-            {/* Barra de Filtros Interactivos (Curso y Periodo) */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm space-y-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                        <Filter className="text-indigo-600" size={18} />
-                        <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Filtros de Análisis Académico</h3>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                        <span>Evaluados: <strong className="text-slate-900">{stats.totalStudents} Estudiantes</strong></span>
-                        <span>•</span>
-                        <span>Calificaciones: <strong className="text-indigo-600">{stats.totalGradesRegistered} notas</strong></span>
-                    </div>
-                </div>
+            {/* Menú de Pestañas de Navegación del Módulo */}
+            <div className="flex flex-wrap gap-2 border-b border-slate-200/80 pb-3">
+                {[
+                    { id: 'overview', label: '📊 Resumen & Diagnóstico', icon: BarChart2 },
+                    { id: 'course_ranking', label: '🏆 Ranking por Salón', icon: Trophy },
+                    { id: 'subject_ranking', label: '🥇 Ranking por Materia', icon: Medal },
+                    { id: 'global_ranking', label: '🎖️ Ranking Institucional', icon: Crown },
+                    { id: 'honor_roll_print', label: '📜 Cuadro de Honor Imprimible', icon: Printer },
+                    { id: 'diplomas_print', label: '🎓 Diplomas de Excelencia (Top 3)', icon: Award }
+                ].map(tab => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`px-4 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2 border transition active-press ${
+                                isActive
+                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                            }`}
+                        >
+                            <Icon size={16} />
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    {/* Selector de Periodo */}
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Periodo Escolar</label>
-                        <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/60">
-                            {[
-                                { id: "ALL", label: "🗓️ Todos" },
-                                { id: "1", label: "P1" },
-                                { id: "2", label: "P2" },
-                                { id: "3", label: "P3" },
-                                { id: "4", label: "P4" }
-                            ].map(p => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => setSelectedPeriod(p.id)}
-                                    className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition ${
-                                        selectedPeriod === p.id 
-                                            ? 'bg-white text-indigo-600 shadow-sm' 
-                                            : 'text-slate-500 hover:text-slate-900'
-                                    }`}
-                                >
-                                    {p.label}
-                                </button>
-                            ))}
+            {/* Filtros Generales Supremos */}
+            {activeTab !== 'honor_roll_print' && activeTab !== 'diplomas_print' && (
+                <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <Filter size={16} className="text-indigo-600" />
+                            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Filtros de Análisis Académico</h3>
+                        </div>
+
+                        <div className="text-[11px] font-bold text-slate-500">
+                            Evaluados: <span className="text-slate-900 font-extrabold">{stats.totalStudents} Estudiantes</span> • Calificaciones: <span className="text-indigo-600 font-extrabold">{stats.totalGradesRegistered} notas</span>
                         </div>
                     </div>
 
-                    {/* Selector de Cursos (Pills) */}
-                    <div className="lg:col-span-2 space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Grado / Curso</label>
-                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                            <button
-                                onClick={() => setSelectedCourse("")}
-                                className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
-                                    selectedCourse === ""
-                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
-                                        : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
-                                }`}
-                            >
-                                🎓 Todos
-                            </button>
-                            {coursesList.map(c => (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {/* Selector de Periodo */}
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Periodo Escolar</label>
+                            <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/60">
+                                {[
+                                    { id: "ALL", label: "🗓️ Todos" },
+                                    { id: "1", label: "P1" },
+                                    { id: "2", label: "P2" },
+                                    { id: "3", label: "P3" },
+                                    { id: "4", label: "P4" }
+                                ].map(p => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => setSelectedPeriod(p.id)}
+                                        className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition ${
+                                            selectedPeriod === p.id 
+                                                ? 'bg-white text-indigo-600 shadow-sm' 
+                                                : 'text-slate-500 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        {p.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Selector de Cursos (Pills) */}
+                        <div className="lg:col-span-2 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Grado / Curso</label>
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
                                 <button
-                                    key={c}
-                                    onClick={() => setSelectedCourse(c)}
+                                    onClick={() => setSelectedCourse("")}
                                     className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
-                                        selectedCourse === c
+                                        selectedCourse === ""
                                             ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
                                             : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
                                     }`}
                                 >
-                                    Curso {c}
+                                    🎓 Todos los Cursos
                                 </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {selectedCourse && (
-                    <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                        <span className="text-slate-500 font-semibold">
-                            ¿Necesitas limpiar las notas de prueba del <strong>Curso {selectedCourse}</strong>?
-                        </span>
-                        <button
-                            onClick={handleResetCourseGrades}
-                            disabled={resettingGrades}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl font-bold transition flex items-center gap-1.5 shrink-0 disabled:opacity-50"
-                        >
-                            {resettingGrades ? <Loader2 size={12} className="animate-spin" /> : "Limpiar Notas de Prueba"}
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Tarjetas KPI de Métricas Académicas Clave */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* 1. Promedio General */}
-                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
-                    <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-xl"></div>
-                    <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Promedio General</span>
-                        <div className="p-2 bg-indigo-500/20 rounded-2xl text-indigo-300">
-                            <TrendingUp size={20} />
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <div className="text-3xl font-black">{stats.globalAverage} <span className="text-xs text-indigo-300 font-medium">/ 100 pts</span></div>
-                        <p className="text-[10px] text-indigo-200 mt-1 font-medium">
-                            {selectedCourse ? `Grado ${selectedCourse}` : 'Promedio global del plantel'}
-                        </p>
-                    </div>
-                </div>
-
-                {/* 2. Tasa de Aprobación */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tasa de Aprobación</span>
-                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-2xl">
-                            <CheckCircle2 size={20} />
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <div className="text-3xl font-black text-slate-900">{stats.passingRate}%</div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
-                            <div style={{ width: `${stats.passingRate}%` }} className="bg-emerald-500 h-full rounded-full transition-all duration-500"></div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 3. Cuadro de Excelencia */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Excelente (Superior &ge;95)</span>
-                        <div className="p-2 bg-amber-50 text-amber-500 rounded-2xl">
-                            <Star size={20} />
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <div className="text-3xl font-black text-slate-900">{stats.excellentRate}%</div>
-                        <p className="text-[10px] text-slate-400 mt-1 font-semibold">
-                            {performanceDistribution.superior} estudiantes en nivel Superior
-                        </p>
-                    </div>
-                </div>
-
-                {/* 4. Estudiantes en Riesgo */}
-                <div className={`border rounded-3xl p-6 shadow-sm flex flex-col justify-between transition ${
-                    stats.studentsAtRiskCount > 0 ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-200/80'
-                }`}>
-                    <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Alumnos en Riesgo</span>
-                        <div className={`p-2 rounded-2xl ${stats.studentsAtRiskCount > 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-400'}`}>
-                            <AlertTriangle size={20} />
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <div className={`text-3xl font-black ${stats.studentsAtRiskCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-                            {stats.studentsAtRiskCount} <span className="text-xs font-bold text-slate-400">alumnos</span>
-                        </div>
-                        <p className="text-[10px] text-rose-500 font-bold mt-1">
-                            {stats.studentsAtRiskCount > 0 ? 'Tienen 1 o más materias perdidas (<75)' : 'Sin alertas de reprobación'}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Layout Principal de Gráficos e Indicadores */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* 1. Gráfico Comparativo por Cursos */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-sm lg:col-span-2 space-y-6">
-                    <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row gap-2 border-b pb-4 border-slate-100">
-                        <div>
-                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                                <GraduationCap className="text-indigo-600" size={20} /> Comparativo de Rendimiento por Cursos
-                            </h3>
-                            <p className="text-xs text-slate-400 font-medium mt-0.5">
-                                Promedio general por grado. Haz clic en una barra para filtrar las estadísticas.
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
-                            <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full inline-block"></span> Aprobado (&ge;75)
-                            <span className="w-2.5 h-2.5 bg-rose-500 rounded-full inline-block ml-2"></span> Reprobado (&lt;75)
-                        </div>
-                    </div>
-
-                    {/* Gráfico de Barras Dinámico con Gradiente e Interacción */}
-                    <div className="relative w-full h-80 border border-slate-100 rounded-2xl bg-slate-50/50 p-4 pt-8">
-                        {courseAverages.length === 0 ? (
-                            <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 font-bold">
-                                No hay datos de grados para mostrar.
-                            </div>
-                        ) : (
-                            <div className="w-full h-full flex flex-col justify-between relative">
-                                {/* Línea de Meta Institucional (75 pts) */}
-                                <div className="absolute inset-x-0 top-[25%] border-t-2 border-dashed border-emerald-500/50 pointer-events-none z-10 flex justify-end pr-2">
-                                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                        Meta Aprobatoria: 75 pts
-                                    </span>
-                                </div>
-
-                                <div className="relative flex-1 flex items-end gap-2 sm:gap-4 pt-4 pb-2 px-2 overflow-x-auto scrollbar-none">
-                                    {courseAverages.map(cObj => {
-                                        const pct = Math.min(100, Math.max(0, cObj.average));
-                                        const isPassing = cObj.average >= 75;
-                                        const isSelected = selectedCourse === cObj.grade;
-                                        const isActive = selectedCourse === "" || isSelected;
-
-                                        return (
-                                            <div 
-                                                key={cObj.grade}
-                                                onClick={() => setSelectedCourse(selectedCourse === cObj.grade ? "" : cObj.grade)}
-                                                className="flex-1 min-w-[42px] flex flex-col items-center h-full justify-end group relative cursor-pointer"
-                                            >
-                                                {/* Tooltip Dinámico */}
-                                                <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 pointer-events-none transition duration-200 transform -translate-y-1 bg-slate-900 text-white text-[10px] p-2 rounded-xl shadow-xl z-30 whitespace-nowrap font-bold text-center">
-                                                    <div>Grado {cObj.grade}</div>
-                                                    <div className="text-indigo-300">Prom: {cObj.average} pts</div>
-                                                    <div className="text-slate-400 font-medium">{cObj.studentCount} estudiantes</div>
-                                                </div>
-
-                                                {/* Valor sobre la barra */}
-                                                <span className={`text-[10px] font-black mb-1 transition-transform ${
-                                                    isSelected ? 'text-indigo-600 scale-125' : 'text-slate-600 group-hover:text-indigo-600'
-                                                }`}>
-                                                    {cObj.average}
-                                                </span>
-
-                                                {/* Elemento de la Barra */}
-                                                <div 
-                                                    style={{ height: `${pct * 0.72}%` }}
-                                                    className={`w-full rounded-t-xl transition-all duration-300 ${
-                                                        isPassing 
-                                                            ? 'bg-gradient-to-t from-indigo-700 to-indigo-500' 
-                                                            : 'bg-gradient-to-t from-rose-600 to-rose-400'
-                                                    } ${isActive ? 'opacity-100' : 'opacity-30'} ${
-                                                        isSelected ? 'ring-4 ring-indigo-600/30 scale-x-105' : 'hover:brightness-110'
-                                                    }`}
-                                                ></div>
-
-                                                {/* Etiqueta del Curso */}
-                                                <span className={`text-[10px] mt-2 block font-extrabold ${
-                                                    isSelected ? 'text-indigo-600' : 'text-slate-500'
-                                                }`}>
-                                                    {cObj.grade}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* 2. Distribución de Nivel de Desempeño (MEN) */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-6">
-                    <div>
-                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                            <Target className="text-indigo-600" size={20} /> Escala de Desempeño Escolar
-                        </h3>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5">
-                            Distribución de estudiantes {selectedCourse ? `del Curso ${selectedCourse}` : 'del colegio'} por nivel.
-                        </p>
-                    </div>
-
-                    {/* Barra de Distribución Porcentual Apilada */}
-                    <div className="space-y-4">
-                        {(() => {
-                            const total = stats.totalStudents || 1;
-                            const supPct = ((performanceDistribution.superior / total) * 100).toFixed(0);
-                            const altoPct = ((performanceDistribution.alto / total) * 100).toFixed(0);
-                            const basPct = ((performanceDistribution.basico / total) * 100).toFixed(0);
-                            const bajPct = ((performanceDistribution.bajo / total) * 100).toFixed(0);
-
-                            return (
-                                <>
-                                    <div className="w-full h-5 rounded-full overflow-hidden flex shadow-inner p-0.5 bg-slate-100">
-                                        <div style={{ width: `${supPct}%` }} className="bg-emerald-500 h-full rounded-l-full transition-all" title={`Superior: ${supPct}%`}></div>
-                                        <div style={{ width: `${altoPct}%` }} className="bg-indigo-600 h-full transition-all" title={`Alto: ${altoPct}%`}></div>
-                                        <div style={{ width: `${basPct}%` }} className="bg-amber-500 h-full transition-all" title={`Básico: ${basPct}%`}></div>
-                                        <div style={{ width: `${bajPct}%` }} className="bg-rose-500 h-full rounded-r-full transition-all" title={`Bajo: ${bajPct}%`}></div>
-                                    </div>
-
-                                    {/* Leyenda de Niveles */}
-                                    <div className="space-y-2.5 pt-2 text-xs font-bold">
-                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
-                                            <span className="flex items-center gap-2 text-emerald-800">
-                                                <span className="w-3 h-3 bg-emerald-500 rounded-full"></span> Superior (95-100)
-                                            </span>
-                                            <span className="text-slate-900 font-black">{performanceDistribution.superior} <span className="text-[10px] text-slate-400 font-medium">({supPct}%)</span></span>
-                                        </div>
-
-                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
-                                            <span className="flex items-center gap-2 text-indigo-800">
-                                                <span className="w-3 h-3 bg-indigo-600 rounded-full"></span> Alto (80-94)
-                                            </span>
-                                            <span className="text-slate-900 font-black">{performanceDistribution.alto} <span className="text-[10px] text-slate-400 font-medium">({altoPct}%)</span></span>
-                                        </div>
-
-                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
-                                            <span className="flex items-center gap-2 text-amber-800">
-                                                <span className="w-3 h-3 bg-amber-500 rounded-full"></span> Básico (75-79)
-                                            </span>
-                                            <span className="text-slate-900 font-black">{performanceDistribution.basico} <span className="text-[10px] text-slate-400 font-medium">({basPct}%)</span></span>
-                                        </div>
-
-                                        <div className="flex justify-between items-center bg-rose-50/50 border border-rose-100 p-2 rounded-xl">
-                                            <span className="flex items-center gap-2 text-rose-700">
-                                                <span className="w-3 h-3 bg-rose-500 rounded-full"></span> Bajo (&lt;75)
-                                            </span>
-                                            <span className="text-rose-700 font-black">{performanceDistribution.bajo} <span className="text-[10px] text-slate-400 font-medium">({bajPct}%)</span></span>
-                                        </div>
-                                    </div>
-                                </>
-                            );
-                        })()}
-                    </div>
-                </div>
-            </div>
-
-            {/* Layout Secundario: Asignaturas Críticas + Podio Honor */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Rendimiento por Asignatura (Dificultad Académica) */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-sm lg:col-span-2 space-y-6">
-                    <div className="flex justify-between items-start sm:items-center border-b pb-4 border-slate-100">
-                        <div>
-                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                                <BookOpen className="text-indigo-600" size={20} /> Desempeño por Asignatura {selectedCourse && `- Curso ${selectedCourse}`}
-                            </h3>
-                            <p className="text-xs text-slate-400 font-medium mt-0.5">
-                                Promedio acumulado por materia. Permite identificar las materias más críticas.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3.5">
-                        {subjectAverages.length === 0 ? (
-                            <div className="text-center py-8 text-xs text-slate-400 font-bold">No hay asignaturas registradas.</div>
-                        ) : (
-                            subjectAverages.map(subj => {
-                                const isPassing = subj.average >= 75;
-                                const barColor = isPassing ? 'bg-indigo-600' : 'bg-rose-500';
-
-                                return (
-                                    <div key={subj.subject} className="space-y-1 bg-slate-50/60 p-3 rounded-2xl border border-slate-100">
-                                        <div className="flex justify-between items-center text-xs font-bold">
-                                            <span className="text-slate-800 font-bold truncate max-w-[200px] sm:max-w-xs">{subj.subject}</span>
-                                            <div className="flex items-center gap-2">
-                                                {subj.lowCount > 0 && (
-                                                    <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
-                                                        ⚠️ {subj.lowCount} perdidas
-                                                    </span>
-                                                )}
-                                                <span className={`font-black text-xs ${isPassing ? 'text-indigo-650' : 'text-rose-600'}`}>
-                                                    {subj.average} <span className="text-[9px] text-slate-400 font-normal">/100</span>
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Barra de Progresión */}
-                                        <div className="w-full h-2.5 bg-slate-200/70 rounded-full overflow-hidden">
-                                            <div 
-                                                style={{ width: `${subj.average}%` }}
-                                                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </div>
-
-                {/* Cuadro de Honor / Top 10 Estudiantes */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6">
-                    <div>
-                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                            <Award className="text-amber-500" size={20} /> Cuadro de Honor {selectedCourse ? `- Grado ${selectedCourse}` : 'Institucional'}
-                        </h3>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5">
-                            Los 10 mejores promedios generales.
-                        </p>
-                    </div>
-
-                    <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
-                        {topStudents.length === 0 ? (
-                            <div className="text-center py-8 text-xs text-slate-400 font-bold">Sin registros disponibles.</div>
-                        ) : (
-                            topStudents.map((st, idx) => {
-                                const rank = idx + 1;
-                                const isTop3 = rank <= 3;
-
-                                return (
-                                    <div 
-                                        key={st.id} 
-                                        className={`flex items-center justify-between p-3 rounded-2xl border transition ${
-                                            isTop3 
-                                                ? 'bg-amber-50/50 border-amber-200/80' 
-                                                : 'bg-slate-50/60 border-slate-100 hover:bg-slate-100/50'
+                                {coursesList.map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setSelectedCourse(c)}
+                                        className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
+                                            selectedCourse === c
+                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                                                : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
                                         }`}
                                     >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
-                                                rank === 1 ? 'bg-amber-400 text-amber-950 shadow-md shadow-amber-400/30' :
-                                                rank === 2 ? 'bg-slate-300 text-slate-900' :
-                                                rank === 3 ? 'bg-amber-700 text-amber-50' : 'bg-slate-200 text-slate-700'
-                                            }`}>
-                                                {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
-                                            </span>
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-black text-slate-900 truncate">{st.name}</p>
-                                                <p className="text-[9px] text-slate-400 font-bold uppercase">Grado {st.grade}</p>
+                                        Curso {c}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PESTAÑA 1: RESUMEN GENERAL & DIAGNÓSTICO */}
+            {activeTab === 'overview' && (
+                <div className="space-y-6">
+                    {/* Tarjetas KPI de Métricas Académicas Clave */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {/* 1. Promedio General */}
+                        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+                            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-xl"></div>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest">PROMEDIO GENERAL</p>
+                                    <h3 className="text-4xl font-black text-white mt-2 tracking-tight">
+                                        {stats.globalAverage || "0.0"} <span className="text-xs font-normal text-indigo-300">/100 pts</span>
+                                    </h3>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                                    <TrendingUp className="text-indigo-300" size={20} />
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-indigo-200/80 font-medium mt-4">
+                                {selectedCourse ? `Grado ${selectedCourse}` : 'Institucional Completo'}
+                            </p>
+                        </div>
+
+                        {/* 2. Tasa de Aprobación */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TASA DE APROBACIÓN</p>
+                                    <h3 className="text-4xl font-black text-slate-800 mt-2 tracking-tight">
+                                        {stats.passingRate}%
+                                    </h3>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <CheckCircle2 size={20} />
+                                </div>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-1.5 mt-4 overflow-hidden">
+                                <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${stats.passingRate}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* 3. Nivel Excelente */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">EXCELENTE (SUPERIOR ≥95)</p>
+                                    <h3 className="text-4xl font-black text-slate-800 mt-2 tracking-tight">
+                                        {stats.excellentRate}%
+                                    </h3>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                                    <Star size={20} />
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-semibold mt-4">
+                                {performanceDistribution.superior} estudiantes en nivel Superior
+                            </p>
+                        </div>
+
+                        {/* 4. Alerta Semáforo de Riesgo */}
+                        <div className="bg-rose-50/50 border border-rose-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">ALUMNOS EN RIESGO</p>
+                                    <h3 className="text-4xl font-black text-rose-700 mt-2 tracking-tight">
+                                        {stats.studentsAtRiskCount} <span className="text-xs font-semibold text-rose-500">alumnos</span>
+                                    </h3>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                                    <ShieldAlert size={20} />
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-rose-600 font-bold mt-4">
+                                Tienen 2 o más materias perdidas (&lt;75)
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Semáforo de Alerta Temprana & Diagnóstico de Materias */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Escala de Desempeño Ley 1290 */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
+                            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2 border-b pb-3">
+                                <Target size={18} className="text-indigo-600" /> Escala de Desempeño Escolar
+                            </h3>
+
+                            <div className="space-y-3 text-xs">
+                                <div className="flex justify-between items-center bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100">
+                                    <span className="font-bold text-emerald-800">Superior (95 - 100 pts)</span>
+                                    <span className="font-black text-emerald-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.superior} alumnos</span>
+                                </div>
+
+                                <div className="flex justify-between items-center bg-blue-50/60 p-3 rounded-2xl border border-blue-100">
+                                    <span className="font-bold text-blue-800">Alto (80 - 94 pts)</span>
+                                    <span className="font-black text-blue-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.alto} alumnos</span>
+                                </div>
+
+                                <div className="flex justify-between items-center bg-amber-50/60 p-3 rounded-2xl border border-amber-100">
+                                    <span className="font-bold text-amber-800">Básico (75 - 79 pts)</span>
+                                    <span className="font-black text-amber-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.basico} alumnos</span>
+                                </div>
+
+                                <div className="flex justify-between items-center bg-rose-50/60 p-3 rounded-2xl border border-rose-100">
+                                    <span className="font-bold text-rose-800">Bajo (&lt; 75 pts)</span>
+                                    <span className="font-black text-rose-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.bajo} alumnos</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Asignatura Estrella vs Asignatura Crítica */}
+                        <div className="lg:col-span-2 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
+                            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2 border-b pb-3">
+                                <Compass size={18} className="text-indigo-600" /> Diagnóstico de Asignaturas (Estrella vs Crítica)
+                            </h3>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Materia Estrella */}
+                                {topSubjectObj ? (
+                                    <div className="bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-5 rounded-2xl shadow-md space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">MATERIA ESTRELLA</span>
+                                            <Star size={18} className="text-amber-300 fill-amber-300" />
+                                        </div>
+                                        <h4 className="text-lg font-black">{topSubjectObj.subject}</h4>
+                                        <p className="text-2xl font-black tracking-tight">{topSubjectObj.average} <span className="text-xs font-normal">/100 pts</span></p>
+                                        <p className="text-[10px] text-emerald-100 font-medium">Mayor promedio general acumulado</p>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-slate-50 text-slate-400 rounded-2xl text-xs font-bold">Cargando materia...</div>
+                                )}
+
+                                {/* Materia Crítica */}
+                                {lowestSubjectObj ? (
+                                    <div className="bg-gradient-to-br from-rose-600 to-pink-800 text-white p-5 rounded-2xl shadow-md space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">MATERIA CRÍTICA</span>
+                                            <AlertTriangle size={18} className="text-amber-300" />
+                                        </div>
+                                        <h4 className="text-lg font-black">{lowestSubjectObj.subject}</h4>
+                                        <p className="text-2xl font-black tracking-tight">{lowestSubjectObj.average} <span className="text-xs font-normal">/100 pts</span></p>
+                                        <p className="text-[10px] text-rose-100 font-medium">Requiere refuerzo pedagógico prioritario</p>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-slate-50 text-slate-400 rounded-2xl text-xs font-bold">Cargando materia...</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Semáforo de Prevención: Zona Amarilla (75 - 78 pts) y Zona Roja (<75) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Zona Amarilla: Prevención a Tiempo */}
+                        <div className="bg-amber-50/40 border border-amber-200/70 rounded-3xl p-6 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between border-b border-amber-200/60 pb-3">
+                                <h3 className="text-sm font-black text-amber-900 tracking-tight flex items-center gap-2">
+                                    <AlertCircle size={18} className="text-amber-600" /> Zona Amarilla: Alerta Temprana (1 materia en bajo o Promedio 75 - 78 pts)
+                                </h3>
+                                <span className="text-xs font-black text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                                    {yellowZoneList.length} alumnos
+                                </span>
+                            </div>
+
+                            {yellowZoneList.length === 0 ? (
+                                <p className="text-xs text-amber-700 font-semibold p-4 text-center">No hay alumnos en riesgo inminente de vulnerabilidad.</p>
+                            ) : (
+                                <div className="space-y-2.5 max-h-[650px] overflow-y-auto pr-1">
+                                    {yellowZoneList.map(st => (
+                                        <div key={st.id} className="bg-white p-3 rounded-2xl border border-amber-200/50 flex items-center justify-between text-xs shadow-xs">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-amber-100 shrink-0">
+                                                    <img src={st.photo_url} alt={st.name} className="w-full h-full object-cover" />
+                                                </div>
+                                                <div>
+                                                    <span className="font-extrabold text-slate-800 block">{st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}</span>
+                                                    <span className="text-[10px] text-amber-700 font-bold">
+                                                        {st.failedSubjectsCount > 0 ? `⚠️ ${st.failedSubjectsCount} materia en bajo (<75)` : '⚠️ Promedio en franja crítica (75-78 pts)'} • Grado {st.grade}
+                                                    </span>
+                                                </div>
                                             </div>
+                                            <span className="font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl text-xs">
+                                                {st.average} Prom. Gral
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Zona Roja: Estudiantes Reprobados */}
+                        <div className="bg-rose-50/40 border border-rose-200/70 rounded-3xl p-6 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between border-b border-rose-200/60 pb-3">
+                                <h3 className="text-sm font-black text-rose-900 tracking-tight flex items-center gap-2">
+                                    <ShieldAlert size={18} className="text-rose-600" /> Zona Roja: Pérdida por Materias Reprobadas (≥ 2 asignaturas)
+                                </h3>
+                                <span className="text-xs font-black text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full">
+                                    {studentsAtRiskList.length} alumnos
+                                </span>
+                            </div>
+
+                            {studentsAtRiskList.length === 0 ? (
+                                <p className="text-xs text-emerald-700 font-semibold p-4 text-center">¡Felicitaciones! Ningún estudiante registra pérdida académica.</p>
+                            ) : (
+                                <div className="space-y-2.5 max-h-[650px] overflow-y-auto pr-1">
+                                    {studentsAtRiskList.map(st => (
+                                        <div key={st.id} className="bg-white p-3 rounded-2xl border border-rose-200/50 flex items-center justify-between text-xs shadow-xs">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-rose-100 shrink-0">
+                                                    <img src={st.photo_url} alt={st.name} className="w-full h-full object-cover" />
+                                                </div>
+                                                <div>
+                                                    <span className="font-extrabold text-slate-800 block">{st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}</span>
+                                                    <span className="text-[10px] text-rose-600 font-bold">⚠️ {st.failedSubjectsCount} materia(s) en bajo (&lt;75) • Grado {st.grade}</span>
+                                                </div>
+                                            </div>
+                                            <span className="font-black text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-xl text-xs">
+                                                {st.average} Prom. Gral
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PESTAÑA 2: RANKING POR SALÓN / CURSO */}
+            {activeTab === 'course_ranking' && (
+                <div className="space-y-6">
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                        <div className="flex justify-between items-center border-b pb-3">
+                            <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                <Trophy size={20} className="text-amber-500" /> Cuadro de Honor por Salón
+                            </h3>
+                            <span className="text-xs font-bold text-slate-400">Puestos 1° al 10° de cada grado</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {(selectedCourse ? [selectedCourse] : coursesList).map(crs => {
+                                const courseSts = (courseRankingsMap[crs] || []).slice(0, 5);
+                                return (
+                                    <div key={crs} className="bg-slate-50/70 border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-4">
+                                        <div className="flex items-center justify-between border-b pb-2">
+                                            <span className="font-black text-slate-800 text-sm">Curso {crs}</span>
+                                            <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full">Top 5 Salón</span>
                                         </div>
 
-                                        <span className="text-xs font-black text-indigo-900 bg-white border border-indigo-100 px-2.5 py-1 rounded-xl shadow-xs shrink-0">
-                                            {st.average}
-                                        </span>
+                                        <div className="space-y-2">
+                                            {courseSts.map((st, idx) => {
+                                                const medalColors = [
+                                                    "bg-amber-400 text-white shadow-amber-400/30",
+                                                    "bg-slate-300 text-slate-800 shadow-slate-300/30",
+                                                    "bg-amber-700 text-white shadow-amber-700/30"
+                                                ];
+                                                return (
+                                                    <div key={st.id} className="bg-white p-3 rounded-2xl border border-slate-200/60 flex items-center justify-between shadow-xs">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className={`w-7 h-7 rounded-xl font-black text-xs flex items-center justify-center shrink-0 ${medalColors[idx] || 'bg-slate-100 text-slate-600'}`}>
+                                                                {idx + 1}°
+                                                            </span>
+                                                            <div>
+                                                                <span className="font-bold text-slate-800 text-xs block truncate max-w-[130px]">
+                                                                    {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                                                </span>
+                                                                <span className="text-[9px] text-slate-400 font-mono">Código: {st.id_code}</span>
+                                                            </div>
+                                                        </div>
+                                                        <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg text-xs">
+                                                            {st.average}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 );
-                            })
-                        )}
+                            })}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Módulo de Alerta Académica: Estudiantes con Materias Pérdidas */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-4 border-slate-100">
-                    <div>
-                        <h3 className="text-base font-black text-rose-600 flex items-center gap-2">
-                            <ShieldAlert size={22} /> Alerta Académica: Alumnos con Asignaturas Reprobadas {selectedCourse && `- Curso ${selectedCourse}`}
+            {/* PESTAÑA 3: RANKING POR MATERIA / ASIGNATURA */}
+            {activeTab === 'subject_ranking' && (
+                <div className="space-y-6">
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+                            <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                <Medal size={20} className="text-indigo-600" /> Medallero de Asignaturas
+                            </h3>
+
+                            {/* Selector de Asignatura */}
+                            <select
+                                value={selectedSubjectFilter}
+                                onChange={e => setSelectedSubjectFilter(e.target.value)}
+                                className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-600/20"
+                            >
+                                <option value="ALL">🌟 Todas las Asignaturas</option>
+                                {subjectsList.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {(selectedSubjectFilter === "ALL" ? subjectsList : [selectedSubjectFilter]).map(subj => {
+                                const topThree = (subjectRankingsMap[subj] || []).slice(0, 3);
+                                if (topThree.length === 0) return null;
+                                return (
+                                    <div key={subj} className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl p-5 shadow-lg space-y-4 relative overflow-hidden">
+                                        <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                                            <h4 className="font-extrabold text-sm text-indigo-100 truncate">{subj}</h4>
+                                            <Crown size={18} className="text-amber-400 shrink-0" />
+                                        </div>
+
+                                        <div className="space-y-2.5">
+                                            {topThree.map((st, idx) => (
+                                                <div key={idx} className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/15 flex items-center justify-between text-xs">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className="text-base">
+                                                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                                                        </span>
+                                                        <div>
+                                                            <span className="font-bold text-white block truncate max-w-[120px]">
+                                                                {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                                            </span>
+                                                            <span className="text-[9.5px] text-indigo-200">Grado {st.grade}</span>
+                                                        </div>
+                                                    </div>
+                                                    <span className="font-black text-amber-300 text-sm">
+                                                        {st.gradeValue} pts
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PESTAÑA 4: RANKING INSTITUCIONAL GLOBAL */}
+            {activeTab === 'global_ranking' && (
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+                    <div className="flex justify-between items-center border-b pb-3">
+                        <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                            <Crown size={20} className="text-amber-500" /> Escalafón Institucional Completo
                         </h3>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5">
-                            Listado prioritario para coordinadores y directores de grupo de estudiantes en riesgo académico.
-                        </p>
+                        <span className="text-xs font-bold text-slate-400">{globalRankingsList.length} Estudiantes Ordenados</span>
                     </div>
 
-                    <Link 
-                        to="/admin/consolidado-print"
-                        className="text-xs font-extrabold text-rose-600 hover:text-rose-700 flex items-center gap-1 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100"
-                    >
-                        Ver Consolidado Completo <ChevronRight size={14} />
-                    </Link>
-                </div>
-
-                {studentsAtRiskList.length === 0 ? (
-                    <div className="text-center py-10 bg-emerald-50/40 border border-emerald-200/60 rounded-2xl text-emerald-800 text-xs font-extrabold">
-                        🎉 ¡Excelente! No se registran alumnos con materias reprobadas en {selectedCourse ? `el Curso ${selectedCourse}` : 'el colegio'}.
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                        <table className="w-full border-collapse text-left text-xs">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
                             <thead>
-                                <tr className="bg-slate-900 text-white font-bold text-[10px] uppercase tracking-wider">
-                                    <th className="p-3.5 pl-5">Código</th>
-                                    <th className="p-3.5">Estudiante</th>
-                                    <th className="p-3.5">Curso</th>
-                                    <th className="p-3.5 text-center">Materias Pérdidas (&lt;75)</th>
-                                    <th className="p-3.5 text-right pr-5">Promedio General</th>
-                                    <th className="p-3.5 text-center">Acciones</th>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-extrabold uppercase text-[10px] tracking-wider">
+                                    <th className="p-3 text-center w-12">Puesto</th>
+                                    <th className="p-3">Estudiante</th>
+                                    <th className="p-3 text-center">Curso</th>
+                                    <th className="p-3 text-center">Código</th>
+                                    <th className="p-3 text-right">Promedio Acumulado</th>
+                                    <th className="p-3 text-center">Acción</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 font-medium">
-                                {studentsAtRiskList.map(student => (
-                                    <tr key={student.id} className="hover:bg-slate-50/60 transition">
-                                        <td className="p-3.5 pl-5 font-mono text-slate-500 font-semibold">{student.id_code}</td>
-                                        <td className="p-3.5 font-bold text-slate-900">{student.name}</td>
-                                        <td className="p-3.5 font-bold text-slate-700 uppercase">Grado {student.grade}</td>
-                                        <td className="p-3.5 text-center">
-                                            <span className="inline-flex items-center gap-1 font-black text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full text-xs">
-                                                ⚠️ {student.failedSubjectsCount} materia(s)
-                                            </span>
-                                        </td>
-                                        <td className="p-3.5 text-right pr-5">
-                                            <span className={`font-black text-xs px-2.5 py-1 rounded-xl ${
-                                                student.average < 75 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-900'
+                            <tbody className="divide-y divide-slate-100">
+                                {globalRankingsList.map((st) => (
+                                    <tr key={st.id} className="hover:bg-slate-50/60 transition">
+                                        <td className="p-3 text-center font-black">
+                                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-xs ${
+                                                st.globalRank === 1 ? 'bg-amber-400 text-white font-black' :
+                                                st.globalRank === 2 ? 'bg-slate-300 text-slate-800 font-black' :
+                                                st.globalRank === 3 ? 'bg-amber-700 text-white font-black' : 'bg-slate-100 text-slate-600'
                                             }`}>
-                                                {student.average}
+                                                {st.globalRank}°
                                             </span>
                                         </td>
-                                        <td className="p-3.5 text-center">
+                                        <td className="p-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-50 shrink-0">
+                                                    <img src={st.photo_url} alt={st.name} className="w-full h-full object-cover" />
+                                                </div>
+                                                <span className="font-extrabold text-slate-800">
+                                                    {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="p-3 text-center font-bold text-slate-700">Curso {st.grade}</td>
+                                        <td className="p-3 text-center font-mono text-slate-400">{st.id_code}</td>
+                                        <td className="p-3 text-right font-black text-indigo-700 text-sm">
+                                            {st.average}
+                                        </td>
+                                        <td className="p-3 text-center">
                                             <Link 
-                                                to={`/admin/boletin-print/${student.id}`}
-                                                className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition inline-flex items-center gap-1"
+                                                to={`/admin/boletin-print/${st.id}`}
+                                                className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition inline-flex items-center gap-1"
                                             >
-                                                <BookOpen size={12} /> Ver Boletín
+                                                <BookOpen size={12} /> Boletín
                                             </Link>
                                         </td>
                                     </tr>
@@ -878,8 +1021,305 @@ export default function AcademicStats() {
                             </tbody>
                         </table>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* PESTAÑA 5: VISTA IMPRIMIBLE DE CUADRO DE HONOR (IZADA DE BANDERA) */}
+            {activeTab === 'honor_roll_print' && (
+                <div className="space-y-6">
+                    {/* Barra de Control de Impresión y Selección de Curso */}
+                    <div className="bg-slate-900 text-white p-5 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md">
+                        <div>
+                            <h3 className="text-sm font-black tracking-tight flex items-center gap-2">
+                                <Printer size={18} className="text-amber-400" /> Cuadro de Honor — Instituto Nueva América de Suba
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-0.5">Selecciona el grado para visualizar o imprimir su Cuadro de Honor Oficial.</p>
+                        </div>
+
+                        {/* Botones de Selección de Curso */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-slate-400 mr-1">Seleccionar Grado:</span>
+                            {coursesList.map(crs => (
+                                <button
+                                    key={crs}
+                                    onClick={() => setPrintSelectedCourse(crs)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition active-press ${
+                                        targetCourseForPrint === crs
+                                            ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 ring-2 ring-amber-300'
+                                            : 'bg-white/10 hover:bg-white/20 text-slate-300'
+                                    }`}
+                                >
+                                    Curso {crs}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => window.print()}
+                                className="ml-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2 active-press"
+                            >
+                                <Printer size={15} /> Imprimir / Guardar PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Hoja Formato Carta Imprimible Oficial */}
+                    <div className="w-[21.5cm] min-h-[28cm] bg-white p-[1.5cm] border border-slate-300 shadow-2xl mx-auto relative flex flex-col justify-between overflow-hidden text-slate-900 printable-honor-roll">
+                        {/* Borde Oficial Doble */}
+                        <div className="absolute inset-[0.4cm] border-[3px] border-slate-800 border-double rounded-xl pointer-events-none"></div>
+
+                        <div className="relative z-10 space-y-6">
+                            {/* Encabezado Institucional */}
+                            <div className="flex items-center justify-between border-b-2 border-slate-800 pb-4">
+                                <div className="w-[2.2cm] h-[2.2cm] shrink-0 flex items-center justify-center">
+                                    {!logoError ? (
+                                        <img 
+                                            src="/logo.png" 
+                                            alt="Escudo Institución" 
+                                            className="w-full h-full object-contain"
+                                            onError={() => setLogoError(true)}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full rounded-full bg-slate-900 text-white font-black text-xs flex items-center justify-center">INAS</div>
+                                    )}
+                                </div>
+
+                                <div className="text-center space-y-1">
+                                    <h2 className="text-xl font-black tracking-tight uppercase text-slate-900">INSTITUTO NUEVA AMÉRICA DE SUBA</h2>
+                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">CUADRO DE HONOR Y EXCELENCIA ACADÉMICA</p>
+                                    <p className="text-[10px] font-black text-indigo-900 bg-indigo-50 inline-block px-3.5 py-0.5 rounded-full border border-indigo-200">
+                                        GRADO {targetCourseForPrint} • PERIODO LECTIVO {selectedPeriod === "ALL" ? "ACUMULADO GENERAL 2026" : `PERIODO ${selectedPeriod}`}
+                                    </p>
+                                </div>
+
+                                <div className="text-right text-[9px] font-bold text-slate-500">
+                                    <p>AÑO LECTIVO 2026</p>
+                                    <p>{new Date().toLocaleDateString('es-ES')}</p>
+                                </div>
+                            </div>
+
+                            {/* Mensaje de Reconocimiento */}
+                            <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs italic font-medium text-slate-700">
+                                "La Rectora y el Consejo Académico del Instituto Nueva América de Suba felicitan con orgullo a los estudiantes que han alcanzado la excelencia académica y disciplinaria en el Grado {targetCourseForPrint}."
+                            </div>
+
+                            {/* Tabla del Top 5 Cuadro de Honor */}
+                            <table className="w-full text-left text-xs border-collapse border border-slate-800">
+                                <thead>
+                                    <tr className="bg-slate-900 text-white font-black uppercase text-[10px] text-center border-b border-slate-800">
+                                        <th className="p-2.5 border-r border-slate-800 w-16">Puesto</th>
+                                        <th className="p-2.5 border-r border-slate-800 text-left">Nombres y Apellidos del Estudiante</th>
+                                        <th className="p-2.5 border-r border-slate-800 w-32">Código ID</th>
+                                        <th className="p-2.5 w-28">Promedio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {honorRollStudentsPrint.map((st, idx) => (
+                                        <tr key={st.id} className="border-b border-slate-800 text-center font-bold">
+                                            <td className="p-3.5 border-r border-slate-800 font-black text-sm bg-slate-100">
+                                                {idx + 1}°
+                                            </td>
+                                            <td className="p-3.5 border-r border-slate-800 text-left font-black text-sm uppercase">
+                                                {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                            </td>
+                                            <td className="p-3.5 border-r border-slate-800 font-mono text-slate-600">
+                                                {st.id_code}
+                                            </td>
+                                            <td className="p-3.5 font-black text-base text-indigo-900 bg-indigo-50/50">
+                                                {st.average} pts
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Firmas Institucionales al pie */}
+                        <div className="pt-12 grid grid-cols-2 gap-12 text-center text-xs font-bold border-t border-slate-300 relative z-10">
+                            <div>
+                                <div className="border-t border-slate-900 w-48 mx-auto mb-1"></div>
+                                <p className="font-black text-slate-800 uppercase">Rectora / Dirección</p>
+                                <p className="text-[10px] text-slate-500 font-normal">Instituto Nueva América de Suba</p>
+                            </div>
+                            <div>
+                                <div className="border-t border-slate-900 w-48 mx-auto mb-1"></div>
+                                <p className="font-black text-slate-800 uppercase">Coordinación Académica</p>
+                                <p className="text-[10px] text-slate-500 font-normal">Registro y Control Académico</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PESTAÑA 6: GENERADOR DE DIPLOMAS IMPRIMIBLES DE EXCELENCIA (TOP 3) */}
+            {activeTab === 'diplomas_print' && (
+                <div className="space-y-6">
+                    {/* Control de Selección de Curso e Impresión de Diplomas */}
+                    <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-white p-6 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+                        <div>
+                            <h3 className="text-base font-black tracking-tight flex items-center gap-2">
+                                <Award size={22} className="text-amber-200" /> Diplomas de Excelencia Académica — Top 3
+                            </h3>
+                            <p className="text-xs text-amber-100 mt-1">Imprime los 3 Diplomas de Honor oficiales (1°, 2° y 3° Puesto) para la Izada de Bandera del grado seleccionado.</p>
+                        </div>
+
+                        {/* Selector de Curso y Botón de Impresión */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-amber-100 mr-1">Seleccionar Grado:</span>
+                            {coursesList.map(crs => (
+                                <button
+                                    key={crs}
+                                    onClick={() => setPrintSelectedCourse(crs)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition active-press ${
+                                        targetCourseForPrint === crs
+                                            ? 'bg-white text-amber-800 shadow-md shadow-amber-900/30 ring-2 ring-amber-300'
+                                            : 'bg-white/20 hover:bg-white/30 text-white'
+                                    }`}
+                                >
+                                    Curso {crs}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => window.print()}
+                                className="ml-2 px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2 active-press"
+                            >
+                                <Printer size={15} /> Imprimir Diplomas PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Generación de los 3 Diplomas de Excelencia por separado */}
+                    <div className="space-y-12">
+                        {topThreeDiplomasPrint.map((st, idx) => {
+                            const rankNames = ["PRIMER LUGAR DE EXCELENCIA", "SEGUNDO LUGAR DE EXCELENCIA", "TERCER LUGAR DE EXCELENCIA"];
+                            const rankMedals = ["🥇 1° PUESTO DE HONOR", "🥈 2° PUESTO DE HONOR", "🥉 3° PUESTO DE HONOR"];
+                            const badgeGradients = [
+                                "from-amber-400 to-yellow-600 border-amber-300 text-slate-950",
+                                "from-slate-300 to-slate-400 border-slate-200 text-slate-900",
+                                "from-amber-700 to-amber-900 border-amber-600 text-white"
+                            ];
+
+                            return (
+                                <div 
+                                    key={st.id}
+                                    className="w-[27.9cm] min-h-[20cm] bg-white p-[1.5cm] border-[2px] border-amber-600/60 shadow-2xl mx-auto relative flex flex-col justify-between overflow-hidden text-slate-900 printable-diploma-page font-serif rounded-3xl"
+                                >
+                                    {/* Marco Ornamental Doble de Honor */}
+                                    <div className="absolute inset-[0.4cm] border-[4px] border-amber-700/80 border-double rounded-2xl pointer-events-none"></div>
+                                    <div className="absolute inset-[0.7cm] border border-amber-600/40 rounded-xl pointer-events-none"></div>
+
+                                    {/* Esquinas Decorativas de Diploma */}
+                                    <div className="absolute top-4 left-4 text-amber-600 font-bold text-xl pointer-events-none">❖</div>
+                                    <div className="absolute top-4 right-4 text-amber-600 font-bold text-xl pointer-events-none">❖</div>
+                                    <div className="absolute bottom-4 left-4 text-amber-600 font-bold text-xl pointer-events-none">❖</div>
+                                    <div className="absolute bottom-4 right-4 text-amber-600 font-bold text-xl pointer-events-none">❖</div>
+
+                                    <div className="relative z-10 space-y-6 text-center">
+                                        {/* Encabezado del Colegio */}
+                                        <div className="flex items-center justify-between border-b-2 border-amber-700/40 pb-4">
+                                            <div className="w-[2.2cm] h-[2.2cm] shrink-0 flex items-center justify-center">
+                                                {!logoError ? (
+                                                    <img 
+                                                        src="/logo.png" 
+                                                        alt="Escudo Institución" 
+                                                        className="w-full h-full object-contain"
+                                                        onError={() => setLogoError(true)}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full rounded-full bg-slate-900 text-white font-sans font-black text-xs flex items-center justify-center">INAS</div>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h2 className="text-2xl font-black tracking-wider uppercase text-slate-900 font-sans">
+                                                    INSTITUTO NUEVA AMÉRICA DE SUBA
+                                                </h2>
+                                                <p className="text-[11px] font-sans font-bold text-slate-600 uppercase tracking-widest">
+                                                    RESOLUCIÓN DE APROBACIÓN OFICIAL DE SECRETARÍA DE EDUCACIÓN
+                                                </p>
+                                                <p className="text-[10px] font-sans font-extrabold text-amber-900 bg-amber-50 inline-block px-4 py-0.5 rounded-full border border-amber-200">
+                                                    AÑO LECTIVO 2026 • GRADO {targetCourseForPrint}
+                                                </p>
+                                            </div>
+
+                                            <div className="w-[2.2cm] h-[2.2cm] shrink-0 flex items-center justify-center font-sans">
+                                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-black text-[10px] flex flex-col items-center justify-center shadow-lg border-2 border-white text-center leading-tight">
+                                                    <span>EXCELENCIA</span>
+                                                    <span>2026</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Título del Diploma */}
+                                        <div className="py-2 space-y-1">
+                                            <span className="text-xs font-sans font-black uppercase tracking-widest text-amber-800 block">
+                                                CONFIERE EL PRESENTE RECONOCIMIENTO Y
+                                            </span>
+                                            <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase font-sans">
+                                                DIPLOMA DE EXCELENCIA ACADÉMICA
+                                            </h1>
+                                            <div className="w-48 h-1 bg-gradient-to-r from-transparent via-amber-600 to-transparent mx-auto mt-2"></div>
+                                        </div>
+
+                                        {/* Nombre del Estudiante */}
+                                        <div className="py-2 space-y-2">
+                                            <p className="text-xs italic text-slate-600">Se otorga con especial honor y mérito a:</p>
+                                            <h3 className="text-3xl font-black text-slate-900 uppercase tracking-wide font-sans underline decoration-amber-500/50 underline-offset-8">
+                                                {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                            </h3>
+                                            <p className="text-xs font-sans font-mono text-slate-500">Identificación / Código: {st.id_code}</p>
+                                        </div>
+
+                                        {/* Texto Conmemorativo */}
+                                        <div className="max-w-3xl mx-auto text-xs font-sans leading-relaxed text-slate-700 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/60">
+                                            Por haber obtenido el <strong className="text-amber-900 font-extrabold">{rankNames[idx]}</strong> con un promedio sobresaliente de <strong className="text-indigo-900 font-extrabold text-sm">{st.average} puntos</strong> en el <strong className="font-extrabold">Grado {targetCourseForPrint}</strong>, destacándose por su permanente disciplina, vocación de aprendizaje y ejemplo constante para la comunidad educativa del Instituto Nueva América de Suba.
+                                        </div>
+
+                                        {/* Insignia del Puesto */}
+                                        <div className="pt-1">
+                                            <span className={`inline-block px-5 py-1.5 rounded-full font-sans font-black text-xs uppercase tracking-wider bg-gradient-to-r ${badgeGradients[idx]} shadow-md border`}>
+                                                {rankMedals[idx]}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Firmas Oficiales */}
+                                    <div className="pt-10 grid grid-cols-2 gap-16 text-center font-sans text-xs font-bold border-t border-slate-300 relative z-10">
+                                        <div>
+                                            <div className="border-t-2 border-slate-900 w-52 mx-auto mb-1"></div>
+                                            <p className="font-black text-slate-900 uppercase">RECTORA / DIRECCIÓN GENERAL</p>
+                                            <p className="text-[10px] text-slate-500 font-normal">Instituto Nueva América de Suba</p>
+                                        </div>
+                                        <div>
+                                            <div className="border-t-2 border-slate-900 w-52 mx-auto mb-1"></div>
+                                            <p className="font-black text-slate-900 uppercase">COORDINACIÓN ACADÉMICA</p>
+                                            <p className="text-[10px] text-slate-500 font-normal">Consejo Académico e Investigaciones</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Zona de Mantenimiento Seguro Protegida */}
+            {selectedCourse && (
+                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500 mt-6">
+                    <div className="flex items-center gap-2.5">
+                        <ShieldAlert className="text-slate-400 shrink-0" size={18} />
+                        <div>
+                            <span className="font-bold text-slate-700 block text-xs">Mantenimiento de Curso — Grado {selectedCourse}</span>
+                            <span className="text-[10.5px] text-slate-400 font-medium">Requiere palabra clave de confirmación obligatoria ("BORRAR") para prevenir eliminaciones accidentales.</span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleResetCourseGrades}
+                        disabled={resettingGrades}
+                        className="px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl font-extrabold transition flex items-center gap-1.5 shrink-0 disabled:opacity-50 text-[11px] shadow-xs"
+                    >
+                        {resettingGrades ? <Loader2 size={12} className="animate-spin" /> : "⚠️ Reiniciar Planilla de este Curso"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

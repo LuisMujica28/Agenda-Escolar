@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
     Bold, Italic, Underline, List, ListOrdered, Link2, HelpCircle, 
     FileText, AlertTriangle, Users, UploadCloud, Printer, ArrowLeft,
-    Check, Eye, Lightbulb, Send, FileCheck, RefreshCw, Sparkles, X, Lock
+    Check, Eye, Lightbulb, Send, FileCheck, RefreshCw, Sparkles, X, Lock, Search, UserMinus
 } from 'lucide-react';
 import CircularDetailModal from '../../components/CircularDetailModal';
 import { MOCK_STUDENTS } from '../../lib/mockData';
@@ -23,6 +23,16 @@ export default function CreateCircular() {
     const [circularNumber, setCircularNumber] = useState(36);
     const [isEditingNumber, setIsEditingNumber] = useState(false);
     const [tempNumber, setTempNumber] = useState(36);
+
+    // Editor WYSIWYG Ref & Active Styles State
+    const editorRef = useRef(null);
+    const [activeStyles, setActiveStyles] = useState({
+        bold: false,
+        italic: false,
+        underline: false,
+        ul: false,
+        ol: false
+    });
     
     // Segmentación de Audiencias States
     const [targetType, setTargetType] = useState('ALL'); // 'ALL' | 'COURSE' | 'STUDENTS'
@@ -31,6 +41,39 @@ export default function CreateCircular() {
     const [studentsList, setStudentsList] = useState([]);
     const [coursesList, setCoursesList] = useState([]);
     const [studentSearch, setStudentSearch] = useState('');
+    const [showPredictiveDropdown, setShowPredictiveDropdown] = useState(false);
+
+    const getPredictiveMatches = () => {
+        if (!studentSearch.trim()) return studentsList;
+        const query = studentSearch.toLowerCase().trim();
+
+        // 1. Filtrar los estudiantes que coinciden
+        const matches = studentsList.filter(s => {
+            const displayName = (s.lastName && s.firstName ? `${s.lastName} ${s.firstName}` : (s.name || '')).toLowerCase();
+            const code = (s.code || s.student_code || s.id || '').toLowerCase();
+            const grade = (s.grade || s.course || '').toLowerCase();
+            return displayName.includes(query) || code.includes(query) || grade.includes(query);
+        });
+
+        // 2. Ordenar por prioridad predictiva: Nombres/Apellidos que COMIENZAN con el texto ingresado al inicio del resultado
+        return matches.sort((a, b) => {
+            const nameA = (a.lastName && a.firstName ? `${a.lastName} ${a.firstName}` : (a.name || '')).toLowerCase();
+            const nameB = (b.lastName && b.firstName ? `${b.lastName} ${b.firstName}` : (b.name || '')).toLowerCase();
+
+            const wordsA = nameA.split(/\s+/);
+            const wordsB = nameB.split(/\s+/);
+
+            // ¿Alguna palabra de A o B comienza con la letra/texto buscado?
+            const startsWordA = wordsA.some(w => w.startsWith(query));
+            const startsWordB = wordsB.some(w => w.startsWith(query));
+
+            if (startsWordA && !startsWordB) return -1;
+            if (!startsWordA && startsWordB) return 1;
+
+            // Si ambos o ninguno comienzan por la letra, ordenar alfabéticamente
+            return nameA.localeCompare(nameB);
+        });
+    };
 
     useEffect(() => {
         async function loadTargetData() {
@@ -97,36 +140,39 @@ export default function CreateCircular() {
         return () => clearInterval(interval);
     }, []);
 
-    // Formatear texto del textarea al presionar un botón del toolbar
-    const handleFormatText = (tag) => {
-        const textarea = document.getElementById('circular-body');
-        if (!textarea) return;
-
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
-        const selectedText = text.substring(start, end);
-        
-        let replacement = '';
-        if (tag === 'bold') replacement = `**${selectedText || 'texto'}**`;
-        else if (tag === 'italic') replacement = `*${selectedText || 'texto'}*`;
-        else if (tag === 'underline') replacement = `__${selectedText || 'texto'}__`;
-        else if (tag === 'ul') replacement = `\n- ${selectedText || 'ítem'}`;
-        else if (tag === 'ol') replacement = `\n1. ${selectedText || 'ítem'}`;
-        else if (tag === 'link') replacement = `[${selectedText || 'texto del enlace'}](url)`;
-        else if (tag === 'help') {
-            showNotification("Consejo: Utiliza marcas de estilo como **negrita** o *cursiva* para resaltar información clave.", "success");
-            return;
+    // Verificar botones activos en el editor de texto enriquecido (Bold, Italic, Underline, etc)
+    const checkActiveStyles = () => {
+        try {
+            setActiveStyles({
+                bold: document.queryCommandState('bold'),
+                italic: document.queryCommandState('italic'),
+                underline: document.queryCommandState('underline'),
+                ul: document.queryCommandState('insertUnorderedList'),
+                ol: document.queryCommandState('insertOrderedList')
+            });
+        } catch (e) {
+            // Ignorar errores de compatibilidad
         }
+    };
 
-        const newText = text.substring(0, start) + replacement + text.substring(end);
-        setBody(newText);
+    // Ejecutar comando de formato WYSIWYG
+    const handleExecCommand = (command, value = null) => {
+        if (editorRef.current) {
+            editorRef.current.focus();
+        }
+        document.execCommand(command, false, value);
+        checkActiveStyles();
+        if (editorRef.current) {
+            setBody(editorRef.current.innerHTML);
+        }
+    };
 
-        // Volver a dar foco
-        setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 2, start + replacement.length - 2);
-        }, 50);
+    // Insertar hipervínculo
+    const handleInsertLink = () => {
+        const url = prompt("Introduce la dirección web (URL):", "https://");
+        if (url && url !== "https://") {
+            handleExecCommand('createLink', url);
+        }
     };
 
     // Manejar subida de archivo real codificado en Base64
@@ -331,55 +377,77 @@ export default function CreateCircular() {
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Contenido de la circular *</label>
                             
-                            <div className="border border-gray-200 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-600/10 focus-within:border-indigo-600 transition">
-                                {/* Toolbar de Formato */}
-                                <div className="bg-slate-50 border-b border-gray-200 px-3 py-2.5 flex items-center justify-between">
+                            <div className="border border-gray-200 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-600/10 focus-within:border-indigo-600 transition bg-white">
+                                {/* Toolbar de Formato WYSIWYG */}
+                                <div className="bg-slate-50 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
                                     <div className="flex items-center gap-1">
                                         <button 
                                             type="button" 
-                                            onClick={() => handleFormatText('bold')}
-                                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition"
-                                            title="Negrita"
+                                            onClick={() => handleExecCommand('bold')}
+                                            className={`p-2 rounded-xl transition font-black text-xs flex items-center justify-center ${
+                                                activeStyles.bold 
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                            }`}
+                                            title="Negrita (B)"
                                         >
                                             <Bold size={14} />
                                         </button>
                                         <button 
                                             type="button" 
-                                            onClick={() => handleFormatText('italic')}
-                                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition"
-                                            title="Cursiva"
+                                            onClick={() => handleExecCommand('italic')}
+                                            className={`p-2 rounded-xl transition font-black text-xs flex items-center justify-center ${
+                                                activeStyles.italic 
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                            }`}
+                                            title="Cursiva (I)"
                                         >
                                             <Italic size={14} />
                                         </button>
                                         <button 
                                             type="button" 
-                                            onClick={() => handleFormatText('underline')}
-                                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition"
-                                            title="Subrayado"
+                                            onClick={() => handleExecCommand('underline')}
+                                            className={`p-2 rounded-xl transition font-black text-xs flex items-center justify-center ${
+                                                activeStyles.underline 
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                            }`}
+                                            title="Subrayado (U)"
                                         >
                                             <Underline size={14} />
                                         </button>
-                                        <div className="h-4 w-px bg-gray-200 mx-1"></div>
+
+                                        <div className="h-4 w-px bg-gray-250 mx-1"></div>
+
                                         <button 
                                             type="button" 
-                                            onClick={() => handleFormatText('ul')}
-                                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition"
+                                            onClick={() => handleExecCommand('insertUnorderedList')}
+                                            className={`p-2 rounded-xl transition font-black text-xs flex items-center justify-center ${
+                                                activeStyles.ul 
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                            }`}
                                             title="Lista Desordenada"
                                         >
                                             <List size={14} />
                                         </button>
                                         <button 
                                             type="button" 
-                                            onClick={() => handleFormatText('ol')}
-                                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition"
+                                            onClick={() => handleExecCommand('insertOrderedList')}
+                                            className={`p-2 rounded-xl transition font-black text-xs flex items-center justify-center ${
+                                                activeStyles.ol 
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                            }`}
                                             title="Lista Ordenada"
                                         >
                                             <ListOrdered size={14} />
                                         </button>
                                         <button 
                                             type="button" 
-                                            onClick={() => handleFormatText('link')}
-                                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition"
+                                            onClick={handleInsertLink}
+                                            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition flex items-center justify-center"
                                             title="Insertar Enlace"
                                         >
                                             <Link2 size={14} />
@@ -388,28 +456,36 @@ export default function CreateCircular() {
 
                                     <button 
                                         type="button" 
-                                        onClick={() => handleFormatText('help')}
-                                        className="p-1.5 text-slate-400 hover:text-indigo-650 rounded-lg hover:bg-slate-250/60 transition"
-                                        title="Ayuda de formato"
+                                        onClick={() => handleExecCommand('removeFormat')}
+                                        className="p-1.5 text-slate-400 hover:text-indigo-650 rounded-lg hover:bg-slate-200/60 transition text-[10px] font-bold flex items-center gap-1"
+                                        title="Quitar formato"
                                     >
-                                        <HelpCircle size={14} />
+                                        <RefreshCw size={12} /> Limpiar
                                     </button>
                                 </div>
 
-                                {/* Textarea */}
-                                <textarea
-                                    id="circular-body"
-                                    value={body}
-                                    onChange={e => setBody(e.target.value)}
-                                    placeholder="Escribe el mensaje de tu circular aquí..."
-                                    maxLength="2000"
-                                    className="w-full p-4 h-48 outline-none border-none text-xs leading-relaxed text-slate-700 resize-none bg-white"
-                                    required
+                                {/* Editor de Texto Enriquecido Vivo (contentEditable) */}
+                                <div
+                                    ref={editorRef}
+                                    contentEditable
+                                    onInput={(e) => {
+                                        setBody(e.currentTarget.innerHTML);
+                                        checkActiveStyles();
+                                    }}
+                                    onKeyUp={checkActiveStyles}
+                                    onMouseUp={checkActiveStyles}
+                                    onSelect={checkActiveStyles}
+                                    onFocus={checkActiveStyles}
+                                    className="w-full p-4 min-h-[190px] max-h-[300px] overflow-y-auto outline-none text-xs leading-relaxed text-slate-700 bg-white border-none space-y-1 focus:ring-0 cursor-text"
+                                    style={{ minHeight: '190px' }}
                                 />
 
                                 {/* Contador de Caracteres */}
-                                <div className="bg-slate-50 border-t border-gray-100 px-4 py-2 flex justify-end text-[10px] text-gray-400 font-bold">
-                                    {body.length} / 2000
+                                <div className="bg-slate-50 border-t border-gray-100 px-4 py-2 flex justify-between items-center text-[10px] text-gray-400 font-bold">
+                                    <span className="text-[9px] text-indigo-650 font-semibold flex items-center gap-1">
+                                        <Sparkles size={11} /> Editor en vivo activo (Negrita, Cursiva, Subrayado)
+                                    </span>
+                                    <span>{body.replace(/<[^>]*>/g, '').length} / 2000</span>
                                 </div>
                             </div>
                         </div>
@@ -463,71 +539,145 @@ export default function CreateCircular() {
                                 </div>
                             )}
 
-                            {/* Selector de Estudiantes Múltiple */}
+                            {/* Selector de Estudiantes Múltiple con Búsqueda Predictiva */}
                             {targetType === 'STUDENTS' && (
-                                <div className="space-y-3 animate-fade-in bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block">Buscar Estudiante</label>
-                                        <input
-                                            type="text"
-                                            value={studentSearch}
-                                            onChange={e => setStudentSearch(e.target.value)}
-                                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-indigo-650 transition"
-                                            placeholder="Escribe el nombre del estudiante..."
-                                        />
-                                    </div>
+                                <div className="space-y-3 animate-fade-in bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+                                    <div className="space-y-1.5 relative">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[10px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                                <Search size={13} className="text-indigo-600" /> Búsqueda Predictiva de Estudiante
+                                            </label>
+                                            <span className="text-[9px] text-slate-400 font-bold">Escriba nombre, apellido o curso</span>
+                                        </div>
 
-                                    {/* Resultados de Búsqueda Scrollable */}
-                                    <div className="border border-slate-200 rounded-xl max-h-40 overflow-y-auto p-2 bg-white divide-y divide-slate-50 space-y-1 shadow-inner">
-                                        {studentsList
-                                            .filter(s => s.name?.toLowerCase().includes(studentSearch.toLowerCase()))
-                                            .map(student => {
-                                                const isSelected = selectedStudents.includes(student.id);
-                                                return (
-                                                    <label key={student.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer text-[11px] transition">
-                                                        <div className="flex items-center gap-2">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isSelected}
-                                                                onChange={() => {
-                                                                    if (isSelected) {
-                                                                        setSelectedStudents(prev => prev.filter(id => id !== student.id));
-                                                                    } else {
+                                        {/* Input de Búsqueda Predictiva */}
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={studentSearch}
+                                                onChange={e => {
+                                                    setStudentSearch(e.target.value);
+                                                    setShowPredictiveDropdown(true);
+                                                }}
+                                                onFocus={() => setShowPredictiveDropdown(true)}
+                                                className="w-full bg-white border border-slate-250 rounded-xl pl-9 pr-8 py-2.5 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15 transition shadow-xs"
+                                                placeholder="Escriba para buscar predictivamente (ej: Juan, Báez, 1001)..."
+                                            />
+                                            <Search size={15} className="absolute left-3 top-3 text-slate-400 pointer-events-none" />
+                                            
+                                            {studentSearch && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setStudentSearch('')}
+                                                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 transition"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Menú Desplegable Predictivo */}
+                                        {showPredictiveDropdown && studentSearch.trim() !== '' && (
+                                            <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 max-h-60 overflow-y-auto divide-y divide-slate-100 p-1 animate-scale-in">
+                                                {getPredictiveMatches().length === 0 ? (
+                                                    <div className="p-4 text-center text-slate-400 text-xs font-semibold flex items-center justify-center gap-2">
+                                                        <UserMinus size={16} className="text-slate-300" />
+                                                        <span>No se encontraron estudiantes que coincidan con <strong>"{studentSearch}"</strong></span>
+                                                    </div>
+                                                ) : (
+                                                    getPredictiveMatches().map(student => {
+                                                        const isSelected = selectedStudents.includes(student.id);
+                                                        const displayName = student.lastName && student.firstName 
+                                                            ? `${student.lastName} ${student.firstName}` 
+                                                            : student.name;
+                                                        return (
+                                                            <button
+                                                                key={student.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (!isSelected) {
                                                                         setSelectedStudents(prev => [...prev, student.id]);
+                                                                    } else {
+                                                                        setSelectedStudents(prev => prev.filter(id => id !== student.id));
                                                                     }
                                                                 }}
-                                                                className="rounded border-gray-300 text-indigo-650 focus:ring-indigo-500"
-                                                            />
-                                                            <span className="font-bold text-slate-700">{student.name}</span>
-                                                        </div>
-                                                        <span className="text-[8px] bg-slate-100 px-1.5 py-0.5 rounded font-extrabold text-slate-500 border">Curso {student.grade}</span>
-                                                    </label>
-                                                );
-                                            })}
+                                                                className={`w-full text-left p-2.5 hover:bg-indigo-50/70 rounded-xl transition flex items-center justify-between gap-3 ${
+                                                                    isSelected ? 'bg-indigo-50/50' : ''
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0 ${
+                                                                        isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+                                                                    }`}>
+                                                                        {displayName.charAt(0)}
+                                                                    </div>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="text-xs font-bold text-slate-800 truncate">{displayName}</p>
+                                                                        <p className="text-[9.5px] text-slate-400 font-medium">Curso: <span className="text-slate-700 font-bold">{student.grade || student.course}</span> • Cód: {student.code || student.id}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="shrink-0">
+                                                                    {isSelected ? (
+                                                                        <span className="bg-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                                            <Check size={10} /> Agregado
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-indigo-600 hover:bg-indigo-100 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-200">
+                                                                            + Seleccionar
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Estudiantes Seleccionados (Tags) */}
-                                    {selectedStudents.length > 0 && (
-                                        <div className="space-y-1.5 border-t pt-2 mt-2">
-                                            <span className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block">Destinatarios Seleccionados ({selectedStudents.length})</span>
-                                            <div className="flex flex-wrap gap-1.5">
+                                    {/* Lista de Estudiantes Seleccionados (Chips) */}
+                                    <div className="pt-2 border-t border-slate-200 space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                                                <Users size={12} className="text-indigo-600" /> Destinatarios Seleccionados ({selectedStudents.length})
+                                            </span>
+                                            {selectedStudents.length > 0 && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setSelectedStudents([])}
+                                                    className="text-[9.5px] text-rose-600 hover:underline font-extrabold"
+                                                >
+                                                    Vaciar selección
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {selectedStudents.length === 0 ? (
+                                            <p className="text-[10px] text-slate-400 italic">Escriba arriba para buscar y agregar estudiantes predictivamente a esta circular.</p>
+                                        ) : (
+                                            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-white border border-slate-200 rounded-xl">
                                                 {studentsList
                                                     .filter(s => selectedStudents.includes(s.id))
-                                                    .map(s => (
-                                                        <span key={s.id} className="inline-flex items-center gap-1 text-[8.5px] bg-indigo-50 border border-indigo-150 text-indigo-800 px-2 py-0.5 rounded-lg font-bold">
-                                                            {s.name} ({s.grade})
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setSelectedStudents(prev => prev.filter(id => id !== s.id))}
-                                                                className="text-indigo-500 hover:text-indigo-850 hover:bg-indigo-100 p-0.5 rounded transition"
-                                                            >
-                                                                <X size={10} />
-                                                            </button>
-                                                        </span>
-                                                    ))}
+                                                    .map(s => {
+                                                        const nameStr = s.lastName && s.firstName ? `${s.lastName} ${s.firstName}` : s.name;
+                                                        return (
+                                                            <span key={s.id} className="inline-flex items-center gap-1.5 text-[9.5px] bg-indigo-50 border border-indigo-200 text-indigo-900 px-2.5 py-1 rounded-xl font-bold shadow-2xs animate-scale-in">
+                                                                <span>{nameStr}</span>
+                                                                <span className="text-[8px] bg-indigo-200/60 text-indigo-950 px-1 py-0.2 rounded font-extrabold">Grado {s.grade || s.course}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedStudents(prev => prev.filter(id => id !== s.id))}
+                                                                    className="text-indigo-600 hover:text-rose-600 hover:bg-rose-50 p-0.5 rounded transition"
+                                                                    title="Eliminar destinatario"
+                                                                >
+                                                                    <X size={11} />
+                                                                </button>
+                                                            </span>
+                                                        );
+                                                    })}
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -729,9 +879,16 @@ export default function CreateCircular() {
                                     </h4>
 
                                     {/* Contenido en vivo */}
-                                    <p className="text-[10px] text-slate-600 font-sans leading-relaxed whitespace-pre-wrap">
-                                        {body || 'Aquí se mostrará el contenido de la circular...'}
-                                    </p>
+                                    {body && (body.includes('<') && body.includes('>')) ? (
+                                        <div 
+                                            className="text-[10px] text-slate-600 font-sans leading-relaxed text-justify space-y-1"
+                                            dangerouslySetInnerHTML={{ __html: body }}
+                                        />
+                                    ) : (
+                                        <p className="text-[10px] text-slate-600 font-sans leading-relaxed whitespace-pre-wrap">
+                                            {body || 'Aquí se mostrará el contenido de la circular...'}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

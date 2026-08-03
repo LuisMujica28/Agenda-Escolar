@@ -102,7 +102,10 @@ export default function CircularReadersModal({ circular, parentsList, studentsLi
     const pendingPercentage = totalCount > 0 ? 100 - readPercentage : 0;
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in no-print">
+        <div 
+            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in no-print"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
             <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl animate-scale-in border border-slate-100 flex flex-col max-h-[85vh] overflow-hidden">
                 
                 {/* Cabecera */}

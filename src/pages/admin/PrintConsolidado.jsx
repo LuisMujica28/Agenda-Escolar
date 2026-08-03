@@ -17,6 +17,7 @@ const SUBJECTS_LIST = [
     { key: 'Ed Religiosa y Moral', short: 'RELIGIOSA Y MORAL' },
     { key: 'Tecnología e Informática', short: 'INFORMÁTICA' },
     { key: 'Español y Literatura', short: 'ESPAÑOL' },
+    { key: 'Geometría', short: 'GEOMETRÍA' },
     { key: 'Inglés', short: 'INGLÉS' },
     { key: 'Matemáticas', short: 'MATEMÁTICAS' }
 ];
@@ -72,7 +73,17 @@ export default function PrintConsolidado() {
                 }
 
                 const sSnap = await getDocs(qStudents);
-                let studentsData = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                let rawStudentsData = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // Deduplicar estudiantes por nombre y código
+                const uniqueMap = new Map();
+                rawStudentsData.forEach(st => {
+                    const normName = (st.name || `${st.lastName || ''} ${st.firstName || ''}`).trim().toUpperCase();
+                    if (!uniqueMap.has(normName)) {
+                        uniqueMap.set(normName, st);
+                    }
+                });
+                let studentsData = Array.from(uniqueMap.values()).filter(st => st.status !== 'retirado');
 
                 // 2. Cargar calificaciones
                 const gSnap = await getDocs(collection(db, 'grades'));
@@ -96,14 +107,21 @@ export default function PrintConsolidado() {
                         }
 
                         // Notas por periodo digitadas (P1, P2, P3, P4)
-                        const p1 = subjGrades.find(g => Number(g.period) === 1)?.grade;
-                        const p2 = subjGrades.find(g => Number(g.period) === 2)?.grade;
-                        const p3 = subjGrades.find(g => Number(g.period) === 3)?.grade;
-                        const p4 = subjGrades.find(g => Number(g.period) === 4)?.grade;
+                        const getPVal = (pNum) => {
+                            const found = subjGrades.find(g => Number(g.period) === pNum);
+                            if (!found) return null;
+                            const val = Number(found.grade);
+                            return (!isNaN(val) && val > 0) ? val : null;
+                        };
+
+                        const p1 = getPVal(1);
+                        const p2 = getPVal(2);
+                        const p3 = getPVal(3);
+                        const p4 = getPVal(4);
 
                         const validNumericGrades = subjGrades
                             .map(g => Number(g.grade))
-                            .filter(n => !isNaN(n));
+                            .filter(n => !isNaN(n) && n > 0);
 
                         let subjAvg = null;
                         if (validNumericGrades.length > 0) {
@@ -117,10 +135,10 @@ export default function PrintConsolidado() {
                         }
 
                         subjectsBreakdown[subjKey] = {
-                            p1: p1 !== undefined ? Number(p1) : null,
-                            p2: p2 !== undefined ? Number(p2) : null,
-                            p3: p3 !== undefined ? Number(p3) : null,
-                            p4: p4 !== undefined ? Number(p4) : null,
+                            p1,
+                            p2,
+                            p3,
+                            p4,
                             avg: subjAvg !== null ? subjAvg : null
                         };
                     });
@@ -167,9 +185,9 @@ export default function PrintConsolidado() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-4 text-white">
-                <Loader2 className="animate-spin text-indigo-400" size={48} />
-                <p className="text-sm font-semibold tracking-wide animate-pulse">
+            <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center gap-4 text-slate-800">
+                <Loader2 className="animate-spin text-indigo-600" size={48} />
+                <p className="text-sm font-bold tracking-wide animate-pulse text-slate-700">
                     Procesando consolidado y ordenando ranking académico...
                 </p>
             </div>
@@ -177,8 +195,8 @@ export default function PrintConsolidado() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-800/90 py-6 px-4 flex flex-col items-center select-none overflow-y-auto no-print-bg">
-            {/* Estilos para impresión en tamaño Oficio Horizontal (33cm x 22cm) */}
+        <div className="min-h-screen bg-slate-100 py-6 px-4 flex flex-col items-center select-none overflow-y-auto no-print-bg">
+            {/* Estilos para impresión en tamaño Oficio Horizontal (33cm x 21.6cm) */}
             <style>{`
                 @media print {
                     header, aside, .no-print, .no-print-area {
@@ -197,13 +215,13 @@ export default function PrintConsolidado() {
                     }
                     
                     @page {
-                        size: 33cm 22cm;
+                        size: 33cm 21.6cm;
                         margin: 0;
                     }
                     
                     .printable-consolidado {
                         width: 33cm !important;
-                        min-height: 22cm !important;
+                        min-height: 21.6cm !important;
                         margin: 0 !important;
                         padding: 0.6cm 0.8cm !important;
                         box-sizing: border-box !important;
@@ -223,7 +241,7 @@ export default function PrintConsolidado() {
 
                 .printable-consolidado {
                     width: 33cm;
-                    min-height: 22cm;
+                    min-height: 21.6cm;
                     margin: 0 auto;
                     background-color: white;
                     padding: 0.7cm;
@@ -350,6 +368,9 @@ export default function PrintConsolidado() {
                                     </h2>
                                     <p className="text-[7.5px] text-slate-500 font-medium mt-0.5">
                                         Resolución de Aprobación SED N° 110254 | NIT: 830.123.456-7 | Año Lectivo 2026
+                                    </p>
+                                    <p className="text-[7px] font-semibold italic text-indigo-900 mt-0.5">
+                                        “Ciudadanos productivos desde la construcción de proyectos de vida con calidad y responsabilidad ambiental”
                                     </p>
                                 </div>
 

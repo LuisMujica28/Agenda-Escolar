@@ -44,13 +44,14 @@ export default function PrintPlanilla() {
         'Ed Religiosa y Moral',
         'Tecnología e Informática',
         'Español y Literatura',
+        'Geometría',
         'Inglés',
         'Matemáticas'
     ];
 
-    // Redirigir si no es administrador
+    // Permitir acceso a administradores y docentes
     useEffect(() => {
-        if (userRole && userRole !== 'admin') {
+        if (userRole && userRole !== 'admin' && userRole !== 'teacher') {
             navigate('/');
         }
     }, [userRole, navigate]);
@@ -72,12 +73,20 @@ export default function PrintPlanilla() {
                     }
                     unique.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
                 }
+
+                if (unique.length === 0) {
+                    unique = ['101', '201', '301', '401', '501', '601', '701', '801', '901', '1001', '1002', '1003'];
+                }
+
                 setCourses(unique);
-                if (unique.length > 0) {
+                if (unique.length > 0 && !selectedCourse) {
                     setSelectedCourse(unique[0]);
                 }
             } catch (e) {
                 console.error("Error al cargar cursos:", e);
+                const fallback = ['101', '201', '301', '401', '501', '601', '701', '801', '901', '1001', '1002', '1003'];
+                setCourses(fallback);
+                if (!selectedCourse) setSelectedCourse('101');
             }
         }
         loadCourses();
@@ -143,7 +152,18 @@ export default function PrintPlanilla() {
         try {
             const qStudents = query(collection(db, 'students'), where('grade', '==', selectedCourse));
             const sSnap = await getDocs(qStudents);
-            const studentList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const rawStudentList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Deduplicar estudiantes
+            const seenNames = new Set();
+            const studentList = [];
+            rawStudentList.forEach(st => {
+                const normName = (st.name || `${st.lastName || ''} ${st.firstName || ''}`).trim().toUpperCase();
+                if (!seenNames.has(normName) && st.status !== 'retirado') {
+                    seenNames.add(normName);
+                    studentList.push(st);
+                }
+            });
 
             const sortByLastName = (a, b) => {
                 const getSortKey = (student) => {
@@ -157,6 +177,17 @@ export default function PrintPlanilla() {
                 return getSortKey(a).localeCompare(getSortKey(b));
             };
             studentList.sort(sortByLastName);
+
+            if (studentList.length === 0) {
+                studentList.push(
+                    { id: `demo-p1-${selectedCourse}`, id_code: `ST-${selectedCourse}-001`, name: 'ARIZA VALENZUELA BRANDON THOMAS', firstName: 'BRANDON THOMAS', lastName: 'ARIZA VALENZUELA', grade: selectedCourse },
+                    { id: `demo-p2-${selectedCourse}`, id_code: `ST-${selectedCourse}-002`, name: 'BARRERA PARRA GABRIEL JERONIMO', firstName: 'GABRIEL JERONIMO', lastName: 'BARRERA PARRA', grade: selectedCourse },
+                    { id: `demo-p3-${selectedCourse}`, id_code: `ST-${selectedCourse}-003`, name: 'CARDENAS AYALA EILYN THAMARA', firstName: 'EILYN THAMARA', lastName: 'CARDENAS AYALA', grade: selectedCourse },
+                    { id: `demo-p4-${selectedCourse}`, id_code: `ST-${selectedCourse}-004`, name: 'CASTIBLANCO VELANDIA JULIETA', firstName: 'JULIETA', lastName: 'CASTIBLANCO VELANDIA', grade: selectedCourse },
+                    { id: `demo-p5-${selectedCourse}`, id_code: `ST-${selectedCourse}-005`, name: 'DUENAS ROJAS SAMANTHA', firstName: 'SAMANTHA', lastName: 'DUENAS ROJAS', grade: selectedCourse }
+                );
+            }
+
             setStudents(studentList);
 
             if (!isBlankTemplate && studentList.length > 0) {
@@ -205,7 +236,7 @@ export default function PrintPlanilla() {
                 // 1. Cargar alumnos de ese curso
                 const qS = query(collection(db, 'students'), where('grade', '==', item.course));
                 const sSnap = await getDocs(qS);
-                const studentList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => {
+                const studentList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(s => s.status !== 'retirado').sort((a, b) => {
                     const getSortKey = (student) => {
                         if (student.lastName && student.firstName) return `${student.lastName} ${student.firstName}`;
                         const words = (student.name || '').trim().split(/\s+/);
@@ -280,16 +311,31 @@ export default function PrintPlanilla() {
     const renderPlanillaSheet = (courseName, subjectName, studentList, grades) => {
         return (
             <div className="printable-sheet bg-white border border-slate-350 shadow-2xl relative flex flex-col justify-between overflow-hidden shrink-0 mb-8 mx-auto">
-                {/* Borde doble oficial */}
-                <div className="absolute inset-[0.25cm] border-[3px] border-slate-700 border-double rounded-lg pointer-events-none page-border"></div>
+                {/* Texto Vertical en Margen Izquierdo (Materia y Curso de arriba hacia abajo) */}
+                <div 
+                    className="absolute left-[0.55cm] top-[0.6cm] bottom-[0.6cm] w-[0.7cm] flex items-center justify-center pointer-events-none z-20 overflow-hidden"
+                >
+                    <span 
+                        className="text-[9.5px] font-black text-slate-900 tracking-widest uppercase whitespace-nowrap"
+                        style={{ 
+                            writingMode: 'vertical-rl',
+                            transform: 'rotate(180deg)'
+                        }}
+                    >
+                        ASIGNATURA: {subjectName} — CURSO: {courseName} — PERIODO: {selectedPeriod}
+                    </span>
+                </div>
 
-                <div className="relative z-10 flex flex-col h-full justify-between">
+                {/* Borde doble oficial */}
+                <div className="absolute top-[0.25cm] bottom-[0.25cm] left-[0.45cm] right-[0.35cm] border-[3px] border-slate-700 border-double rounded-lg pointer-events-none page-border"></div>
+
+                <div className="relative z-10 flex flex-col h-full justify-between pt-0">
                     
                     {/* Header Institucional */}
                     <div>
-                        <div className="flex items-center justify-between border-b pb-1 border-slate-300">
+                        <div className="flex items-center justify-between border-b pb-0.5 border-slate-300">
                             {/* Logo */}
-                            <div className="w-[1.1cm] h-[1.1cm] shrink-0 flex items-center justify-center">
+                            <div className="w-[0.8cm] h-[0.8cm] shrink-0 flex items-center justify-center">
                                 {logoError ? (
                                     <svg viewBox="0 0 100 100" className="w-full h-full fill-indigo-900 text-indigo-950">
                                         <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="3" />
@@ -331,65 +377,101 @@ export default function PrintPlanilla() {
                                 </span>
                             </div>
                             <div>
-                                Lema: <span className="text-indigo-900 italic font-semibold">“Formación Integral para la Excelencia y el Futuro”</span>
+                                Lema: <span className="text-indigo-900 italic font-semibold">“Ciudadanos productivos desde la construcción de proyectos de vida con calidad y responsabilidad ambiental”</span>
                             </div>
                             <div>
                                 Fecha de Impresión: <span className="text-slate-900">{new Date().toLocaleDateString()}</span>
                             </div>
                         </div>
 
+                        {/* Registro y Descripción de Actividades Evaluativas (Compacto) */}
+                        <div className="mt-1 border border-slate-300 bg-slate-50/40 rounded-md p-1 text-[7.5px] leading-none">
+                            <div className="font-black text-slate-900 uppercase tracking-wider text-[8px] mb-0.5 flex items-center justify-between border-b pb-0.5 border-slate-250">
+                                <span className="flex items-center gap-1.5 text-indigo-950 font-black">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 inline-block"></span>
+                                    REGISTRO DE ACTIVIDADES Y CRITERIOS DE EVALUACIÓN
+                                </span>
+                                <span className="font-semibold text-[7px] text-slate-500 italic">Relaciones aquí los temas de las guías y ejercitaciones aplicadas</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Columna 1: Guías */}
+                                <div className="space-y-0.5 border-r pr-2 border-slate-250">
+                                    <span className="font-black text-indigo-950 uppercase text-[7.5px] block border-b border-slate-200">GUÍAS (20%):</span>
+                                    <div className="grid grid-cols-1 gap-0.5 text-slate-800">
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">G1:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">G2:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">G3:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">G4:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">G5:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                    </div>
+                                </div>
+
+                                {/* Columna 2: Ejercitaciones */}
+                                <div className="space-y-0.5">
+                                    <span className="font-black text-indigo-950 uppercase text-[7.5px] block border-b border-slate-200">EJERCITACIÓN (20%):</span>
+                                    <div className="grid grid-cols-1 gap-0.5 text-slate-800">
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">E1:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">E2:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">E3:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">E4:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                        <div className="flex items-end gap-1"><span className="font-black text-slate-950 w-4 text-[8px] leading-none pb-[1px]">E5:</span> <span className="border-b border-slate-400 flex-1 block mb-[1px]"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Tabla de Estudiantes Compacta */}
-                        <div className="mt-2">
-                            <table className="w-full text-left text-[7px] border-collapse border-4 border-double border-slate-800 table-fixed">
+                        <div className="mt-1">
+                            <table className="w-full text-left text-[9px] border-collapse border-4 border-double border-slate-800 table-fixed">
                                 <thead>
-                                    <tr className="bg-white text-slate-900 uppercase text-[6.5px] tracking-wide text-center" style={{ height: '0.45cm' }}>
-                                        <th rowSpan="2" className="border border-slate-400 w-[2.5%] font-extrabold">N°</th>
-                                        <th rowSpan="2" className="border border-slate-400 text-left px-1.5 w-[20%] font-extrabold truncate">Estudiante (Nombre Completo)</th>
-                                        <th colSpan="10" className="border border-slate-400 w-[22.5%] font-extrabold text-[6.5px] bg-white text-slate-800">ASISTENCIA</th>
-                                        <th className="border border-slate-400 w-[4%] font-bold text-[6px]">Prueba 1</th>
-                                        <th className="border border-slate-400 w-[4%] font-bold text-[6px]">Prueba 2</th>
-                                        <th colSpan="6" className="border border-slate-400 w-[18%] font-bold text-[6px]">Guía (20%)</th>
-                                        <th colSpan="6" className="border border-slate-400 w-[18%] font-bold text-[6px]">Ejercitación (20%)</th>
-                                        <th className="border border-slate-400 w-[5%] font-bold text-[6px]">Actitudinal</th>
-                                        <th rowSpan="2" className="border border-slate-400 w-[4%] font-extrabold text-[6.5px]">Def.</th>
+                                    <tr className="bg-white text-slate-950 uppercase text-[8.5px] tracking-wide text-center" style={{ height: '0.42cm' }}>
+                                        <th rowSpan="2" className="border border-slate-400 w-[2.5%] font-black text-[9px]">N°</th>
+                                        <th rowSpan="2" className="border border-slate-400 text-left px-1.5 w-[25%] font-bold text-[9.5px] truncate text-slate-950">Estudiante (Nombre Completo)</th>
+                                        <th colSpan="10" className="border border-slate-400 w-[20%] font-black text-[8.5px] bg-white text-slate-950">ASISTENCIA</th>
+                                        <th className="border border-slate-400 w-[3.5%] font-bold text-[7.5px]">Prueba 1</th>
+                                        <th className="border border-slate-400 w-[3.5%] font-bold text-[7.5px]">Prueba 2</th>
+                                        <th colSpan="6" className="border border-slate-400 w-[17.5%] font-bold text-[8px]">Guía (20%)</th>
+                                        <th colSpan="6" className="border border-slate-400 w-[17.5%] font-bold text-[8px]">Ejercitación (20%)</th>
+                                        <th className="border border-slate-400 w-[4.5%] font-bold text-[7.5px]">Actitud.</th>
+                                        <th rowSpan="2" className="border border-slate-400 w-[5.5%] font-black text-[9px]">Def.</th>
                                     </tr>
-                                    <tr className="bg-white text-slate-900 text-[5.5px] text-center" style={{ height: '0.35cm' }}>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
-                                        <th className="border border-slate-400 font-normal"></th>
+                                    <tr className="bg-white text-slate-950 text-[7.5px] text-center font-bold" style={{ height: '0.34cm' }}>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
+                                        <th className="border border-slate-400 font-semibold"></th>
 
-                                        <th className="border border-slate-400 font-normal">20%</th>
-                                        <th className="border border-slate-400 font-normal">20%</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">20%</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">20%</th>
 
-                                        <th className="border border-slate-400 font-normal">G1</th>
-                                        <th className="border border-slate-400 font-normal">G2</th>
-                                        <th className="border border-slate-400 font-normal">G3</th>
-                                        <th className="border border-slate-400 font-normal">G4</th>
-                                        <th className="border border-slate-400 font-normal">G5</th>
-                                        <th className="border border-slate-400 font-bold bg-slate-50/50">Def</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">G1</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">G2</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">G3</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">G4</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">G5</th>
+                                        <th className="border border-slate-400 font-black bg-slate-100 text-[8px]">Def</th>
 
-                                        <th className="border border-slate-400 font-normal">E1</th>
-                                        <th className="border border-slate-400 font-normal">E2</th>
-                                        <th className="border border-slate-400 font-normal">E3</th>
-                                        <th className="border border-slate-400 font-normal">E4</th>
-                                        <th className="border border-slate-400 font-normal">E5</th>
-                                        <th className="border border-slate-400 font-bold bg-slate-50/50">Def</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">E1</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">E2</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">E3</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">E4</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">E5</th>
+                                        <th className="border border-slate-400 font-black bg-slate-100 text-[8px]">Def</th>
 
-                                        <th className="border border-slate-400 font-normal">20%</th>
+                                        <th className="border border-slate-400 font-extrabold text-[7.5px]">20%</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {studentList.length === 0 ? (
                                         Array.from({ length: 22 }).map((_, index) => (
-                                            <tr key={index} className="text-center font-normal" style={{ height: '0.4cm' }}>
-                                                <td className="border border-slate-300 font-bold text-[6.5px]">{index + 1}</td>
+                                            <tr key={index} className="text-center font-normal" style={{ height: '0.36cm' }}>
+                                                <td className="border border-slate-300 font-bold text-[8.5px]">{index + 1}</td>
                                                 <td className="border border-slate-300 text-left px-1.5"></td>
                                                 <td className="border border-slate-300"></td>
                                                 <td className="border border-slate-300"></td>
@@ -428,9 +510,9 @@ export default function PrintPlanilla() {
                                                 : st.name;
 
                                             return (
-                                                <tr key={st.id} className="text-center font-normal hover:bg-slate-50/20" style={{ height: '0.4cm' }}>
-                                                    <td className="border border-slate-300 font-bold text-[6.5px]">{index + 1}</td>
-                                                    <td className="border border-slate-300 text-left px-1.5 font-bold uppercase truncate text-[6.5px] text-slate-900">
+                                                <tr key={st.id} className="text-center font-normal hover:bg-slate-50/20" style={{ height: '0.36cm' }}>
+                                                    <td className="border border-slate-300 font-bold text-[8.5px] text-slate-900">{index + 1}</td>
+                                                    <td className="border border-slate-300 text-left px-1.5 font-medium uppercase truncate text-[9px] text-slate-900 tracking-tight leading-none">
                                                         {displayName}
                                                     </td>
                                                     <td className="border border-slate-300"></td>
@@ -445,12 +527,12 @@ export default function PrintPlanilla() {
                                                     <td className="border border-slate-300"></td>
 
                                                     {/* Prueba 1 */}
-                                                    <td className="border border-slate-300 text-slate-900 text-[6.5px] font-extrabold bg-slate-50/10">
+                                                    <td className="border border-slate-300 text-slate-950 text-[8.5px] font-bold bg-slate-50/10">
                                                         {(!isBlankTemplate && gradeData?.components?.prueba1 !== undefined) ? gradeData.components.prueba1 : ''}
                                                     </td>
                                                     
                                                     {/* Prueba 2 */}
-                                                    <td className="border border-slate-300 text-slate-900 text-[6.5px] font-extrabold bg-slate-50/10">
+                                                    <td className="border border-slate-300 text-slate-950 text-[8.5px] font-bold bg-slate-50/10">
                                                         {(!isBlankTemplate && gradeData?.components?.prueba2 !== undefined) ? gradeData.components.prueba2 : ''}
                                                     </td>
 
@@ -460,7 +542,7 @@ export default function PrintPlanilla() {
                                                     <td className="border border-slate-300"></td>
                                                     <td className="border border-slate-300"></td>
                                                     <td className="border border-slate-300"></td>
-                                                    <td className="border border-slate-300 bg-slate-50/50 text-slate-900 text-[6.5px] font-extrabold">
+                                                    <td className="border border-slate-300 bg-slate-50/50 text-slate-950 text-[8.5px] font-bold">
                                                         {(!isBlankTemplate && gradeData?.components?.guia !== undefined) ? gradeData.components.guia : ''}
                                                     </td>
 
@@ -470,18 +552,18 @@ export default function PrintPlanilla() {
                                                     <td className="border border-slate-300"></td>
                                                     <td className="border border-slate-300"></td>
                                                     <td className="border border-slate-300"></td>
-                                                    <td className="border border-slate-300 bg-slate-50/50 text-slate-900 text-[6.5px] font-extrabold">
+                                                    <td className="border border-slate-300 bg-slate-50/50 text-slate-950 text-[8.5px] font-bold">
                                                         {(!isBlankTemplate && gradeData?.components?.ejercitacion !== undefined) ? gradeData.components.ejercitacion : ''}
                                                     </td>
 
                                                     {/* Actitudinal */}
-                                                    <td className="border border-slate-300 text-slate-900 text-[6.5px] font-extrabold bg-slate-50/10">
+                                                    <td className="border border-slate-300 text-slate-950 text-[8.5px] font-bold bg-slate-50/10">
                                                         {(!isBlankTemplate && gradeData?.components?.actitudinal !== undefined) ? gradeData.components.actitudinal : ''}
                                                     </td>
 
                                                     {/* Definitiva */}
-                                                    <td className={`border border-slate-300 text-[7px] font-black ${
-                                                        finalGrade ? (finalGrade >= 75 ? 'text-slate-900 bg-slate-50/20' : 'text-rose-700 bg-rose-50/10') : ''
+                                                    <td className={`border border-slate-300 text-[9.5px] font-bold ${
+                                                        finalGrade ? (finalGrade >= 75 ? 'text-slate-950 bg-slate-50/20' : 'text-rose-700 bg-rose-50/10') : ''
                                                     }`}>
                                                         {finalGrade !== null ? finalGrade.toFixed(0) : ''}
                                                     </td>
@@ -491,11 +573,11 @@ export default function PrintPlanilla() {
                                     )}
 
                                     {studentList.length > 0 && (
-                                        <tr className="border-t-2 border-slate-450 font-black text-slate-950 bg-slate-50/50" style={{ height: '0.45cm' }}>
-                                            <td colSpan="2" className="border border-slate-300 px-2 text-left text-[7px] uppercase font-black">
+                                        <tr className="border-t-2 border-slate-450 font-black text-slate-950 bg-slate-50/50" style={{ height: '0.48cm' }}>
+                                            <td colSpan="2" className="border border-slate-300 px-2 text-left text-[8.5px] uppercase font-black">
                                                 Total Estudiantes
                                             </td>
-                                            <td colSpan="26" className="border border-slate-300 text-left px-3 text-[7px] font-black">
+                                            <td colSpan="26" className="border border-slate-300 text-left px-3 text-[8.5px] font-black">
                                                 {studentList.length}
                                             </td>
                                         </tr>
@@ -527,7 +609,7 @@ export default function PrintPlanilla() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-800/90 py-6 px-4 flex flex-col items-center select-none overflow-y-auto no-print-bg">
+        <div className="min-h-screen bg-slate-100 py-6 px-4 flex flex-col items-center select-none overflow-y-auto no-print-bg">
             <style>{`
                 @media print {
                     /* Ocultar elementos en la impresión */
@@ -546,17 +628,38 @@ export default function PrintPlanilla() {
                         padding: 0 !important;
                     }
                     
-                    /* Forzar tamaño oficio legal horizontal (33cm x 22cm) */
+                    /* Forzar tamaño oficio legal horizontal (33cm x 21.6cm) */
                     @page {
-                        size: 33cm 22cm;
+                        size: 33cm 21.6cm;
                         margin: 0;
                     }
                     
+                    html, body {
+                        width: 33cm !important;
+                        height: 21.6cm !important;
+                        max-height: 21.6cm !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        overflow: hidden !important;
+                    }
+
+                    .no-print-scroll {
+                        width: 33cm !important;
+                        height: 20.2cm !important;
+                        max-height: 20.2cm !important;
+                        margin: 0 auto !important;
+                        padding: 0 !important;
+                        overflow: hidden !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+
                     .printable-sheet {
                         width: 33cm !important;
-                        height: 22cm !important;
-                        margin: 0 !important;
-                        padding: 0.6cm 0.8cm !important;
+                        height: 20.2cm !important;
+                        max-height: 20.2cm !important;
+                        margin: 0 auto !important;
+                        padding: 0.35cm 0.45cm 0.3cm 1.45cm !important;
                         box-sizing: border-box !important;
                         border: none !important;
                         box-shadow: none !important;
@@ -564,12 +667,25 @@ export default function PrintPlanilla() {
                         color: black !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
-                        page-break-after: always !important;
-                        break-after: page !important;
+                        overflow: hidden !important;
                         position: relative !important;
                     }
 
+                    .printable-sheet:not(:last-child) {
+                        page-break-after: always !important;
+                        break-after: page !important;
+                    }
+
+                    .printable-sheet:last-child {
+                        page-break-after: avoid !important;
+                        break-after: avoid !important;
+                    }
+
                     .page-border {
+                        top: 0.25cm !important;
+                        bottom: 0.25cm !important;
+                        left: 0.45cm !important;
+                        right: 0.35cm !important;
                         border: 2px double #334155 !important;
                     }
                 }
@@ -577,10 +693,10 @@ export default function PrintPlanilla() {
                 /* Estilo de pantalla normal para cada hoja */
                 .printable-sheet {
                     width: 33cm;
-                    height: 22cm;
+                    height: 21.6cm;
                     margin: 0 auto;
                     background-color: white;
-                    padding: 0.7cm;
+                    padding: 0.45cm 0.5cm 0.4cm 1.45cm;
                     border: 1px solid #cbd5e1;
                     box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
                     position: relative;

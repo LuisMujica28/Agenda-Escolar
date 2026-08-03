@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { Search, GraduationCap, Users } from 'lucide-react';
+import { Search, GraduationCap, Users, UserX, UserCheck, UserMinus } from 'lucide-react';
 
 export default function StudentSearch() {
     const [searchTerm, setSearchTerm] = useState('');
     const [students, setStudents] = useState([]);
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState('');
+    const [statusFilter, setStatusFilter] = useState('activo'); // 'all', 'activo', 'retirado'
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -46,14 +47,40 @@ export default function StudentSearch() {
         loadStudents();
     }, []);
 
+    const handleToggleStatus = async (e, student) => {
+        e.stopPropagation();
+        const currentStatus = student.status === 'retirado' ? 'retirado' : 'activo';
+        const newStatus = currentStatus === 'retirado' ? 'activo' : 'retirado';
+        
+        const displayName = student.lastName && student.firstName ? `${student.lastName} ${student.firstName}` : student.name;
+        const confirmMsg = newStatus === 'retirado' 
+            ? `¿Confirmas marcar a ${displayName} como RETIRADO?\n\nSus notas y boletines permanecerán 100% intactos para certificados, pero no aparecerá en estadísticas institucionales ni rankings.`
+            : `¿Confirmas REACTIVAR a ${displayName} como Alumno Activo?`;
+
+        if (window.confirm(confirmMsg)) {
+            try {
+                await updateDoc(doc(db, 'students', student.id), { status: newStatus });
+                setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: newStatus } : s));
+            } catch (err) {
+                console.error("Error al cambiar estado:", err);
+                alert("Error al actualizar el estado en Firestore.");
+            }
+        }
+    };
+
     // Filtrar por curso seleccionado y término de búsqueda
     const courseStudents = students.filter(s => s.grade === selectedCourse);
     
     const filtered = courseStudents
-        .filter(s =>
-            s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            s.id_code.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        .filter(s => {
+            const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                s.id_code.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const isRetirado = s.status === 'retirado';
+            if (statusFilter === 'activo') return matchesSearch && !isRetirado;
+            if (statusFilter === 'retirado') return matchesSearch && isRetirado;
+            return matchesSearch;
+        })
         .sort((a, b) => {
             const getSortKey = (student) => {
                 if (student.lastName && student.firstName) {
@@ -76,7 +103,7 @@ export default function StudentSearch() {
                 <h2 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
                     <GraduationCap className="text-indigo-600" size={28} /> Búsqueda y Registro de Alumnos
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">Selecciona un curso para ver sus estudiantes y registrar calificaciones, asistencia o anotaciones.</p>
+                <p className="text-xs text-gray-500 mt-1">Selecciona un curso para ver sus estudiantes, registrar novedades o marcar estado (Activo / Retirado).</p>
             </div>
 
             {/* Selector de Cursos (Tabs) */}
@@ -84,7 +111,7 @@ export default function StudentSearch() {
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cursos Disponibles</label>
                 <div className="flex flex-wrap gap-2">
                     {courses.map(course => {
-                        const count = students.filter(s => s.grade === course).length;
+                        const count = students.filter(s => s.grade === course && s.status !== 'retirado').length;
                         const isSelected = selectedCourse === course;
                         return (
                             <button
@@ -126,46 +153,82 @@ export default function StudentSearch() {
                             />
                             <Search className="absolute left-3.5 top-3.5 text-gray-400" size={18} />
                         </div>
-                        <div className="text-xs text-gray-400 font-semibold shrink-0 flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
-                            <Users size={14} className="text-gray-500" /> Mostrando {filtered.length} de {courseStudents.length} alumnos
+
+                        {/* Filtro de Estado: Activos / Retirados / Todos */}
+                        <div className="flex items-center bg-gray-100 p-1 rounded-2xl border border-gray-200/60 shrink-0 text-xs font-bold">
+                            <button
+                                onClick={() => setStatusFilter('activo')}
+                                className={`px-3 py-1.5 rounded-xl transition ${statusFilter === 'activo' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                🟢 Activos ({courseStudents.filter(s => s.status !== 'retirado').length})
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('retirado')}
+                                className={`px-3 py-1.5 rounded-xl transition ${statusFilter === 'retirado' ? 'bg-white text-rose-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                🔴 Retirados ({courseStudents.filter(s => s.status === 'retirado').length})
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('all')}
+                                className={`px-3 py-1.5 rounded-xl transition ${statusFilter === 'all' ? 'bg-white text-indigo-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Todos ({courseStudents.length})
+                            </button>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {loading ? (
                             <p className="text-sm text-gray-500">Cargando listado oficial...</p>
-                        ) : filtered.map(student => (
-                            <div
-                                key={student.id}
-                                onClick={() => navigate(`/teacher/log/${student.id}`)}
-                                className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-200 cursor-pointer flex justify-between items-center transition group"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-2xl overflow-hidden bg-indigo-50 border border-indigo-100/50 flex items-center justify-center shrink-0">
-                                        {student.photo_url ? (
-                                            <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-indigo-600 font-extrabold text-sm">{student.name.charAt(0)}</span>
-                                        )}
-                                    </div>
-                                    <div>
-                                         <p className="font-bold text-gray-800 group-hover:text-indigo-600 transition text-sm">
-                                             {student.lastName && student.firstName 
-                                                 ? `${student.lastName} ${student.firstName}` 
-                                                 : student.name}
-                                         </p>
-                                        <p className="text-[10px] font-mono text-gray-400 mt-0.5">{student.id_code}</p>
-                                    </div>
+                        ) : filtered.map(student => {
+                            const isRetirado = student.status === 'retirado';
+                            return (
+                                <div
+                                    key={student.id}
+                                    onClick={() => navigate(`/teacher/log/${student.id}`)}
+                                    className={`p-4 rounded-2xl border shadow-sm hover:shadow-md transition cursor-pointer flex justify-between items-center group relative ${
+                                        isRetirado ? 'bg-rose-50/30 border-rose-200' : 'bg-white border-gray-100 hover:border-indigo-200'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-12 h-12 rounded-2xl overflow-hidden border flex items-center justify-center shrink-0 ${
+                                            isRetirado ? 'bg-rose-100 border-rose-200' : 'bg-indigo-50 border-indigo-100/50'
+                                        }`}>
+                                            {student.photo_url ? (
+                                                <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className={`font-extrabold text-sm ${isRetirado ? 'text-rose-600' : 'text-indigo-600'}`}>
+                                                    {student.name.charAt(0)}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-gray-800 group-hover:text-indigo-600 transition text-sm">
+                                                    {student.lastName && student.firstName 
+                                                        ? `${student.lastName} ${student.firstName}` 
+                                                        : student.name}
+                                                </p>
+                                                {isRetirado && (
+                                                    <span className="text-[9px] bg-rose-100 text-rose-700 font-extrabold px-2 py-0.5 rounded-full border border-rose-200">
+                                                        RETIRADO
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] font-mono text-gray-400 mt-0.5">{student.id_code}</p>
+                                        </div>
+                                                                  <div className="flex items-center gap-2">
+                                        <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1.5 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition">
+                                            Gestionar
+                                        </span>
+                                    </div>         </div>
                                 </div>
-                                <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-indigo-600 hover:text-white transition">
-                                    Gestionar Alumno
-                                </span>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {!loading && filtered.length === 0 && (
                             <div className="col-span-full text-center text-gray-500 py-10 bg-white rounded-2xl border border-dashed">
-                                No se encontraron alumnos con ese nombre en este curso.
+                                No se encontraron alumnos {statusFilter === 'retirado' ? 'retirados' : 'activos'} en este curso.
                             </div>
                         )}
                     </div>

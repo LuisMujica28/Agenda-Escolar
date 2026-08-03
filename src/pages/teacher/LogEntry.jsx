@@ -334,6 +334,7 @@ export default function LogEntry() {
                                     <option value="Ed Religiosa y Moral">Ed Religiosa y Moral</option>
                                     <option value="Tecnología e Informática">Tecnología e Informática</option>
                                     <option value="Español y Literatura">Español y Literatura</option>
+                                    <option value="Geometría">Geometría</option>
                                     <option value="Inglés">Inglés</option>
                                     <option value="Matemáticas">Matemáticas</option>
                                 </select>
