@@ -195,54 +195,47 @@ export default function PrintConsolidado() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 py-6 px-4 flex flex-col items-center select-none overflow-y-auto no-print-bg">
-            {/* Estilos para impresión en tamaño Oficio Horizontal (33cm x 21.6cm) */}
+        <div className="min-h-screen bg-slate-100 py-6 px-4 flex flex-col items-center select-none no-print-bg">
+            {/* Estilos específicos de impresión (Formato Oficio Horizontal: 33cm x 21.6cm) */}
             <style>{`
                 @media print {
-                    header, aside, .no-print, .no-print-area {
+                    header, sidebar, aside, nav, .no-print {
                         display: none !important;
                     }
                     
-                    body {
+                    body, html {
                         background-color: white !important;
                         margin: 0 !important;
                         padding: 0 !important;
+                        height: auto !important;
+                        width: 33cm !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                     
                     .no-print-bg {
                         background: white !important;
                         padding: 0 !important;
+                        margin: 0 !important;
                     }
                     
                     @page {
-                        size: 33cm 21.6cm;
+                        size: 33cm 21.6cm landscape;
                         margin: 0;
-                    }
-                    
-                    html, body {
-                        width: 33cm !important;
-                        height: 21.6cm !important;
-                        max-height: 21.6cm !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        overflow: hidden !important;
                     }
 
                     .no-print-scroll {
                         width: 33cm !important;
-                        height: 20.2cm !important;
-                        max-height: 20.2cm !important;
+                        height: auto !important;
                         margin: 0 auto !important;
                         padding: 0 !important;
-                        overflow: hidden !important;
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
+                        overflow: visible !important;
                     }
 
                     .printable-consolidado {
                         width: 33cm !important;
-                        height: 20.2cm !important;
-                        max-height: 20.2cm !important;
+                        height: 21.6cm !important;
+                        max-height: 21.6cm !important;
                         margin: 0 auto !important;
                         padding: 0.35cm 0.45cm 0.3cm 1.45cm !important;
                         box-sizing: border-box !important;
@@ -250,10 +243,17 @@ export default function PrintConsolidado() {
                         box-shadow: none !important;
                         background: white !important;
                         color: black !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
+                        page-break-after: always !important;
+                        break-after: page !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                         overflow: hidden !important;
                         position: relative !important;
+                    }
+
+                    .printable-consolidado:last-of-type, .printable-consolidado:last-child {
+                        page-break-after: auto !important;
+                        break-after: auto !important;
                     }
 
                     .page-border {
@@ -262,29 +262,6 @@ export default function PrintConsolidado() {
                         left: 0.45cm !important;
                         right: 0.35cm !important;
                         border: 2px double #334155 !important;
-                    }
-                }
-
-                .printable-consolidado {
-                    width: 33cm;
-                    height: 21.6cm;
-                    margin: 0 auto;
-                    background-color: white;
-                    padding: 0.45cm 0.5cm 0.4cm 1.45cm;
-                    border: 1px solid #cbd5e1;
-                    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-                    position: relative;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                    overflow: hidden;
-                    flex-shrink: 0;
-                }
-                @media screen {
-                    .no-print-scroll {
-                        width: 100%;
-                        overflow-x: auto;
-                        padding-bottom: 16px;
                     }
                 }
             `}</style>
@@ -304,7 +281,7 @@ export default function PrintConsolidado() {
                             <h2 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
                                 <Award size={18} className="text-indigo-600" /> Consolidado de Calificaciones y Ranking Académico
                             </h2>
-                            <p className="text-[10px] text-gray-500">Formato Oficial INAS: Lista de mejor a peor resultado, periodos digitados arriba y promedio abajo.</p>
+                            <p className="text-[10px] text-gray-500">Formato Oficial INAS: 22 alumnos exactos por hoja (sin cortes de fila).</p>
                         </div>
                     </div>
 
@@ -358,203 +335,211 @@ export default function PrintConsolidado() {
                 </div>
             </div>
 
-            {/* Hoja de Impresión Consolidada (33cm x 22cm Horizontal) */}
-            <div className="no-print-scroll w-full flex justify-center">
-                <div className="printable-consolidado bg-white border border-slate-350 shadow-2xl relative flex flex-col justify-between overflow-hidden shrink-0">
-                    {/* Borde Oficial Doble */}
-                    <div className="absolute inset-[0.25cm] border-[3px] border-slate-700 border-double rounded-lg pointer-events-none page-border"></div>
+            {/* Hojas de Impresión Consolidadas (Paginadas exactamente en bloques de 22 alumnos) */}
+            <div className="no-print-scroll w-full flex flex-col items-center gap-8">
+                {(() => {
+                    const ROWS_PER_PAGE = 22;
+                    const studentPages = [];
+                    if (rankedStudents.length === 0) {
+                        studentPages.push([]);
+                    } else {
+                        for (let i = 0; i < rankedStudents.length; i += ROWS_PER_PAGE) {
+                            studentPages.push(rankedStudents.slice(i, i + ROWS_PER_PAGE));
+                        }
+                    }
 
-                    <div className="relative z-10 flex flex-col h-full justify-between">
-                        {/* Header Institucional */}
-                        <div>
-                            <div className="flex items-center justify-between border-b pb-2 border-slate-300">
-                                {/* Escudo */}
-                                <div className="w-[1.4cm] h-[1.4cm] shrink-0 flex items-center justify-center">
-                                    {logoError ? (
-                                        <svg viewBox="0 0 100 100" className="w-full h-full fill-indigo-900 text-indigo-950">
-                                            <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="3" />
-                                            <path d="M50 15 L20 40 L30 75 L70 75 L80 40 Z" fill="none" stroke="currentColor" strokeWidth="2.5" />
-                                        </svg>
-                                    ) : (
-                                        <img 
-                                            src="/Escudo.png" 
-                                            alt="Escudo" 
-                                            className="w-full h-full object-contain" 
-                                            onError={() => setLogoError(true)} 
-                                        />
-                                    )}
-                                </div>
+                    return studentPages.map((pageStudents, pageIndex) => (
+                        <div key={pageIndex} className="printable-consolidado bg-white border border-slate-350 shadow-2xl relative flex flex-col justify-between overflow-hidden shrink-0">
+                            {/* Borde Oficial Doble */}
+                            <div className="absolute inset-[0.25cm] border-[3px] border-slate-700 border-double rounded-lg pointer-events-none page-border"></div>
 
-                                {/* Textos del Colegio */}
-                                <div className="flex-1 text-center">
-                                    <h1 className="text-sm font-black text-slate-900 tracking-wider uppercase leading-tight">
-                                        Instituto Nueva América de Suba — INAS
-                                    </h1>
-                                    <h2 className="text-[11px] font-black text-indigo-950 tracking-wider uppercase mt-0.5 leading-none">
-                                        Consolidado de Evaluaciones y Control Académico de Estudiantes
-                                    </h2>
-                                    <p className="text-[8.5px] text-slate-500 font-medium mt-0.5">
-                                        Resolución de Aprobación SED N° 110254 | NIT: 830.123.456-7 | Año Lectivo 2026
-                                    </p>
-                                    <p className="text-[8px] font-semibold italic text-indigo-900 mt-0.5">
-                                        “Ciudadanos productivos desde la construcción de proyectos de vida con calidad y responsabilidad ambiental”
-                                    </p>
-                                </div>
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                {/* Header Institucional */}
+                                <div>
+                                    <div className="flex items-center justify-between border-b pb-1.5 border-slate-300">
+                                        {/* Escudo */}
+                                        <div className="w-[1.3cm] h-[1.3cm] shrink-0 flex items-center justify-center">
+                                            {logoError ? (
+                                                <svg viewBox="0 0 100 100" className="w-full h-full fill-indigo-900 text-indigo-950">
+                                                    <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="3" />
+                                                    <path d="M50 15 L20 40 L30 75 L70 75 L80 40 Z" fill="none" stroke="currentColor" strokeWidth="2.5" />
+                                                </svg>
+                                            ) : (
+                                                <img 
+                                                    src="/Escudo.png" 
+                                                    alt="Escudo" 
+                                                    className="w-full h-full object-contain" 
+                                                    onError={() => setLogoError(true)} 
+                                                />
+                                            )}
+                                        </div>
 
-                                {/* Metadatos */}
-                                <div className="text-right text-[8.5px] leading-tight font-bold text-slate-500 border border-slate-200 bg-slate-50 p-2 rounded-lg">
-                                    <p>Curso: <span className="text-slate-900 font-black">{selectedCourse === 'ALL' ? 'Todos los Cursos' : `Grado ${selectedCourse}`}</span></p>
-                                    <p>Periodo: <span className="text-slate-900 font-black">{selectedPeriod === 'ALL' ? 'Acumulado' : `Periodo ${selectedPeriod}`}</span></p>
-                                    <p>Fecha: <span className="text-slate-800">{new Date().toLocaleDateString()}</span></p>
-                                </div>
-                            </div>
+                                        {/* Textos del Colegio */}
+                                        <div className="flex-1 text-center">
+                                            <h1 className="text-xs font-black text-slate-900 tracking-wider uppercase leading-tight">
+                                                Instituto Nueva América de Suba — INAS
+                                            </h1>
+                                            <h2 className="text-[10px] font-black text-indigo-950 tracking-wider uppercase mt-0.5 leading-none">
+                                                Consolidado de Evaluaciones y Control Académico de Estudiantes
+                                            </h2>
+                                            <p className="text-[8px] text-slate-500 font-medium mt-0.5">
+                                                Resolución de Aprobación SED N° 110254 | NIT: 830.123.456-7 | Año Lectivo 2026
+                                            </p>
+                                            <p className="text-[7.5px] font-semibold italic text-indigo-900 mt-0.5">
+                                                “Ciudadanos productivos desde la construcción de proyectos de vida con calidad y responsabilidad ambiental”
+                                            </p>
+                                        </div>
 
-                            {/* Tabla Principal del Consolidado Exacta al Formato Físico */}
-                            <div className="mt-2">
-                                <table className="w-full text-left text-[8.5px] border-collapse border-2 border-slate-800 table-fixed">
-                                    <thead>
-                                        <tr className="bg-slate-900 text-white uppercase text-[8px] tracking-tight text-center">
-                                            <th className="border border-slate-700 w-[3%] font-black py-1.5">N°</th>
-                                            <th className="border border-slate-700 text-left px-1.5 w-[16%] font-black truncate">ALUMNOS (Nombres Completo)</th>
-                                            
-                                            {/* Columnas de Asignaturas Oficiales */}
-                                            {SUBJECTS_LIST.map(subj => (
-                                                <th key={subj.key} className="border border-slate-700 font-extrabold px-0.5 py-1 text-[7px] leading-tight text-center bg-slate-850">
-                                                    <div className="truncate">{subj.short}</div>
-                                                </th>
-                                            ))}
+                                        {/* Metadatos */}
+                                        <div className="text-right text-[8px] leading-tight font-bold text-slate-500 border border-slate-200 bg-slate-50 p-1.5 rounded-lg">
+                                            <p>Curso: <span className="text-slate-900 font-black">{selectedCourse === 'ALL' ? 'Todos los Cursos' : `Grado ${selectedCourse}`}</span></p>
+                                            <p>Periodo: <span className="text-slate-900 font-black">{selectedPeriod === 'ALL' ? 'Acumulado' : `Periodo ${selectedPeriod}`}</span></p>
+                                            <p>Página: <span className="text-indigo-900 font-black">{pageIndex + 1} de {studentPages.length}</span></p>
+                                        </div>
+                                    </div>
 
-                                            <th className="border border-slate-700 w-[5%] font-black bg-indigo-950 text-indigo-100 text-[8px]">PROM. GRAL</th>
-                                            <th className="border border-slate-700 w-[5%] font-black bg-rose-950 text-rose-100 text-[7.5px]">Mat. Per.</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rankedStudents.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={4 + SUBJECTS_LIST.length} className="py-8 text-center text-slate-400 text-xs font-bold">
-                                                    No hay datos registrados para el filtro seleccionado.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            rankedStudents.map((st) => {
-                                                const isTop3 = st.rank <= 3;
-                                                const hasFailures = st.failedSubjectsCount > 0;
+                                    {/* Tabla Principal del Consolidado (22 alumnos exactos por página) */}
+                                    <div className="mt-1">
+                                        <table className="w-full text-left text-[8px] border-collapse border-2 border-slate-800 table-fixed">
+                                            <thead>
+                                                <tr className="bg-slate-900 text-white uppercase text-[7.5px] tracking-tight text-center">
+                                                    <th className="border border-slate-700 w-[3%] font-black py-1">N°</th>
+                                                    <th className="border border-slate-700 text-left px-1.5 w-[16%] font-black truncate">ALUMNOS (Nombres Completo)</th>
+                                                    
+                                                    {/* Columnas de Asignaturas Oficiales */}
+                                                    {SUBJECTS_LIST.map(subj => (
+                                                        <th key={subj.key} className="border border-slate-700 font-extrabold px-0.5 py-0.5 text-[6.5px] leading-tight text-center bg-slate-850">
+                                                            <div className="truncate">{subj.short}</div>
+                                                        </th>
+                                                    ))}
 
-                                                return (
-                                                    <tr key={st.id} className={`text-center font-semibold border-b border-slate-300 text-[8.5px] ${
-                                                        isTop3 ? 'bg-amber-50/40' : 'hover:bg-slate-50/40'
-                                                    }`}>
-                                                        {/* N° / Puesto en Ranking */}
-                                                        <td className={`border border-slate-300 font-black text-[9px] ${
-                                                            st.rank === 1 ? 'bg-amber-100 text-amber-900' :
-                                                            st.rank === 2 ? 'bg-slate-200 text-slate-800' :
-                                                            st.rank === 3 ? 'bg-amber-50 text-amber-800' : 'text-slate-700'
-                                                        }`}>
-                                                            {st.rank}
-                                                        </td>
-
-                                                        {/* Alumno (Apellidos y Nombres) */}
-                                                        <td className="border border-slate-300 text-left px-1.5 font-bold uppercase truncate text-slate-900 text-[8.5px]">
-                                                            {st.fullName}
-                                                        </td>
-
-                                                        {/* Casilla por Materia: Arriba Notas Periodos, Abajo Promedio Centrado */}
-                                                        {SUBJECTS_LIST.map(subj => {
-                                                            const breakdown = st.subjectsBreakdown[subj.key];
-                                                            const avg = breakdown?.avg;
-                                                            const isLoss = avg !== null && avg < 75;
-
-                                                            // Colección de periodos digitados (P1, P2, P3, P4)
-                                                            const periodDigits = [
-                                                                breakdown?.p1 !== null && breakdown?.p1 !== undefined ? breakdown.p1 : null,
-                                                                breakdown?.p2 !== null && breakdown?.p2 !== undefined ? breakdown.p2 : null,
-                                                                breakdown?.p3 !== null && breakdown?.p3 !== undefined ? breakdown.p3 : null,
-                                                                breakdown?.p4 !== null && breakdown?.p4 !== undefined ? breakdown.p4 : null
-                                                            ].filter(val => val !== null);
-
-                                                            return (
-                                                                <td key={subj.key} className={`border border-slate-300 p-0.5 align-middle ${
-                                                                    isLoss ? 'bg-rose-50/90' : ''
-                                                                }`}>
-                                                                    {avg !== null ? (
-                                                                        <div className="flex flex-col justify-between items-center h-full py-0.5">
-                                                                            {/* Arriba: Notas de cada periodo lado a lado */}
-                                                                            <div className="flex items-center justify-center gap-1.5 text-[7.5px] font-semibold text-slate-700 w-full leading-none">
-                                                                                {periodDigits.map((val, idx) => (
-                                                                                    <span key={idx}>{val}</span>
-                                                                                ))}
-                                                                            </div>
-                                                                            {/* Abajo: Promedio acumulado centrado y destacado */}
-                                                                            <div className={`font-black text-[9px] mt-0.5 border-t border-slate-200/80 w-full pt-0.5 text-center leading-none ${
-                                                                                isLoss ? 'text-rose-700 font-black' : 'text-slate-950 font-extrabold'
-                                                                            }`}>
-                                                                                {Math.round(avg)}
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-slate-300 font-normal text-[8px]">-</span>
-                                                                    )}
-                                                                </td>
-                                                            );
-                                                        })}
-
-                                                        {/* Promedio General */}
-                                                        <td className="border border-slate-300 font-black text-[9.5px] bg-indigo-50/60 text-indigo-950">
-                                                            {st.overallAvg.toFixed(1)}
-                                                        </td>
-
-                                                        {/* Materias Perdidas (Mat. Per.) */}
-                                                        <td className={`border border-slate-300 font-black text-[9.5px] ${
-                                                            hasFailures 
-                                                                ? 'bg-rose-100 text-rose-800 font-black' 
-                                                                : 'bg-emerald-50/40 text-emerald-700 font-bold'
-                                                        }`}>
-                                                            {hasFailures ? (
-                                                                <span className="text-rose-700 font-black">
-                                                                    {st.failedSubjectsCount}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-slate-700 font-bold">0</span>
-                                                            )}
+                                                    <th className="border border-slate-700 w-[5%] font-black bg-indigo-950 text-indigo-100 text-[7.5px]">PROM. GRAL</th>
+                                                    <th className="border border-slate-700 w-[5%] font-black bg-rose-950 text-rose-100 text-[7px]">Mat. Per.</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {pageStudents.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={4 + SUBJECTS_LIST.length} className="py-6 text-center text-slate-400 text-xs font-bold">
+                                                            No hay datos registrados para el filtro seleccionado.
                                                         </td>
                                                     </tr>
-                                                );
-                                            })
-                                        )}
-                                    </tbody>
-                                </table>
+                                                ) : (
+                                                    pageStudents.map((st) => {
+                                                        const isTop3 = st.rank <= 3;
+                                                        const hasFailures = st.failedSubjectsCount > 0;
+
+                                                        return (
+                                                            <tr key={st.id} className={`text-center font-semibold border-b border-slate-300 text-[8px] ${
+                                                                isTop3 ? 'bg-amber-50/40' : 'hover:bg-slate-50/40'
+                                                            }`}>
+                                                                {/* N° / Puesto en Ranking */}
+                                                                <td className={`border border-slate-300 font-black text-[8px] py-0.5 ${
+                                                                    st.rank === 1 ? 'bg-amber-100 text-amber-900' :
+                                                                    st.rank === 2 ? 'bg-slate-200 text-slate-800' :
+                                                                    st.rank === 3 ? 'bg-amber-50 text-amber-800' : 'text-slate-700'
+                                                                }`}>
+                                                                    {st.rank}
+                                                                </td>
+
+                                                                {/* Alumno (Apellidos y Nombres) */}
+                                                                <td className="border border-slate-300 text-left px-1.5 font-bold uppercase truncate text-slate-900 text-[8px] py-0.5">
+                                                                    {st.fullName}
+                                                                </td>
+
+                                                                {/* Casilla por Materia: Arriba Notas Periodos, Abajo Promedio Centrado */}
+                                                                {SUBJECTS_LIST.map(subj => {
+                                                                    const breakdown = st.subjectsBreakdown[subj.key];
+                                                                    const avg = breakdown?.avg;
+                                                                    const isLoss = avg !== null && avg < 75;
+
+                                                                    const periodDigits = [
+                                                                        breakdown?.p1 !== null && breakdown?.p1 !== undefined ? breakdown.p1 : null,
+                                                                        breakdown?.p2 !== null && breakdown?.p2 !== undefined ? breakdown.p2 : null,
+                                                                        breakdown?.p3 !== null && breakdown?.p3 !== undefined ? breakdown.p3 : null,
+                                                                        breakdown?.p4 !== null && breakdown?.p4 !== undefined ? breakdown.p4 : null
+                                                                    ].filter(val => val !== null);
+
+                                                                    return (
+                                                                        <td key={subj.key} className={`border border-slate-300 p-0.5 align-middle ${
+                                                                            isLoss ? 'bg-rose-50/90' : ''
+                                                                        }`}>
+                                                                            {avg !== null ? (
+                                                                                <div className="flex flex-col justify-between items-center h-full py-0">
+                                                                                    <div className="flex items-center justify-center gap-1 text-[7px] font-semibold text-slate-700 w-full leading-none">
+                                                                                        {periodDigits.map((val, idx) => (
+                                                                                            <span key={idx}>{val}</span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                    <div className={`font-black text-[8.5px] border-t border-slate-200/80 w-full text-center leading-none mt-0.5 ${
+                                                                                        isLoss ? 'text-rose-700 font-black' : 'text-slate-950 font-extrabold'
+                                                                                    }`}>
+                                                                                        {Math.round(avg)}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span className="text-slate-300 font-normal text-[7.5px]">-</span>
+                                                                            )}
+                                                                        </td>
+                                                                    );
+                                                                })}
+
+                                                                {/* Promedio General */}
+                                                                <td className="border border-slate-300 font-black text-[8.5px] bg-indigo-50/60 text-indigo-950 py-0.5">
+                                                                    {st.overallAvg.toFixed(1)}
+                                                                </td>
+
+                                                                {/* Materias Perdidas (Mat. Per.) */}
+                                                                <td className={`border border-slate-300 font-black text-[8.5px] py-0.5 ${
+                                                                    hasFailures 
+                                                                        ? 'bg-rose-100 text-rose-800 font-black' 
+                                                                        : 'bg-emerald-50/40 text-emerald-700 font-bold'
+                                                                }`}>
+                                                                    {hasFailures ? (
+                                                                        <span className="text-rose-700 font-black">
+                                                                            {st.failedSubjectsCount}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-slate-700 font-bold">0</span>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Pie de Página y Firmas */}
+                                <div className="mt-1 border-t pt-1 border-slate-300 grid grid-cols-3 gap-6 text-[8px] font-semibold text-slate-600">
+                                    <div>
+                                        <p className="font-extrabold text-slate-800 text-[8.5px] uppercase">Convenciones e Indicadores:</p>
+                                        <p className="text-[7.5px] text-slate-500 leading-tight">
+                                            • Arriba en casilla: Calificación digitada de cada periodo (P1, P2...). | Abajo: Promedio acumulado.
+                                        </p>
+                                        <p className="text-[7.5px] text-slate-500 leading-tight">
+                                            • Mat. Per. = Número de asignaturas con promedio acumulado inferior a 75 pts.
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col items-center justify-end text-center">
+                                        <div className="border-t border-slate-400 w-[5cm] mb-0.5"></div>
+                                        <span className="uppercase text-slate-900 font-extrabold text-[8.5px]">COORDINACIÓN ACADÉMICA</span>
+                                        <span className="text-[7px] text-slate-400">Verificación Oficial INAS</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center justify-end text-center">
+                                        <div className="border-t border-slate-400 w-[5cm] mb-0.5"></div>
+                                        <span className="uppercase text-slate-900 font-extrabold text-[8.5px]">RECTORÍA GENERAL</span>
+                                        <span className="text-[7px] text-slate-400">Firma y Sello del Plantel</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Pie de Página y Firmas */}
-                        <div className="mt-2.5 border-t pt-2 border-slate-300 grid grid-cols-3 gap-6 text-[8.5px] font-semibold text-slate-600">
-                            <div>
-                                <p className="font-extrabold text-slate-800 text-[9.5px] uppercase">Convenciones e Indicadores:</p>
-                                <p className="text-[8px] text-slate-500">
-                                    • Arriba en casilla: Calificación digitada de cada periodo (P1, P2...).
-                                </p>
-                                <p className="text-[8px] text-slate-500">
-                                    • Abajo en casilla: Promedio acumulado de la asignatura.
-                                </p>
-                                <p className="text-[8px] text-slate-500">
-                                    • Mat. Per. = Número de asignaturas con promedio acumulado inferior a 75 pts.
-                                </p>
-                            </div>
-
-                            <div className="flex flex-col items-center justify-end text-center">
-                                <div className="border-t border-slate-400 w-[5.5cm] mb-1"></div>
-                                <span className="uppercase text-slate-900 font-extrabold text-[9.5px]">COORDINACIÓN ACADÉMICA</span>
-                                <span className="text-[8px] text-slate-400">Verificación Oficial INAS</span>
-                            </div>
-
-                            <div className="flex flex-col items-center justify-end text-center">
-                                <div className="border-t border-slate-400 w-[5.5cm] mb-1"></div>
-                                <span className="uppercase text-slate-900 font-extrabold text-[9.5px]">RECTORÍA GENERAL</span>
-                                <span className="text-[8px] text-slate-400">Firma y Sello del Plantel</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    ));
+                })()}
             </div>
         </div>
     );
