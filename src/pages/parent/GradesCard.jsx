@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useParams } from 'react-router-dom';
 import { Loader2, Award, BookOpen, AlertCircle, CheckCircle2 } from 'lucide-react';
 
+import { getStudentForUser } from '../../lib/getStudentForUser';
+
 export default function GradesCard() {
     const { studentId } = useParams();
     const { currentUser } = useAuth();
@@ -31,14 +33,8 @@ export default function GradesCard() {
                         studentData = { id: sDoc.id, ...sDoc.data() };
                     }
                 } else {
-                    // 1. Obtener el estudiante del padre
-                    const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                    const sSnap = await getDocs(qStudent);
-
-                    if (!sSnap.empty) {
-                        const studentDoc = sSnap.docs[0];
-                        studentData = { id: studentDoc.id, ...studentDoc.data() };
-                    }
+                    // 1. Obtener el estudiante correspondiente al usuario activo
+                    studentData = await getStudentForUser(db, currentUser);
                 }
 
                 if (!studentData) {

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import NewsCard from '../../components/NewsCard';
 import { Loader2 } from 'lucide-react';
 import { MOCK_NEWS } from '../../lib/mockData';
+import { getStudentForUser } from '../../lib/getStudentForUser';
 
 export default function NewsFeed() {
     const [newsList, setNewsList] = useState([]);
@@ -26,15 +27,11 @@ export default function NewsFeed() {
 
                 // Cargar hijo para filtrar
                 let activeStudent = null;
-                if (currentUser?.uid?.startsWith('fake-')) {
+                if (currentUser.uid.startsWith('fake-')) {
                     const { MOCK_STUDENTS } = await import('../../lib/mockData');
                     activeStudent = MOCK_STUDENTS[0];
                 } else {
-                    const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                    const sSnap = await getDocs(qStudent);
-                    if (!sSnap.empty) {
-                        activeStudent = { id: sSnap.docs[0].id, ...sSnap.docs[0].data() };
-                    }
+                    activeStudent = await getStudentForUser(db, currentUser);
                 }
 
                 loadedCircs = loadedCircs.filter(c => {

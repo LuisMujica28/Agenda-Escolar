@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
+import { getStudentForUser } from '../../lib/getStudentForUser';
 
 export default function DigitalID() {
     const { currentUser } = useAuth();
@@ -26,18 +27,16 @@ export default function DigitalID() {
             }
 
             try {
-                const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                const sSnap = await getDocs(qStudent);
+                const activeStudent = await getStudentForUser(db, currentUser);
 
-                if (!sSnap.empty) {
-                    const studentData = sSnap.docs[0].data();
+                if (activeStudent) {
                     setStudent({
-                        name: studentData.name,
-                        firstName: studentData.firstName || '',
-                        lastName: studentData.lastName || '',
-                        grade: studentData.grade,
-                        id_code: studentData.id_code || 'ST-N/A',
-                        photo_url: studentData.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${studentData.name}`
+                        name: activeStudent.name || `${activeStudent.firstName || ''} ${activeStudent.lastName || ''}`,
+                        firstName: activeStudent.firstName || '',
+                        lastName: activeStudent.lastName || '',
+                        grade: activeStudent.grade,
+                        id_code: activeStudent.id_code || activeStudent.code || 'ST-N/A',
+                        photo_url: activeStudent.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${activeStudent.name || 'Student'}`
                     });
                 } else {
                     // Fallback

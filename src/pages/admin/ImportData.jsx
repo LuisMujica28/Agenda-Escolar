@@ -396,23 +396,44 @@ export default function ImportData() {
                     const qStudent = query(studentsRef, where('id_code', '==', row.codigo));
                     const sSnap = await getDocs(qStudent);
 
-                    let studentId;
-                    const words = row.nombre.trim().split(/\s+/);
-                    let firstName = row.nombre;
+                    let rawName = (row.nombre || '').trim();
+                    let rawLastName = (row['last_name_[required]'] || row.last_name || row.apellidos || '').trim();
+                    let rawFirstName = (row['first_name_[required]'] || row.first_name || row.nombres || '').trim();
+
+                    let firstName = rawFirstName;
                     let lastName = '';
-                    if (words.length === 2) {
-                        firstName = words[0];
-                        lastName = words[1];
-                    } else if (words.length >= 3) {
-                        firstName = words.slice(0, -2).join(' ');
-                        lastName = words.slice(-2).join(' ');
+                    let secondLastName = '';
+
+                    if (rawLastName) {
+                        const parts = rawLastName.split(/\s+/);
+                        lastName = parts[0] || '';
+                        secondLastName = parts.slice(1).join(' ') || '';
+                    }
+
+                    if (!lastName && rawName) {
+                        const words = rawName.split(/\s+/);
+                        if (words.length >= 4) {
+                            lastName = words[0];
+                            secondLastName = words[1];
+                            firstName = words.slice(2).join(' ');
+                        } else if (words.length === 3) {
+                            lastName = words[0];
+                            secondLastName = words[1];
+                            firstName = words[2];
+                        } else if (words.length === 2) {
+                            lastName = words[0];
+                            firstName = words[1];
+                        } else {
+                            firstName = rawName;
+                        }
                     }
 
                     if (sSnap.empty) {
                         const docRef = await addDoc(studentsRef, {
-                            name: row.nombre,
+                            name: rawName || `${firstName} ${lastName} ${secondLastName}`.trim(),
                             firstName: firstName.toUpperCase(),
                             lastName: lastName.toUpperCase(),
+                            secondLastName: secondLastName.toUpperCase(),
                             grade: row.curso,
                             id_code: row.codigo,
                             photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(firstName)}`,
@@ -423,9 +444,13 @@ export default function ImportData() {
                     } else {
                         studentId = sSnap.docs[0].id;
                         await updateDoc(doc(db, 'students', studentId), {
+                            firstName: firstName.toUpperCase(),
+                            lastName: lastName.toUpperCase(),
+                            secondLastName: secondLastName.toUpperCase(),
+                            grade: row.curso,
                             parent_uids: [parentUid]
                         });
-                        addLog(`Estudiante actualizado con acudiente: ${row.nombre}`);
+                        addLog(`Estudiante actualizado con curso ${row.curso} y acudiente: ${row.nombre}`);
                     }
 
                     const gradesRef = collection(db, 'grades');

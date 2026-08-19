@@ -50,28 +50,30 @@ export default function CircularReadersModal({ circular, parentsList, studentsLi
 
     // Helper para mapear qué cursos tiene asociados cada padre a través de sus hijos
     const getParentCourses = (parent) => {
-        // Fallbacks para datos de demostración
-        if (parent.uid === 'demo-parent') return ['10A'];
-        if (parent.uid === 'parent-1') return ['9A'];
-        if (parent.uid === 'parent-2') return ['10B'];
-        if (parent.uid === 'parent-3') return ['9A'];
-        if (parent.uid === 'parent-4') return ['10B'];
+        // Búsqueda real de estudiantes asociados en studentsList
+        const relatedStudents = studentsList.filter(s => {
+            if (s.parent_uids?.includes(parent.uid)) return true;
+            const pEmail = (parent.email || '').toLowerCase().trim();
+            const sEmail = (s.email || '').toLowerCase().trim();
+            const sPEmail = (s.email_padre || '').toLowerCase().trim();
+            if (pEmail && (sEmail === pEmail || sPEmail === pEmail)) return true;
+
+            const uPrefix = pEmail.split('@')[0];
+            const fn = (s.firstName || '').toLowerCase();
+            const ln = (s.lastName || '').toLowerCase();
+            if (uPrefix && fn && ln && uPrefix.startsWith(fn[0]) && uPrefix.includes(ln.split(/\s+/)[0])) {
+                return true;
+            }
+            return false;
+        });
+
+        const grades = Array.from(new Set(relatedStudents.map(s => s.grade).filter(Boolean)));
         
-        // Búsqueda real de estudiantes asociados en Firestore
-        const relatedStudents = studentsList.filter(student => student.parent_uids?.includes(parent.uid));
-        const grades = relatedStudents.map(s => s.grade).filter(Boolean);
-        
-        // Si no tiene asignado curso real en la DB pero su correo nos da pista (p. ej. salarezb@inas.edu.co)
-        // para efectos visuales le asignamos un curso simulado basado en el índice o le dejamos 'Sin Curso'
-        if (grades.length === 0) {
-            // Asignación consistente basada en hash del email/uid
-            const courses = ['10A', '10B', '11A', '9A', '11B'];
-            const charCodeSum = parent.email?.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) || 0;
-            const assignedCourse = courses[charCodeSum % courses.length];
-            return [assignedCourse];
+        if (grades.length > 0) {
+            return grades;
         }
 
-        return grades;
+        return [];
     };
 
     // 2. Extraer todos los cursos únicos disponibles de la institución para el dropdown de filtro

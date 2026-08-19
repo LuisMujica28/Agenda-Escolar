@@ -7,9 +7,10 @@ import {
     Loader2, BookOpen, Calendar as CalendarIcon, ClipboardList, 
     MessageSquare, User, FileText, Award, Star, Bell, 
     ChevronRight, CheckCircle2, AlertTriangle, TrendingUp,
-    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send, UserMinus, UserCheck
+    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send, UserMinus, UserCheck, RefreshCw
 } from 'lucide-react';
 import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS, MOCK_PARENTS } from '../lib/mockData';
+import { getStudentForUser } from '../lib/getStudentForUser';
 import CircularDetailModal from '../components/CircularDetailModal';
 import CircularReadersModal from '../components/CircularReadersModal';
 
@@ -503,6 +504,63 @@ export default function Dashboard() {
         });
     };
 
+    const handleBulkReassignCourse = async (currentCourse) => {
+        const studentsInCourse = adminStudents.filter(s => s.grade === currentCourse);
+        if (studentsInCourse.length === 0) {
+            // Si el curso no tiene alumnos pero la pestaña existe, ofrecemos eliminar el curso vacío
+            if (confirm(`El curso "${currentCourse}" no tiene estudiantes. ¿Deseas eliminar la pestaña "${currentCourse}"?`)) {
+                await handleDeleteCourse(currentCourse);
+            }
+            return;
+        }
+
+        const newCourse = prompt(
+            `Vas a mover ${studentsInCourse.length} estudiantes del curso "${currentCourse}".\n\nIngresa el nombre del nuevo curso destino (ejemplo: 1001):`,
+            '1001'
+        );
+
+        if (!newCourse || !newCourse.trim() || newCourse.trim() === currentCourse) {
+            return;
+        }
+
+        const targetCourse = newCourse.trim().toUpperCase();
+
+        if (!confirm(`¿Confirmas cambiar el curso de ${studentsInCourse.length} estudiantes de "${currentCourse}" a "${targetCourse}"?`)) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const { doc, updateDoc, setDoc, deleteDoc } = await import('firebase/firestore');
+
+            for (const s of studentsInCourse) {
+                if (!s.id.startsWith('st-')) {
+                    await updateDoc(doc(db, 'students', s.id), {
+                        grade: targetCourse
+                    });
+                }
+            }
+
+            // 1. Crear/Asegurar el curso destino en Firestore
+            await setDoc(doc(db, 'courses', targetCourse), { created_at: new Date() }, { merge: true });
+
+            // 2. Eliminar el documento del curso antiguo para que la pestaña 10B desaparezca
+            try {
+                await deleteDoc(doc(db, 'courses', currentCourse));
+            } catch (dErr) {
+                console.warn("No se pudo borrar el curso antiguo de Firestore:", dErr);
+            }
+
+            alert(`✅ ¡Éxito! ${studentsInCourse.length} estudiantes fueron trasladados al curso ${targetCourse} y la pestaña ${currentCourse} fue eliminada.`);
+            window.location.reload();
+        } catch (err) {
+            console.error("Error al reasignar curso masivamente:", err);
+            alert("⚠️ Hubo un error al reasignar el curso: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleOpenCircularsModal = async () => {
         setShowCircularsModal(true);
         setLoadingAllCirculars(true);
@@ -524,11 +582,7 @@ export default function Dashboard() {
             if (userRole === 'parent') {
                 let activeStudent = student;
                 if (!activeStudent) {
-                    const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                    const sSnap = await getDocs(qStudent);
-                    if (!sSnap.empty) {
-                        activeStudent = { id: sSnap.docs[0].id, ...sSnap.docs[0].data() };
-                    }
+                    activeStudent = await getStudentForUser(db, currentUser);
                 }
                 loadedCircs = loadedCircs.filter(c => {
                     if (!c.target_type) return true;
@@ -591,16 +645,7 @@ export default function Dashboard() {
                 }
 
                 if (userRole === 'parent') {
-                    let activeStudent = null;
-                    if (currentUser.uid.startsWith('fake-')) {
-                        activeStudent = MOCK_STUDENTS[0];
-                    } else {
-                        const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                        const sSnap = await getDocs(qStudent);
-                        if (!sSnap.empty) {
-                            activeStudent = { id: sSnap.docs[0].id, ...sSnap.docs[0].data() };
-                        }
-                    }
+                    const activeStudent = await getStudentForUser(db, currentUser);
                     loadedCircs = loadedCircs.filter(c => {
                         if (!c.target_type) return true;
                         if (c.target_type === 'ALL') return true;
@@ -626,27 +671,14 @@ export default function Dashboard() {
                         setLatestLogs(MOCK_LOGS.slice(0, 2));
                     } else {
                         // Cargar estudiante real
-                        const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                        const sSnap = await getDocs(qStudent);
+                        const targetStudentData = await getStudentForUser(db, currentUser);
 
-                        let targetStudentDoc = null;
-                        if (!sSnap.empty) {
-                            targetStudentDoc = sSnap.docs[0];
-                        } else {
-                            // Fallback para cuentas de prueba o padres sin estudiante vinculado explícito
-                            const allStudentsSnap = await getDocs(collection(db, 'students'));
-                            if (!allStudentsSnap.empty) {
-                                targetStudentDoc = allStudentsSnap.docs[0];
-                            }
-                        }
-
-                        if (targetStudentDoc) {
-                            const studentDoc = targetStudentDoc;
-                            const studentData = { id: studentDoc.id, ...studentDoc.data() };
+                        if (targetStudentData) {
+                            const studentData = targetStudentData;
                             setStudent(studentData);
 
                             // Cargar notas para promedio
-                            const qGrades = query(collection(db, 'grades'), where('student_id', '==', studentDoc.id));
+                            const qGrades = query(collection(db, 'grades'), where('student_id', '==', studentData.id));
                             const gSnap = await getDocs(qGrades);
                             const gradesList = gSnap.docs.map(d => Number(d.data().grade));
                             if (gradesList.length > 0) {
@@ -655,7 +687,7 @@ export default function Dashboard() {
                             }
 
                             // Cargar asistencia para tasa
-                            const qAtt = query(collection(db, 'attendance'), where('student_id', '==', studentDoc.id));
+                            const qAtt = query(collection(db, 'attendance'), where('student_id', '==', studentData.id));
                             const aSnap = await getDocs(qAtt);
                             const attList = aSnap.docs.map(d => d.data().status);
                             if (attList.length > 0) {
@@ -679,7 +711,7 @@ export default function Dashboard() {
                             setPendingTasks(pending.slice(0, 3));
 
                             // Cargar logs recientes
-                            const qLogs = query(collection(db, 'observation_logs'), where('student_id', '==', studentDoc.id));
+                            const qLogs = query(collection(db, 'observation_logs'), where('student_id', '==', studentData.id));
                             const lSnap = await getDocs(qLogs);
                             const logsList = lSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                             logsList.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
@@ -937,7 +969,7 @@ export default function Dashboard() {
             </div>
 
             {/* Renderizar según Rol */}
-            {userRole === 'parent' && student && (
+            {userRole === 'parent' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     {/* Columna Principal (Anuncios y Tareas) */}
                     <div className="lg:col-span-2 space-y-6">
@@ -1281,10 +1313,7 @@ export default function Dashboard() {
                                     <Users size={15} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <div className="flex items-center gap-1">
-                                        <p className="text-xs font-black text-slate-700">{totalStudentsCount}</p>
-                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+8%</span>
-                                    </div>
+                                    <p className="text-xs font-black text-slate-700">{totalStudentsCount}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Alumnos totales</p>
                                 </div>
                             </div>
@@ -1295,10 +1324,7 @@ export default function Dashboard() {
                                     <Users size={15} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <div className="flex items-center gap-1">
-                                        <p className="text-xs font-black text-slate-700">{totalUsersCount}</p>
-                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+12%</span>
-                                    </div>
+                                    <p className="text-xs font-black text-slate-700">{totalUsersCount}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Cuentas reg.</p>
                                 </div>
                             </div>
@@ -1313,10 +1339,7 @@ export default function Dashboard() {
                                     <Bell size={15} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <div className="flex items-center gap-1">
-                                        <p className="text-xs font-black text-slate-700">{circulars.length}</p>
-                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+50%</span>
-                                    </div>
+                                    <p className="text-xs font-black text-slate-700">{circulars.length}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Circulares pub.</p>
                                 </div>
                             </div>
@@ -1331,10 +1354,7 @@ export default function Dashboard() {
                                     <FileText size={15} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <div className="flex items-center gap-1">
-                                        <p className="text-xs font-black text-slate-700">{importPlanillasCount}</p>
-                                        <span className="text-[8px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">+20%</span>
-                                    </div>
+                                    <p className="text-xs font-black text-slate-700">{importPlanillasCount}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Planillas imp.</p>
                                 </div>
                             </div>
@@ -1670,6 +1690,13 @@ export default function Dashboard() {
                                             className="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 shrink-0 transition border border-rose-100/50 shadow-sm"
                                         >
                                             <Trash2 size={15} className="text-rose-500" /> Eliminar Curso
+                                        </button>
+                                        <button
+                                            onClick={() => handleBulkReassignCourse(selectedAdminCourse)}
+                                            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 shrink-0 transition border border-indigo-100/50 shadow-sm"
+                                            title="Reasignar todos los estudiantes de este curso a otro curso masivamente"
+                                        >
+                                            <RefreshCw size={15} className="text-indigo-600" /> Reasignar Curso Masivo
                                         </button>
                                         <Link
                                             to="/admin/boletin-print"

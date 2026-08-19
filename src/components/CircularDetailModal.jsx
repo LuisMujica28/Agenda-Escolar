@@ -108,45 +108,98 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
     };
 
     const paperStyles = paperSize === 'letter'
-        ? { width: '100%', maxWidth: '21.6cm', minHeight: '27cm', aspectRatio: '21.6/27' }
+        ? { width: '100%', maxWidth: '21.6cm', minHeight: '27.9cm', aspectRatio: '21.6/27.9' }
         : { width: '100%', maxWidth: '21.6cm', minHeight: '33cm', aspectRatio: '21.6/33' };
 
     return (
         <div 
-            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 no-print animate-fade-in"
+            className="circular-modal-overlay fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            {/* Estilos dinámicos de impresión para forzar Carta u Oficio en la impresora física */}
+            {/* Estilos dinámicos de impresión para forzar Carta u Oficio en 1 sola página perfecta */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media print {
-                    body * {
-                        visibility: hidden !important;
+                    header, aside, nav, .no-print, .no-print-area {
+                        display: none !important;
                     }
-                    .page-sheet, .page-sheet * {
-                        visibility: visible !important;
+
+                    html, body {
+                        background: white !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        overflow: visible !important;
                     }
-                    .page-sheet {
+
+                    .circular-modal-overlay {
                         position: absolute !important;
                         left: 0 !important;
                         top: 0 !important;
-                        width: 21.6cm !important;
-                        height: ${paperSize === 'letter' ? '27cm' : '33cm'} !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        background: white !important;
+                        padding: 0 !important;
                         margin: 0 !important;
-                        padding: 1.5cm !important;
+                        display: block !important;
+                        overflow: visible !important;
+                        backdrop-filter: none !important;
+                    }
+
+                    .circular-modal-container {
+                        position: static !important;
                         box-shadow: none !important;
                         border: none !important;
+                        max-width: 100% !important;
+                        max-height: none !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        background: white !important;
+                        overflow: visible !important;
+                        border-radius: 0 !important;
                     }
+
+                    .circular-modal-scroll {
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        background: white !important;
+                        overflow: visible !important;
+                        display: flex !important;
+                        justify-content: center !important;
+                    }
+
                     @page {
-                        size: 21.6cm ${paperSize === 'letter' ? '27cm' : '33cm'};
+                        size: 21.6cm ${paperSize === 'letter' ? '27.9cm' : '33cm'};
                         margin: 0;
+                    }
+
+                    .page-sheet {
+                        position: relative !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 21.6cm !important;
+                        height: ${paperSize === 'letter' ? '27.9cm' : '33cm'} !important;
+                        max-height: ${paperSize === 'letter' ? '27.9cm' : '33cm'} !important;
+                        margin: 0 auto !important;
+                        padding: 1.2cm 1.5cm !important;
+                        box-sizing: border-box !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                        background: white !important;
+                        color: black !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        overflow: hidden !important;
+                        page-break-after: avoid !important;
+                        page-break-inside: avoid !important;
                     }
                 }
             `}} />
 
-            <div className="bg-white rounded-3xl max-w-[24cm] w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
+            <div className="circular-modal-container bg-white rounded-3xl max-w-[24cm] w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
                 
                 {/* Cabecera de Controles */}
-                <div className="bg-slate-50 border-b px-6 py-4 flex justify-between items-center shrink-0">
+                <div className="no-print bg-slate-50 border-b px-6 py-4 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-2">
                         <BookOpen size={18} className="text-indigo-650" />
                         <span className="text-xs font-black text-slate-800 uppercase tracking-wider">Documento Oficial</span>
@@ -167,6 +220,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
                                         ? 'bg-white text-slate-800 shadow-sm border border-slate-300/20' 
                                         : 'text-slate-500 hover:text-slate-700'
                                 }`}
+                                title="Carta (21,6 x 27,9 cm)"
                             >
                                 Carta
                             </button>
@@ -177,6 +231,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
                                         ? 'bg-white text-slate-800 shadow-sm border border-slate-300/20' 
                                         : 'text-slate-500 hover:text-slate-700'
                                 }`}
+                                title="Oficio (21,6 x 33 cm)"
                             >
                                 Oficio
                             </button>
@@ -200,7 +255,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
                 </div>
 
                 {/* Contenedor Hoja Escolar (Scrollable) */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/35 flex justify-center items-start overflow-x-hidden">
+                <div className="circular-modal-scroll flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/35 flex justify-center items-start overflow-x-hidden">
                     <div 
                         style={paperStyles}
                         className="page-sheet bg-white border border-slate-250 p-[1.5cm] rounded-sm shadow-md relative flex flex-col justify-between overflow-hidden mx-auto transition-all duration-200"
@@ -303,7 +358,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
                                     <button
                                         onClick={handleDownloadAttachment}
                                         disabled={downloading}
-                                        className="bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-[10px] px-4 py-2.5 rounded-xl transition shadow-md shadow-indigo-650/15 flex items-center gap-1.5 active-press shrink-0"
+                                        className="no-print bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-[10px] px-4 py-2.5 rounded-xl transition shadow-md shadow-indigo-650/15 flex items-center gap-1.5 active-press shrink-0"
                                     >
                                         <Download size={12} />
                                         {downloading ? 'Descargando...' : 'Descargar Archivo'}
@@ -322,7 +377,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
                                     ) : (
                                         <button
                                             onClick={() => onAcknowledge(circular.id)}
-                                            className="w-full bg-slate-900 hover:bg-slate-850 text-white font-black text-xs py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-md shadow-slate-900/10 active-press"
+                                            className="no-print w-full bg-slate-900 hover:bg-slate-850 text-white font-black text-xs py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-md shadow-slate-900/10 active-press"
                                         >
                                             <FileCheck size={16} />
                                             Confirmar Lectura y Firmar Acuse de Recibo

@@ -3,6 +3,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { Loader2, Calendar, CheckCircle2, AlertTriangle, Clock, Ban } from 'lucide-react';
+import { getStudentForUser } from '../../lib/getStudentForUser';
 
 export default function AttendanceTracker() {
     const { currentUser } = useAuth();
@@ -16,21 +17,19 @@ export default function AttendanceTracker() {
 
             try {
                 // 1. Obtener estudiante
-                const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                const sSnap = await getDocs(qStudent);
+                const studentData = await getStudentForUser(db, currentUser);
 
-                if (sSnap.empty) {
+                if (!studentData) {
                     setLoading(false);
                     return;
                 }
 
-                const studentDoc = sSnap.docs[0];
-                setStudent({ id: studentDoc.id, ...studentDoc.data() });
+                setStudent(studentData);
 
                 // 2. Obtener historial de asistencia ordenado por fecha descendente
                 const qAttendance = query(
                     collection(db, 'attendance'),
-                    where('student_id', '==', studentDoc.id)
+                    where('student_id', '==', studentData.id)
                 );
                 const aSnap = await getDocs(qAttendance);
                 

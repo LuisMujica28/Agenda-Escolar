@@ -378,7 +378,7 @@ export default function PrintBoletin() {
                                 <div>
                                     <div className="flex items-center justify-between gap-3 border-b pb-2 border-slate-300">
                                         {/* Logo / Escudo */}
-                                        <div className="w-[1.4cm] h-[1.4cm] shrink-0 flex items-center justify-center">
+                                        <div className="w-[1.6cm] h-[1.6cm] shrink-0 flex items-center justify-center">
                                             {logoError ? (
                                                 <svg viewBox="0 0 100 100" className="w-full h-full fill-indigo-900 text-indigo-950">
                                                     <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="3" />
@@ -396,76 +396,76 @@ export default function PrintBoletin() {
 
                                         {/* Textos del Colegio */}
                                         <div className="flex-1 text-center">
-                                            <h1 className="text-[11px] font-black text-slate-900 tracking-wide uppercase leading-tight">
+                                            <h1 className="text-sm font-black text-slate-900 tracking-wide uppercase leading-tight">
                                                 Instituto Nueva América de Suba
                                             </h1>
-                                            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">
+                                            <p className="text-[9.5px] font-extrabold text-slate-600 uppercase tracking-widest mt-0.5">
                                                 INAS - BOGOTÁ D.C.
                                             </p>
-                                            <p className="text-[7px] font-medium text-slate-500 mt-0.5 leading-normal">
+                                            <p className="text-[8.5px] font-medium text-slate-500 mt-0.5 leading-normal">
                                                 Resolución de Aprobación SED N° 110254 | NIT: 830.123.456-7 | Bogotá, Colombia
                                             </p>
-                                            <p className="text-[6.5px] font-semibold italic text-indigo-900 mt-0.5 leading-normal">
+                                            <p className="text-[8px] font-semibold italic text-indigo-900 mt-0.5 leading-normal">
                                                 “Ciudadanos productivos desde la construcción de proyectos de vida con calidad y responsabilidad ambiental”
                                             </p>
-                                            <h3 className="text-[9px] font-extrabold text-indigo-900 mt-1 tracking-wider uppercase border border-indigo-900/30 px-2.5 py-0.5 rounded-full w-fit mx-auto bg-indigo-50/50">
+                                            <h3 className="text-[10.5px] font-black text-indigo-900 mt-1 tracking-wider uppercase border border-indigo-900/30 px-3 py-0.5 rounded-full w-fit mx-auto bg-indigo-50/50">
                                                 Boletín Oficial de Rendimiento Académico
                                             </h3>
                                         </div>
 
                                         {/* Periodo y Año Lectivo */}
-                                        <div className="w-[1.4cm] h-[1.4cm] shrink-0 flex flex-col items-center justify-center border border-slate-200 bg-slate-50 rounded-xl p-1 text-center">
-                                            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Año</span>
-                                            <span className="text-base font-black text-indigo-950 leading-none">2026</span>
-                                            <span className="text-[6px] font-bold text-slate-500 tracking-tighter mt-0.5 uppercase">LECTIVO</span>
+                                        <div className="w-[1.6cm] h-[1.6cm] shrink-0 flex flex-col items-center justify-center border border-slate-200 bg-slate-50 rounded-xl p-1 text-center">
+                                            <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-tighter">Año</span>
+                                            <span className="text-lg font-black text-indigo-950 leading-none">2026</span>
+                                            <span className="text-[6.5px] font-bold text-slate-500 tracking-tighter mt-0.5 uppercase">LECTIVO</span>
                                         </div>
                                     </div>
 
                                     {/* Ficha de Información del Estudiante */}
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 bg-slate-50/50 border border-slate-200 rounded-xl p-2 mt-2 text-[8.5px] leading-relaxed">
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 bg-slate-50/50 border border-slate-200 rounded-xl p-2.5 mt-2.5 text-[9.5px] leading-relaxed">
                                         <div className="col-span-2">
-                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[7px]">Estudiante:</span>
-                                            <span className="font-extrabold text-slate-800 text-[10px] uppercase">
+                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Estudiante:</span>
+                                            <span className="font-extrabold text-slate-800 text-[11.5px] uppercase">
                                                 {studentItem.lastName && studentItem.firstName 
                                                     ? `${studentItem.lastName} ${studentItem.firstName}` 
                                                     : studentItem.name}
                                             </span>
                                         </div>
                                         <div>
-                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[7px]">Curso / Grado:</span>
-                                            <span className="font-bold text-slate-700 text-[9.5px]">Grado {studentItem.grade}</span>
+                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Curso / Grado:</span>
+                                            <span className="font-bold text-slate-700 text-[10.5px]">Grado {studentItem.grade}</span>
                                         </div>
                                         <div>
-                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[7px]">Código Alumno:</span>
-                                            <span className="font-mono font-bold text-slate-700 text-[9.5px]">{studentItem.id_code}</span>
+                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Código Alumno:</span>
+                                            <span className="font-mono font-bold text-slate-700 text-[10.5px]">{studentItem.id_code}</span>
                                         </div>
                                         <div className="col-span-2">
-                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[7px]">Director de Grupo:</span>
-                                            <span className="font-semibold text-slate-600 text-[8px]">Docente Titular - INAS</span>
+                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Director de Grupo:</span>
+                                            <span className="font-semibold text-slate-600 text-[9px]">Docente Titular - INAS</span>
                                         </div>
                                         <div>
-                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[7px]">Fecha de Expedición:</span>
-                                            <span className="font-medium text-slate-600 text-[8px]">{new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Fecha de Expedición:</span>
+                                            <span className="font-medium text-slate-600 text-[9px]">{new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                         </div>
                                         <div className="bg-indigo-900 text-white rounded-lg p-1 px-2 flex flex-col justify-center items-center text-center">
-                                            <span className="font-bold text-[6.5px] uppercase tracking-wider leading-none text-indigo-200">Promedio</span>
-                                            <span className="text-sm font-black mt-0.5 leading-none">{overallAverage}</span>
+                                            <span className="font-bold text-[7.5px] uppercase tracking-wider leading-none text-indigo-200">Promedio</span>
+                                            <span className="text-base font-black mt-0.5 leading-none">{overallAverage}</span>
                                         </div>
                                     </div>
 
                                     {/* Listado de Calificaciones */}
-                                    <div className="mt-2.5">
-                                        <table className="w-full text-left text-[7.5px] border-collapse border border-slate-350">
+                                    <div className="mt-3">
+                                        <table className="w-full text-left text-[8.5px] border-collapse border border-slate-350">
                                             <thead>
-                                                <tr className="bg-slate-900 text-white uppercase text-[6.5px] tracking-wider text-center">
-                                                    <th rowSpan="2" className="py-1 px-2.5 text-left w-[30%] border-r border-slate-700 align-middle">Áreas / Asignaturas</th>
-                                                    <th colSpan="2" className="py-0.5 px-1 border-b border-slate-700 border-r border-slate-700 text-[6.5px]">1 Per.</th>
-                                                    <th colSpan="2" className="py-0.5 px-1 border-b border-slate-700 border-r border-slate-700 text-[6.5px]">2 Per.</th>
-                                                    <th colSpan="2" className="py-0.5 px-1 border-b border-slate-700 border-r border-slate-700 text-[6.5px]">3 Per.</th>
-                                                    <th colSpan="2" className="py-0.5 px-1 border-b border-slate-700 border-r border-slate-700 text-[6.5px]">4 Per.</th>
-                                                    <th colSpan="2" className="py-0.5 px-1 border-b border-slate-700 text-[6.5px] align-middle">Prom. Acumulado</th>
+                                                <tr className="bg-slate-900 text-white uppercase text-[8.5px] tracking-wider text-center">
+                                                    <th rowSpan="2" className="py-1.5 px-2.5 text-left w-[30%] border-r border-slate-700 align-middle">Áreas / Asignaturas</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">1 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">2 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">3 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">4 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 text-[8px] align-middle">Prom. Acumulado</th>
                                                 </tr>
-                                                <tr className="bg-slate-800 text-white uppercase text-[5.5px] text-center">
+                                                <tr className="bg-slate-800 text-white uppercase text-[7.5px] text-center">
                                                     <th className="py-0.5 px-0.5 w-[6.5%] border-r border-slate-700">Nota</th>
                                                     <th className="py-0.5 px-0.5 w-[5%] border-r border-slate-700">Des.</th>
                                                     <th className="py-0.5 px-0.5 w-[6.5%] border-r border-slate-700">Nota</th>
@@ -483,8 +483,8 @@ export default function PrintBoletin() {
                                                     return (
                                                         <React.Fragment key={areaObj.area}>
                                                             {/* Encabezado de Área */}
-                                                            <tr className="bg-slate-100/90 font-black text-[7px] text-slate-800 border-b border-slate-250">
-                                                                <td colSpan="11" className="py-0.5 px-2 text-left uppercase tracking-wide border-r border-slate-200 bg-slate-100">
+                                                            <tr className="bg-slate-100/90 font-black text-[8.5px] text-slate-800 border-b border-slate-250">
+                                                                <td colSpan="11" className="py-1 px-2.5 text-left uppercase tracking-wide border-r border-slate-200 bg-slate-100">
                                                                     {areaObj.area}
                                                                 </td>
                                                             </tr>
@@ -499,7 +499,7 @@ export default function PrintBoletin() {
                                                                     : null;
 
                                                                 return (
-                                                                    <tr key={subject} className="border-b border-slate-200 text-center font-semibold hover:bg-slate-50/30 transition text-[7px]">
+                                                                    <tr key={subject} className="border-b border-slate-200 text-center font-semibold hover:bg-slate-50/30 transition text-[8.5px]">
                                                                         <td className="py-1 px-2.5 text-left font-bold text-slate-800 uppercase border-r border-slate-200 truncate">
                                                                             {subject}
                                                                         </td>
@@ -510,10 +510,10 @@ export default function PrintBoletin() {
                                                                             if (gradeDoc && val > 0) {
                                                                                 return (
                                                                                     <React.Fragment key={p}>
-                                                                                        <td className="py-1 px-0.5 font-bold border-r border-slate-200 text-slate-800">
+                                                                                        <td className="py-1 px-0.5 font-bold border-r border-slate-200 text-slate-800 text-[8.5px]">
                                                                                             {val.toFixed(0)}
                                                                                         </td>
-                                                                                        <td className={`py-1 px-0.5 font-bold border-r border-slate-200 ${getDesempenoColorClass(val)}`}>
+                                                                                        <td className={`py-1 px-0.5 font-bold border-r border-slate-200 text-[8.5px] ${getDesempenoColorClass(val)}`}>
                                                                                             {getDesempenoAbbr(val)}
                                                                                         </td>
                                                                                     </React.Fragment>
@@ -521,8 +521,8 @@ export default function PrintBoletin() {
                                                                             } else {
                                                                                 return (
                                                                                     <React.Fragment key={p}>
-                                                                                        <td className="py-1 px-0.5 text-slate-400 border-r border-slate-200 font-normal">-</td>
-                                                                                        <td className="py-1 px-0.5 text-slate-400 border-r border-slate-200 font-normal">-</td>
+                                                                                        <td className="py-1 px-0.5 text-slate-400 border-r border-slate-200 font-normal text-[8.5px]">-</td>
+                                                                                        <td className="py-1 px-0.5 text-slate-400 border-r border-slate-200 font-normal text-[8.5px]">-</td>
                                                                                     </React.Fragment>
                                                                                 );
                                                                             }
@@ -530,17 +530,17 @@ export default function PrintBoletin() {
 
                                                                         {avg !== null ? (
                                                                             <>
-                                                                                <td className="py-1 px-0.5 font-extrabold border-r border-slate-200 text-indigo-900 bg-indigo-50/10">
+                                                                                <td className="py-1 px-0.5 font-extrabold border-r border-slate-200 text-indigo-900 bg-indigo-50/10 text-[9.5px]">
                                                                                     {avg.toFixed(0)}
                                                                                 </td>
-                                                                                <td className={`py-1 px-0.5 font-black bg-indigo-50/10 ${getDesempenoColorClass(avg)}`}>
+                                                                                <td className={`py-1 px-0.5 font-black bg-indigo-50/10 text-[9.5px] ${getDesempenoColorClass(avg)}`}>
                                                                                     {getDesempenoAbbr(avg)}
                                                                                 </td>
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <td className="py-1 px-0.5 text-slate-450 border-r border-slate-200 font-normal bg-slate-50/30">N.A.</td>
-                                                                                <td className="py-1 px-0.5 text-slate-450 font-normal bg-slate-50/30">N.A.</td>
+                                                                                <td className="py-1 px-0.5 text-slate-450 border-r border-slate-200 font-normal bg-slate-50/30 text-[8.5px]">N.A.</td>
+                                                                                <td className="py-1 px-0.5 text-slate-450 font-normal bg-slate-50/30 text-[8.5px]">N.A.</td>
                                                                             </>
                                                                         )}
                                                                     </tr>
@@ -554,8 +554,8 @@ export default function PrintBoletin() {
 
                                         {/* Comentarios y Observaciones específicas */}
                                         {studentGrades.some(g => g.comment && g.comment.trim()) && (
-                                            <div className="mt-1.5 border border-slate-200 rounded-lg p-1.5 bg-slate-50/30 text-[6.5px] leading-tight">
-                                                <p className="font-extrabold text-[7px] text-indigo-950 uppercase mb-0.5 border-b border-slate-200 pb-0.5 tracking-wide">Observaciones Específicas por Asignatura:</p>
+                                            <div className="mt-2 border border-slate-200 rounded-lg p-2 bg-slate-50/30 text-[8px] leading-tight">
+                                                <p className="font-extrabold text-[8.5px] text-indigo-950 uppercase mb-0.5 border-b border-slate-200 pb-0.5 tracking-wide">Observaciones Específicas por Asignatura:</p>
                                                 <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                                                     {studentGrades.filter(g => g.comment && g.comment.trim()).map(g => (
                                                         <div key={g.id} className="text-slate-650 font-medium">
@@ -571,63 +571,63 @@ export default function PrintBoletin() {
                                 {/* Sección Inferior: Criterios, Escala, Observaciones y Firmas (Compactado) */}
                                 <div className="space-y-2">
                                     <div className="grid grid-cols-2 gap-3 border-t pt-2 border-slate-300">
-                                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-2 text-[6.5px] leading-tight text-slate-500">
-                                            <p className="font-bold text-[7.5px] text-slate-700 uppercase mb-0.5">Criterios de Evaluación por Periodo</p>
+                                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[8px] leading-tight text-slate-500">
+                                            <p className="font-bold text-[9px] text-slate-700 uppercase mb-0.5">Criterios de Evaluación por Periodo</p>
                                             <p>• Cada asignatura se evalúa sobre un máximo acumulable de 100 puntos.</p>
                                             <p>• Componentes: Actitudinal (20%), Prueba 1 (20%), Ejercitación (20%), Prueba 2 (20%), Guía (20%).</p>
                                             <p>• Calificación mínima aprobatoria: <span className="font-extrabold text-slate-700">75 puntos</span>.</p>
                                             <p className="mt-0.5 font-semibold text-indigo-900">“Formación Integral para la Excelencia y el Futuro”</p>
                                         </div>
 
-                                        <div className="border border-slate-200 rounded-xl p-2 text-[7px] leading-tight text-slate-600 bg-white">
-                                            <p className="font-bold text-[7.5px] text-slate-700 uppercase mb-0.5 text-center">Escala Oficial de Desempeño Escolar</p>
+                                        <div className="border border-slate-200 rounded-xl p-2.5 text-[8.5px] leading-tight text-slate-600 bg-white">
+                                            <p className="font-bold text-[9px] text-slate-700 uppercase mb-0.5 text-center">Escala Oficial de Desempeño Escolar</p>
                                             <div className="grid grid-cols-4 gap-1 text-center mt-0.5">
-                                                <div className="border border-slate-100 p-0.5 rounded bg-slate-50">
-                                                    <p className="font-black text-emerald-800 text-[7.5px]">95 - 100</p>
-                                                    <p className="text-[6px] font-bold text-slate-400">SUPERIOR</p>
+                                                <div className="border border-slate-100 p-1 rounded bg-slate-50">
+                                                    <p className="font-black text-emerald-800 text-[9px]">95 - 100</p>
+                                                    <p className="text-[7.5px] font-bold text-slate-400">SUPERIOR</p>
                                                 </div>
-                                                <div className="border border-slate-100 p-0.5 rounded bg-slate-50">
-                                                    <p className="font-black text-indigo-800 text-[7.5px]">80 - 94</p>
-                                                    <p className="text-[6px] font-bold text-slate-400">ALTO</p>
+                                                <div className="border border-slate-100 p-1 rounded bg-slate-50">
+                                                    <p className="font-black text-indigo-800 text-[9px]">80 - 94</p>
+                                                    <p className="text-[7.5px] font-bold text-slate-400">ALTO</p>
                                                 </div>
-                                                <div className="border border-slate-100 p-0.5 rounded bg-slate-50">
-                                                    <p className="font-black text-slate-800 text-[7.5px]">75 - 79</p>
-                                                    <p className="text-[6px] font-bold text-slate-400">BÁSICO</p>
+                                                <div className="border border-slate-100 p-1 rounded bg-slate-50">
+                                                    <p className="font-black text-slate-800 text-[9px]">75 - 79</p>
+                                                    <p className="text-[7.5px] font-bold text-slate-400">BÁSICO</p>
                                                 </div>
-                                                <div className="border border-slate-100 p-0.5 rounded bg-slate-50">
-                                                    <p className="font-black text-rose-800 text-[7.5px]">0 - 74</p>
-                                                    <p className="text-[6px] font-bold text-slate-400 text-rose-500">BAJO</p>
+                                                <div className="border border-slate-100 p-1 rounded bg-slate-50">
+                                                    <p className="font-black text-rose-800 text-[9px]">0 - 74</p>
+                                                    <p className="text-[7.5px] font-bold text-slate-400 text-rose-500">BAJO</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Observaciones Generales (Ajustadas para no desbordar el borde) */}
-                                    <div className="border border-slate-200 rounded-xl p-2 bg-white">
-                                        <span className="text-slate-400 font-bold uppercase tracking-wider block text-[6.5px] mb-1">Observaciones Generales y Recomendaciones Pedagógicas:</span>
-                                        <div className="space-y-2">
-                                            <div className="border-b border-slate-200 w-full h-[0.05cm]"></div>
-                                            <div className="border-b border-slate-200 w-full h-[0.05cm]"></div>
+                                    <div className="border border-slate-200 rounded-xl p-2.5 bg-white">
+                                        <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px] mb-1">Observaciones Generales y Recomendaciones Pedagógicas:</span>
+                                        <div className="space-y-3">
+                                            <div className="border-b border-slate-200 w-full h-[0.1cm]"></div>
+                                            <div className="border-b border-slate-200 w-full h-[0.1cm]"></div>
                                         </div>
                                     </div>
 
                                     {/* Firmas Oficiales */}
-                                    <div className="grid grid-cols-2 gap-8 pt-5 pb-1 text-center text-[8px] font-bold text-slate-600 relative">
+                                    <div className="grid grid-cols-2 gap-8 pt-6 pb-1 text-center text-[9px] font-bold text-slate-600 relative">
                                         <div className="flex flex-col items-center">
-                                            <div className="border-t border-slate-400 w-[4.5cm] mb-1"></div>
-                                            <span className="uppercase text-slate-900 font-extrabold text-[8.5px]">RECTOR / COORDINADOR</span>
-                                            <span className="text-[7px] text-slate-400 font-medium tracking-tighter">Autoridad Administrativa INAS</span>
+                                            <div className="border-t border-slate-400 w-[5.5cm] mb-1"></div>
+                                            <span className="uppercase text-slate-900 font-extrabold text-[10px]">RECTOR / COORDINADOR</span>
+                                            <span className="text-[8px] text-slate-400 font-medium tracking-tighter">Autoridad Administrativa INAS</span>
                                         </div>
 
                                         <div className="flex flex-col items-center">
-                                            <div className="border-t border-slate-400 w-[4.5cm] mb-1"></div>
-                                            <span className="uppercase text-slate-900 font-extrabold text-[8.5px]">DIRECTOR DE GRUPO</span>
-                                            <span className="text-[7px] text-slate-400 font-medium tracking-tighter">Verificación Docente del Grado {studentItem.grade}</span>
+                                            <div className="border-t border-slate-400 w-[5.5cm] mb-1"></div>
+                                            <span className="uppercase text-slate-900 font-extrabold text-[10px]">DIRECTOR DE GRUPO</span>
+                                            <span className="text-[8px] text-slate-400 font-medium tracking-tighter">Verificación Docente del Grado {studentItem.grade}</span>
                                         </div>
 
-                                        <div className="absolute left-[50%] top-[-0.2cm] transform translate-x-[-50%] w-[1.4cm] h-[1.4cm] rounded-full border border-dashed border-indigo-900/35 flex flex-col justify-center items-center opacity-40">
-                                            <span className="text-[4.5px] text-indigo-900 font-bold tracking-tighter uppercase leading-none">Sello</span>
-                                            <span className="text-[6px] text-indigo-900 font-black tracking-tighter uppercase leading-none mt-0.5">INAS</span>
+                                        <div className="absolute left-[50%] top-[-0.2cm] transform translate-x-[-50%] w-[1.6cm] h-[1.6cm] rounded-full border border-dashed border-indigo-900/35 flex flex-col justify-center items-center opacity-40">
+                                            <span className="text-[5.5px] text-indigo-900 font-bold tracking-tighter uppercase leading-none">Sello</span>
+                                            <span className="text-[7.5px] text-indigo-900 font-black tracking-tighter uppercase leading-none mt-0.5">INAS</span>
                                         </div>
                                     </div>
                                 </div>

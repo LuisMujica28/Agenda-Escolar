@@ -3,6 +3,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { Loader2, ClipboardList, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { getStudentForUser } from '../../lib/getStudentForUser';
 
 export default function HomeworkCalendar() {
     const { currentUser } = useAuth();
@@ -10,12 +11,18 @@ export default function HomeworkCalendar() {
     const [student, setStudent] = useState(null);
     const [completedTasks, setCompletedTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
+    // Cargar tareas completadas guardadas localmente para el usuario
     useEffect(() => {
-        // Cargar las tareas completadas locales de localStorage
-        const stored = localStorage.getItem(`completed_tasks_${currentUser?.uid}`);
-        if (stored) {
-            setCompletedTasks(JSON.parse(stored));
+        if (!currentUser) return;
+        const storedCompleted = localStorage.getItem(`completed_tasks_${currentUser.uid}`);
+        if (storedCompleted) {
+            try {
+                setCompletedTasks(JSON.parse(storedCompleted));
+            } catch (e) {
+                console.error("Error reading completed tasks from localStorage:", e);
+            }
         }
     }, [currentUser]);
 
@@ -24,18 +31,15 @@ export default function HomeworkCalendar() {
             if (!currentUser) return;
 
             try {
-                // 1. Obtener estudiante para saber su curso/grado (ej. "9A")
-                const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                const sSnap = await getDocs(qStudent);
+                // 1. Obtener estudiante para saber su curso/grado
+                const studentData = await getStudentForUser(db, currentUser);
 
-                if (sSnap.empty) {
+                if (!studentData) {
                     setLoading(false);
                     return;
                 }
 
-                const studentDoc = sSnap.docs[0];
-                const studentData = studentDoc.data();
-                setStudent({ id: studentDoc.id, ...studentData });
+                setStudent(studentData);
 
                 // 2. Obtener tareas para el grado del estudiante
                 const qTasks = query(

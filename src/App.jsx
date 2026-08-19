@@ -19,6 +19,7 @@ import ImportData from './pages/admin/ImportData';
 import PrintBoletin from './pages/admin/PrintBoletin';
 import PrintPlanilla from './pages/admin/PrintPlanilla';
 import PrintConsolidado from './pages/admin/PrintConsolidado';
+import PrintFormularioInscripcion from './pages/admin/PrintFormularioInscripcion';
 import AcademicStats from './pages/admin/AcademicStats';
 import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2, Layers, Award } from 'lucide-react';
 import IaChatBot from './components/IaChatBot';
@@ -254,6 +255,15 @@ function Layout({ children }) {
               <Award size={18} /> Consolidado & Ranking
             </Link>
             <Link 
+              to="/admin/formulario-inscripcion" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/admin/formulario-inscripcion') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <FileText size={18} /> Formulario Inscripción
+            </Link>
+            <Link 
               to="/admin/stats" 
               onClick={() => setIsSidebarOpen(false)}
               className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
@@ -282,13 +292,13 @@ function Layout({ children }) {
     <div className="min-h-screen bg-slate-50/20 flex">
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white hidden md:flex flex-col border-r border-slate-800/40 shrink-0 sticky top-0 h-screen z-30">
-        {/* Sidebar Header: Solo Escudo y Nombre Institucional (Sin la palabra INAS) */}
-        <div className="p-4 border-b border-slate-800/40 flex items-center gap-3 bg-slate-950/30">
-          <div className="w-10 h-10 flex items-center justify-center shrink-0 drop-shadow-md">
-            <img src="/Escudo1.png" alt="Escudo Institucional" className="w-full h-full object-contain" />
+        {/* Sidebar Header: Escudo con fondo blanco de alto contraste y Nombre Institucional */}
+        <div className="p-4 border-b border-slate-800/40 flex items-center gap-3 bg-slate-950/40">
+          <div className="w-11 h-11 rounded-2xl bg-white p-1.5 flex items-center justify-center shrink-0 shadow-lg shadow-white/5 border border-white/40 ring-2 ring-indigo-500/30">
+            <img src="/Escudo1.png" alt="Escudo Institucional" className="w-full h-full object-contain filter drop-shadow-sm" />
           </div>
           <div className="leading-tight text-left">
-            <span className="text-[10px] text-slate-200 font-black tracking-wide uppercase block">
+            <span className="text-[10px] text-slate-100 font-black tracking-wider uppercase block">
               INSTITUTO NUEVA AMÉRICA DE SUBA
             </span>
           </div>
@@ -299,12 +309,12 @@ function Layout({ children }) {
           {renderNavLinks()}
         </nav>
 
-        {/* Imagen transparente sin fondo INAS.png aún más grande y más arriba */}
-        <div className="py-0 px-2 text-center flex items-center justify-center -mt-2 -mb-2">
+        {/* Imagen transparente sin fondo INAS.png libre sobre el fondo lateral */}
+        <div className="py-2 px-2 text-center flex items-center justify-center my-1">
           <img 
             src="/INAS.png" 
             alt="INAS" 
-            className="w-56 h-auto max-h-24 object-contain drop-shadow-2xl opacity-95 hover:opacity-100 transition transform hover:scale-105" 
+            className="w-52 h-auto max-h-20 object-contain drop-shadow-lg opacity-95 hover:opacity-100 transition transform hover:scale-105" 
           />
         </div>
 
@@ -345,10 +355,10 @@ function Layout({ children }) {
       }`}>
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md border border-white/40 ring-1 ring-indigo-500/30">
               <img src="/Escudo1.png" alt="Escudo Institucional" className="w-full h-full object-contain" />
             </div>
-            <span className="text-[9px] text-slate-200 font-black tracking-wide uppercase text-left leading-tight">
+            <span className="text-[9px] text-slate-100 font-black tracking-wide uppercase text-left leading-tight">
               INSTITUTO NUEVA AMÉRICA DE SUBA
             </span>
           </div>
@@ -452,6 +462,7 @@ function App() {
           <Route path="/admin/boletin/:studentId" element={<Layout><GradesCard /></Layout>} />
           <Route path="/admin/boletin-print/:studentId?" element={<PrintBoletin />} />
           <Route path="/admin/consolidado-print" element={<PrintConsolidado />} />
+          <Route path="/admin/formulario-inscripcion/:studentId?" element={<PrintFormularioInscripcion />} />
           <Route path="/planilla-print" element={<PrintPlanilla />} />
 
           {/* Teacher Routes */}

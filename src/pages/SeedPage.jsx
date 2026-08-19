@@ -244,7 +244,9 @@ export default function SeedPage() {
                                 grade: gradeGroup.gradeName,
                                 photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
                                 parent_uids: [parentId],
-                                id_code: item.id_code
+                                id_code: item.id_code,
+                                email: item.email,
+                                email_padre: item.email
                             });
                             sDocId = sDoc.id;
                         } else {
@@ -254,7 +256,9 @@ export default function SeedPage() {
                                 parent_uids: [parentId], 
                                 grade: gradeGroup.gradeName,
                                 firstName: item.firstName,
-                                lastName: item.lastName
+                                lastName: item.lastName,
+                                email: item.email,
+                                email_padre: item.email
                             }, { merge: true });
                         }
 
