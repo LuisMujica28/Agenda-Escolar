@@ -400,26 +400,27 @@ function Layout({ children }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-20 shadow-sm">
-          <div className="flex items-center gap-4">
+        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-1.5 hover:bg-gray-100 rounded-xl text-gray-500 md:hidden transition"
+              className="p-2 hover:bg-gray-100 rounded-xl text-gray-600 md:hidden transition active:scale-95"
+              aria-label="Abrir menú de navegación"
             >
-              <Menu size={20} />
+              <Menu size={22} />
             </button>
-            <h2 className="text-sm font-bold text-gray-700 hidden md:block">
+            <h2 className="text-xs sm:text-sm font-bold text-gray-700 truncate">
               {location.pathname === '/' ? 'Tablero General' : 'Panel de Control'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition relative">
               <Bell size={18} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full border-2 border-white"></span>
             </button>
-            <div className="h-8 w-px bg-gray-100"></div>
-            <div className="flex items-center gap-2.5">
+            <div className="h-8 w-px bg-gray-100 hidden sm:block"></div>
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-bold text-gray-800 leading-none">{currentUser.displayName || currentUser.email}</p>
                 <span className="text-[9px] text-gray-400 font-bold tracking-wide mt-0.5 inline-block">{getRoleLabel()}</span>
@@ -431,9 +432,9 @@ function Layout({ children }) {
           </div>
         </header>
 
-        {/* Dynamic Children Panel */}
-        <main className="flex-1 p-6 md:p-8 bg-slate-50/20 overflow-y-auto">
-          <div className="max-w-6xl w-full mx-auto">
+        {/* Dynamic Children Panel Responsivo */}
+        <main className="flex-1 p-3 sm:p-6 md:p-8 bg-slate-50/20 overflow-y-auto min-w-0">
+          <div className="max-w-6xl w-full mx-auto min-w-0">
             {children}
           </div>
         </main>

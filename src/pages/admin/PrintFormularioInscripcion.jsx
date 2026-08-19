@@ -441,6 +441,17 @@ export default function PrintFormularioInscripcion() {
                         box-shadow: none !important;
                     }
                 }
+                @media screen {
+                    .printable-page-container {
+                        width: 100%;
+                        max-width: 100%;
+                        overflow-x: auto;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        padding-bottom: 24px;
+                    }
+                }
             `}</style>
 
             {/* Panel de Controles y Selector Inteligente (Pantalla - Ancho completo max-w-6xl) */}
