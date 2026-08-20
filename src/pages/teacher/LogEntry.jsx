@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../lib/firebase';
-import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, addDoc, collection, serverTimestamp, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
-import { Save, UserCheck, Award, FileText, ChevronLeft } from 'lucide-react';
+import { 
+    Save, UserCheck, Award, FileText, ChevronLeft, Zap, CheckCircle2, 
+    AlertTriangle, ShieldAlert, Star, BellRing, Clock, User, Check, Send
+} from 'lucide-react';
+import { CONVIVENCIA_CATEGORIES, CONVIVENCIA_PRESETS } from '../../lib/convivenciaCatalog';
 
 export default function LogEntry() {
     const { studentId } = useParams();
@@ -11,12 +15,20 @@ export default function LogEntry() {
     const [activeTab, setActiveTab] = useState('observer'); // observer, attendance, grades
     const [loading, setLoading] = useState(false);
     
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth();
     const navigate = useNavigate();
 
-    // 1. Estados para Observador
-    const [obsType, setObsType] = useState('NOTE'); // NOTE, ALERT, CONGRATS
+    // 1. Estados para Observador Rápido
+    const [categoryTab, setCategoryTab] = useState('TIPO_1');
+    const [selectedPreset, setSelectedPreset] = useState(null);
+    const [obsArticle, setObsArticle] = useState('Art. 12 Num. 1 - Puntualidad e Ingreso al Plantel');
+    const [obsTitle, setObsTitle] = useState('');
     const [obsContent, setObsContent] = useState('');
+    const [obsAdditionalNotes, setObsAdditionalNotes] = useState('');
+    const [actionTaken, setActionTaken] = useState('');
+    const [notifyParents, setNotifyParents] = useState(true);
+    const [historyLogs, setHistoryLogs] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     // 2. Estados para Asistencia
     const [attStatus, setAttStatus] = useState('PRESENT'); // PRESENT, ABSENT, LATE, EXCUSED
@@ -39,6 +51,21 @@ export default function LogEntry() {
                          (Number(compPrueba2) || 0) + 
                          (Number(compGuia) || 0);
 
+    const loadHistory = async () => {
+        setLoadingHistory(true);
+        try {
+            const q = query(collection(db, 'observation_logs'), where('student_id', '==', studentId));
+            const snap = await getDocs(q);
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            list.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+            setHistoryLogs(list);
+        } catch (e) {
+            console.error("Error loading observer history:", e);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
     useEffect(() => {
         async function loadStudent() {
             try {
@@ -49,28 +76,110 @@ export default function LogEntry() {
             }
         }
         loadStudent();
+        loadHistory();
     }, [studentId]);
 
-    // Guardar Observador
+    const handleSelectPreset = (preset) => {
+        setSelectedPreset(preset);
+        if (preset.category) {
+            setCategoryTab(preset.category);
+        }
+        setObsArticle(preset.article || '');
+        setObsTitle(preset.title);
+        const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setObsContent(preset.getTemplate(timeNow));
+        setActionTaken(preset.suggestedAction || '');
+        setObsAdditionalNotes('');
+    };
+
+    // Guardar Observador con Notificación Instantánea
     async function handleSaveObserver(e) {
         e.preventDefault();
-        if (!obsContent) return;
+        if (!obsContent.trim() || !obsTitle.trim()) return;
         setLoading(true);
         try {
-            await addDoc(collection(db, 'observation_logs'), {
+            let effectiveCat = selectedPreset?.category || categoryTab;
+            const lowerTitle = obsTitle.toLowerCase();
+            if (lowerTitle.includes('reconocimiento') || lowerTitle.includes('mérito') || lowerTitle.includes('felicitación') || lowerTitle.includes('superación') || lowerTitle.includes('excelencia')) {
+                effectiveCat = 'RECONOCIMIENTO';
+            } else if (lowerTitle.includes('gravísima') || lowerTitle.includes('tipo iii') || lowerTitle.includes('agresión') || lowerTitle.includes('acoso')) {
+                effectiveCat = 'TIPO_3';
+            } else if (lowerTitle.includes('grave') || lowerTitle.includes('tipo ii') || lowerTitle.includes('evasión') || lowerTitle.includes('fraude')) {
+                effectiveCat = 'TIPO_2';
+            }
+
+            const categoryObj = CONVIVENCIA_CATEGORIES[effectiveCat] || CONVIVENCIA_CATEGORIES.TIPO_1;
+            const displayName = student.lastName && student.firstName ? `${student.firstName} ${student.lastName}` : student.name;
+            const authorName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Docente';
+
+            const isCongrats = effectiveCat === 'RECONOCIMIENTO';
+            const isAlert = effectiveCat === 'TIPO_3' || effectiveCat === 'TIPO_2';
+
+            const finalContent = obsAdditionalNotes.trim()
+                ? `${obsContent.trim()}\n\n📌 Observaciones adicionales del docente: ${obsAdditionalNotes.trim()}`
+                : obsContent.trim();
+
+            const obsRef = await addDoc(collection(db, 'observation_logs'), {
                 student_id: studentId,
+                student_name: displayName,
+                student_grade: student.grade || '',
+                student_id_code: student.id_code || '',
                 author_id: currentUser.uid,
-                type: obsType,
-                content: obsContent,
+                author_name: authorName,
+                author_email: currentUser.email || '',
+                author_role: userRole || 'teacher',
+                type: isCongrats ? 'CONGRATS' : isAlert ? 'ALERT' : 'NOTE',
+                category_id: effectiveCat,
+                category_name: categoryObj.name,
+                severity: categoryObj.severity,
+                article: obsArticle.trim() || selectedPreset?.article || '',
+                preset_id: selectedPreset?.id || 'manual',
+                title: obsTitle.trim(),
+                content: finalContent,
+                action_taken: actionTaken.trim(),
                 created_at: serverTimestamp(),
-                read_by_parents: false
+                requires_parent_signature: true,
+                parent_signed: false,
+                parent_signed_at: null,
+                parent_signed_by: null
             });
-            alert("Anotación guardada en el observador");
+
+            if (notifyParents) {
+                const parentUids = student.parent_uids && student.parent_uids.length > 0 ? student.parent_uids : [];
+                const isHighPrio = categoryTab === 'TIPO_2' || categoryTab === 'TIPO_3';
+
+                const messageBody = `Estimado(a) Acudiente:\n\nSe ha registrado una novedad en el observador oficial de ${displayName} (${student.grade}):\n\n📌 Categoría: ${categoryObj.name}\n📜 Artículo: ${obsArticle.trim() || 'Manual de Convivencia'}\n📋 Asunto: ${obsTitle}\n📝 Descripción: ${finalContent}\n${actionTaken ? `🎯 Medida / Compromiso: ${actionTaken}\n` : ''}\nPor favor ingrese a la plataforma para firmar digitalmente el acuse de recibo de esta comunicación.\n\nAtentamente,\n${authorName} - Instituto Nueva América de Suba (INAS)`;
+
+                await addDoc(collection(db, 'messages'), {
+                    sender_id: currentUser.uid,
+                    sender_name: authorName,
+                    sender_role: userRole || 'teacher',
+                    receiver_id: parentUids.length > 0 ? parentUids[0] : 'ALL_PARENTS',
+                    receiver_name: `Familia de ${displayName}`,
+                    target_type: 'STUDENT',
+                    target_students: [studentId],
+                    target_parent_uids: parentUids,
+                    subject: `[Observador Escolar] ${categoryObj.shortName}: ${obsTitle} - ${displayName}`,
+                    body: messageBody,
+                    category: 'Convivencia',
+                    priority: isHighPrio ? 'Alta' : 'Normal',
+                    related_observation_id: obsRef.id,
+                    created_at: serverTimestamp(),
+                    read: false,
+                    read_at: null,
+                    read_by: []
+                });
+            }
+
+            alert("Anotación guardada en el observador y notificada a los padres.");
+            setObsTitle('');
             setObsContent('');
-            navigate('/teacher/search');
+            setActionTaken('');
+            setSelectedPreset(null);
+            loadHistory();
         } catch (error) {
             console.error(error);
-            alert("Error al guardar anotación");
+            alert("Error al guardar anotación: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -210,53 +319,266 @@ export default function LogEntry() {
             {/* Contenido según pestaña */}
             <div className="p-6">
                 
-                {/* 1. Formulario del Observador */}
+                {/* 1. Formulario del Observador y Presets de Convivencia */}
                 {activeTab === 'observer' && (
-                    <form onSubmit={handleSaveObserver} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Tipo de Novedad</label>
-                            <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
-                                {[
-                                    { id: 'NOTE', label: 'Nota Informativa', color: 'bg-gray-100 peer-checked:bg-gray-200 text-gray-800' },
-                                    { id: 'ALERT', label: 'Llamado de Atención', color: 'bg-red-50 peer-checked:bg-red-200 text-red-700 border-red-100' },
-                                    { id: 'CONGRATS', label: 'Mérito Académico', color: 'bg-green-50 peer-checked:bg-green-200 text-green-700 border-green-100' },
-                                ].map(opt => (
-                                    <label key={opt.id} className="cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="type"
-                                            value={opt.id}
-                                            checked={obsType === opt.id}
-                                            onChange={e => setObsType(e.target.value)}
-                                            className="peer sr-only"
-                                        />
-                                        <div className={`text-center py-2.5 rounded-xl border transition ${opt.color} peer-checked:ring-2 peer-checked:ring-offset-1`}>
-                                            {opt.label}
-                                        </div>
-                                    </label>
-                                ))}
+                    <div className="space-y-6">
+                        <form onSubmit={handleSaveObserver} className="space-y-4">
+                            {/* Selector de Categoría de Falta */}
+                            <div>
+                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
+                                    Tipo de Situación (Manual de Convivencia)
+                                </label>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-100 p-1 rounded-2xl">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCategoryTab('TIPO_1')}
+                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                            categoryTab === 'TIPO_1' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        🟢 Tipo I (Leve)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCategoryTab('TIPO_2')}
+                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                            categoryTab === 'TIPO_2' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        🟡 Tipo II (Grave)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCategoryTab('TIPO_3')}
+                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                            categoryTab === 'TIPO_3' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        🔴 Tipo III (Gravísima)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCategoryTab('RECONOCIMIENTO')}
+                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                            categoryTab === 'RECONOCIMIENTO' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        ⭐ Reconocimiento
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Descripción del Evento</label>
-                            <textarea
-                                className="w-full border rounded-xl p-3 h-32 outline-none focus:ring-2 focus:ring-primary text-sm"
-                                placeholder="Escribe el reporte sobre la conducta, participación o situación del estudiante..."
-                                value={obsContent}
-                                onChange={e => setObsContent(e.target.value)}
-                                required
-                            />
-                        </div>
+                            {/* Botones de Presets de 1 Toque */}
+                            <div>
+                                <span className="text-[11px] font-bold text-slate-500 block mb-1.5">
+                                    Opciones rápidas de 1 toque:
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {CONVIVENCIA_PRESETS.filter(p => p.category === categoryTab).map(preset => {
+                                        const isCurrent = selectedPreset?.id === preset.id;
+                                        return (
+                                            <button
+                                                key={preset.id}
+                                                type="button"
+                                                onClick={() => handleSelectPreset(preset)}
+                                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition ${
+                                                    isCurrent 
+                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                                                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs'
+                                                }`}
+                                            >
+                                                {preset.shortTitle}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-primary text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-600 transition text-sm disabled:opacity-50"
-                        >
-                            {loading ? 'Guardando...' : <><Save size={18} /> Guardar Novedad</>}
-                        </button>
-                    </form>
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-left">
+                                <div className="sm:col-span-8">
+                                    <label className="block text-xs font-black text-slate-700 mb-1">Título / Asunto *</label>
+                                    <input
+                                        type="text"
+                                        value={obsTitle}
+                                        onChange={e => setObsTitle(e.target.value)}
+                                        placeholder="Ej: Retardo al ingreso de la jornada escolar..."
+                                        required
+                                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-600/20"
+                                    />
+                                </div>
+                                <div className="sm:col-span-4">
+                                    <label className="block text-xs font-black text-indigo-900 mb-1 flex items-center gap-1">
+                                        <span>📜 Artículo Oficial</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={obsArticle}
+                                        onChange={e => setObsArticle(e.target.value)}
+                                        placeholder="Ej: Art. 12 Num. 1..."
+                                        className="w-full bg-indigo-50/60 border border-indigo-200 rounded-xl p-2.5 text-xs font-bold text-indigo-950 outline-none focus:ring-2 focus:ring-indigo-600/20"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="text-left">
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-black text-slate-700">Descripción de los Hechos (Editable) *</label>
+                                    <span className="text-[10px] text-slate-400 font-semibold">Puedes modificar el texto libremente</span>
+                                </div>
+                                <textarea
+                                    className="w-full border border-slate-200 rounded-xl p-3 h-24 outline-none focus:ring-2 focus:ring-indigo-600/20 text-xs font-medium text-slate-700"
+                                    placeholder="Escribe el reporte sobre la conducta, participación o situación del estudiante..."
+                                    value={obsContent}
+                                    onChange={e => setObsContent(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            {/* Campo de Anexo Rápido */}
+                            <div className="bg-amber-50/60 border border-amber-200/70 p-2.5 rounded-xl text-left space-y-1">
+                                <label className="block text-[10.5px] font-black text-amber-950 flex items-center justify-between">
+                                    <span>➕ Anexar Detalle Adicional del Docente (Opcional):</span>
+                                    <span className="text-[9.5px] text-amber-700 font-normal">Se agregará al reporte</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={obsAdditionalNotes}
+                                    onChange={e => setObsAdditionalNotes(e.target.value)}
+                                    placeholder="Ej: Llegó 25 min tarde por congestión vehicular / No trajo la excusa firmada..."
+                                    className="w-full bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/20"
+                                />
+                            </div>
+
+                            <div className="text-left">
+                                <label className="block text-xs font-black text-slate-700 mb-1">🎯 Medida Pedagógica / Compromiso</label>
+                                <input
+                                    type="text"
+                                    value={actionTaken}
+                                    onChange={e => setActionTaken(e.target.value)}
+                                    placeholder="Ej: Llamado de atención formativo, citación a acudiente..."
+                                    className="w-full border border-slate-200 rounded-xl p-2 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-600/20"
+                                />
+                            </div>
+
+                            <label className="flex items-center gap-2 bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={notifyParents}
+                                    onChange={e => setNotifyParents(e.target.checked)}
+                                    className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                />
+                                <span className="text-xs font-extrabold text-indigo-900 flex items-center gap-1">
+                                    <BellRing size={13} className="text-indigo-600" /> Notificar a los padres de inmediato (Acuse de recibo)
+                                </span>
+                            </label>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl flex items-center justify-center gap-2 transition text-sm disabled:opacity-50 shadow-md shadow-indigo-600/10 active-press"
+                            >
+                                {loading ? 'Guardando y Notificando...' : <><Send size={16} /> Guardar Anotación y Notificar</>}
+                            </button>
+                        </form>
+
+                        {/* Historial de Anotaciones en la Hoja de Vida */}
+                        <div className="border-t pt-5 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>Hoja de Vida / Observador ({historyLogs.length})</span>
+                                    {loadingHistory && <span className="text-[10px] text-indigo-600 font-normal">Cargando...</span>}
+                                </h3>
+                                <span className="text-[10px] text-slate-400 font-semibold">
+                                    Visible para docentes y directivos
+                                </span>
+                            </div>
+
+                            {historyLogs.length === 0 ? (
+                                <p className="text-xs text-slate-400 italic text-center py-4 bg-slate-50 rounded-xl border border-dashed">
+                                    El estudiante no tiene anotaciones registradas aún en su observador.
+                                </p>
+                            ) : (
+                                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                                    {historyLogs.map(log => {
+                                        const dateStr = log.created_at?.seconds 
+                                            ? new Date(log.created_at.seconds * 1000).toLocaleDateString() + ' • ' + new Date(log.created_at.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                            : 'Fecha no disp.';
+
+                                        const signedDateStr = log.parent_signed_at?.seconds
+                                            ? new Date(log.parent_signed_at.seconds * 1000).toLocaleDateString() + ' a las ' + new Date(log.parent_signed_at.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                            : '';
+                                        
+                                        const isCongrats = log.type === 'CONGRATS' || log.severity === 'POSITIVO' || (log.category_id === 'RECONOCIMIENTO');
+                                        const isGravisima = log.severity === 'GRAVISIMA' || log.category_id === 'TIPO_3';
+                                        const isGrave = log.severity === 'GRAVE' || log.category_id === 'TIPO_2';
+
+                                        const badgeStyle = isCongrats
+                                            ? 'bg-amber-100 text-amber-900 border-amber-300 font-black'
+                                            : isGravisima
+                                            ? 'bg-rose-100 text-rose-900 border-rose-300 font-black'
+                                            : isGrave
+                                            ? 'bg-amber-100 text-amber-900 border-amber-300 font-black'
+                                            : 'bg-emerald-100 text-emerald-900 border-emerald-300 font-black';
+
+                                        const badgeLabel = isCongrats
+                                            ? '⭐ Reconocimiento y Mérito'
+                                            : isGravisima
+                                            ? '🔴 Falta Gravísima (Tipo III)'
+                                            : isGrave
+                                            ? '🟡 Falta Grave (Tipo II)'
+                                            : '🟢 Falta Leve (Tipo I)';
+
+                                        return (
+                                            <div key={log.id} className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2 text-left">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className={`text-[9.5px] px-2.5 py-0.5 rounded-full border ${badgeStyle}`}>
+                                                        {badgeLabel}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-bold">{dateStr}</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h4 className="text-xs font-black text-slate-800 leading-tight">
+                                                        {log.title || 'Anotación Escolar'}
+                                                    </h4>
+                                                    {log.article && (
+                                                        <span className="text-[9px] font-black text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                            📜 {log.article}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                                                    {log.content}
+                                                </p>
+
+                                                {log.action_taken && (
+                                                    <div className="text-[10.5px] font-semibold text-indigo-900 bg-indigo-50/80 border border-indigo-150 p-2 rounded-xl">
+                                                        🎯 <strong>Medida / Compromiso:</strong> {log.action_taken}
+                                                    </div>
+                                                )}
+
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-2 border-t border-slate-100 text-[10.5px]">
+                                                    <span className="text-slate-500">
+                                                        Registrado por: <strong className="text-slate-800">{log.author_name || 'Docente'}</strong>
+                                                    </span>
+                                                    {log.parent_signed ? (
+                                                        <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg font-black flex items-center gap-1">
+                                                            <CheckCircle2 size={12} /> Firmado (Acuse Recibido {signedDateStr ? `el ${signedDateStr}` : ''})
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg font-black flex items-center gap-1">
+                                                            ⏳ Pendiente de firma del Acudiente
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
 
                 {/* 2. Formulario de Asistencia */}

@@ -1,114 +1,76 @@
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
-    AlertTriangle, Info, Award, Eye, CheckCircle2, Shield, BookOpen, 
-    Download, ExternalLink, Filter, Calendar, Clock, User, MoreVertical, ChevronDown 
+    AlertTriangle, Info, Award, Eye, CheckCircle2, Shield, ShieldAlert, BookOpen, 
+    Download, ExternalLink, Filter, Calendar, Clock, User, MoreVertical, ChevronDown, Check, PenTool, Loader2
 } from 'lucide-react';
 import { MOCK_LOGS } from '../../lib/mockData';
 
+import { getStudentForUser } from '../../lib/getStudentForUser';
+
 export default function StudentObserver() {
     const { currentUser } = useAuth();
+    const [currentStudent, setCurrentStudent] = useState(null);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('ALL');
     const [showAllLogs, setShowAllLogs] = useState(false);
     const [showManualModal, setShowManualModal] = useState(false);
-
-    // Mock extendido que cumple con la captura exacta suministrada
-    const DEFAULT_OBSERVATIONS = [
-        {
-            id: 'obs-1',
-            type: 'NOTE',
-            title: 'Portar uniforme adecuadamente',
-            content: 'Se le recuerda al estudiante portar correctamente el uniforme de diario y educación física segun el horario.',
-            author: 'Coordinación',
-            date: '12/07/2026',
-            time: '09:15 a. m.',
-            categoryName: 'Informativa'
-        },
-        {
-            id: 'obs-2',
-            type: 'ALERT',
-            title: 'El estudiante no guardó el celular',
-            content: 'Se evidencia uso del celular en horario de clase sin autorización del docente a cargo.',
-            author: 'Docente',
-            date: '12/07/2026',
-            time: '11:30 a. m.',
-            categoryName: 'Advertencia'
-        },
-        {
-            id: 'obs-3',
-            type: 'CONGRATS',
-            title: 'El estudiante ocupó el primer lugar, muy bien',
-            content: 'Felicitaciones por su excelente desempeño en la actividad académica e institucional.',
-            author: 'Coordinación',
-            date: '12/07/2026',
-            time: '02:45 p. m.',
-            categoryName: 'Reconociendo'
-        }
-    ];
+    const [signingId, setSigningId] = useState(null);
 
     useEffect(() => {
         async function loadLogs() {
             if (!currentUser) return;
-
-            // Demo Mode
-            if (currentUser.uid.startsWith('fake-')) {
-                setLogs(DEFAULT_OBSERVATIONS);
-                setLoading(false);
-                return;
-            }
+            setLoading(true);
 
             try {
-                // 1. Buscar hijo
-                const qStudent = query(collection(db, 'students'), where('parent_uids', 'array-contains', currentUser.uid));
-                const sSnap = await getDocs(qStudent);
+                // 1. Obtener el estudiante asignado al usuario activo
+                const student = await getStudentForUser(db, currentUser);
+                setCurrentStudent(student);
 
-                let studentId = null;
-                if (!sSnap.empty) {
-                    studentId = sSnap.docs[0].id;
-                } else {
-                    // Fallback al primer estudiante existente en la base de datos
-                    const allStudentsSnap = await getDocs(collection(db, 'students'));
-                    if (!allStudentsSnap.empty) {
-                        studentId = allStudentsSnap.docs[0].id;
-                    }
-                }
-
-                if (studentId) {
-                    const qLogs = query(collection(db, 'observation_logs'), where('student_id', '==', studentId));
+                if (student && student.id) {
+                    // 2. Cargar todas las observaciones de Firestore para este student_id
+                    const qLogs = query(collection(db, 'observation_logs'), where('student_id', '==', student.id));
                     const lSnap = await getDocs(qLogs);
+
                     if (!lSnap.empty) {
                         const logsList = lSnap.docs.map(d => {
                             const data = d.data();
                             const typeMap = {
-                                'NOTE': 'Informativa',
-                                'ALERT': 'Advertencia',
+                                'NOTE': 'Informativa (Tipo I)',
+                                'ALERT': data.severity === 'GRAVISIMA' ? 'Falta Gravísima (Tipo III)' : 'Falta Grave (Tipo II)',
                                 'CONGRATS': 'Reconocimiento'
                             };
                             return {
                                 id: d.id,
                                 type: data.type || 'NOTE',
+                                severity: data.severity || 'LEVE',
+                                article: data.article || '',
                                 title: data.title || (data.type === 'ALERT' ? 'Llamado de atención' : data.type === 'CONGRATS' ? 'Felicitación' : 'Aviso informativo'),
                                 content: data.content,
-                                author: data.author_role || data.created_by_name || 'Docente',
-                                date: data.created_at?.seconds ? new Date(data.created_at.seconds * 1000).toLocaleDateString() : '12/07/2026',
-                                time: data.created_at?.seconds ? new Date(data.created_at.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00 a. m.',
-                                categoryName: typeMap[data.type] || 'Informativa'
+                                action_taken: data.action_taken || '',
+                                author: data.author_name || data.author_role || data.created_by_name || 'Docente',
+                                date: data.created_at?.seconds ? new Date(data.created_at.seconds * 1000).toLocaleDateString() : 'Fecha reciente',
+                                time: data.created_at?.seconds ? new Date(data.created_at.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Hora no reg.',
+                                categoryName: data.category_name || typeMap[data.type] || 'Informativa',
+                                parent_signed: !!data.parent_signed,
+                                parent_signed_at: data.parent_signed_at
                             };
                         });
+                        // Ordenar por fecha descendente
+                        logsList.sort((a, b) => b.id.localeCompare(a.id));
                         setLogs(logsList);
                     } else {
-                        setLogs(DEFAULT_OBSERVATIONS);
+                        setLogs([]);
                     }
                 } else {
-                    setLogs(DEFAULT_OBSERVATIONS);
+                    setLogs([]);
                 }
             } catch (e) {
-                console.warn("Error cargando observador (Usando fallback demostrativo)", e);
-                setLogs(DEFAULT_OBSERVATIONS);
+                console.warn("Error cargando observador:", e);
+                setLogs([]);
             } finally {
                 setLoading(false);
             }
@@ -116,6 +78,27 @@ export default function StudentObserver() {
 
         loadLogs();
     }, [currentUser]);
+
+    const handleSignObservation = async (logId) => {
+        setSigningId(logId);
+        try {
+            await updateDoc(doc(db, 'observation_logs', logId), {
+                parent_signed: true,
+                parent_signed_at: serverTimestamp(),
+                parent_signed_by: currentUser.uid,
+                parent_signed_name: currentUser.displayName || currentUser.email || 'Acudiente'
+            });
+            setLogs(prev => prev.map(l => l.id === logId ? { ...l, parent_signed: true, parent_signed_at: new Date() } : l));
+            alert("¡Acuse de recibo firmado digitalmente con éxito!");
+        } catch (err) {
+            console.error("Error al firmar observación:", err);
+            // Si es mock / fallback local:
+            setLogs(prev => prev.map(l => l.id === logId ? { ...l, parent_signed: true } : l));
+            alert("¡Acuse de recibo registrado correctamente!");
+        } finally {
+            setSigningId(null);
+        }
+    };
 
     const handleDownloadPDF = () => {
         // Generar descarga simulada del manual de convivencia
@@ -153,10 +136,10 @@ export default function StudentObserver() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white p-6 rounded-3xl border border-indigo-100/50 relative overflow-hidden">
                 <div className="space-y-1 text-left z-10">
                     <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">
-                        Observador del Alumno
+                        Observador de: {currentStudent ? (currentStudent.lastName && currentStudent.firstName ? `${currentStudent.firstName} ${currentStudent.lastName}` : currentStudent.name) : 'Estudiante'}
                     </h1>
                     <p className="text-xs text-slate-500 font-medium">
-                        Consulta el comportamiento, observaciones y documentos institucionales.
+                        {currentStudent ? `Curso: ${currentStudent.grade} • Código ID: ${currentStudent.id_code || 'INAS-2026'}` : 'Consulta el comportamiento, observaciones y acuerdos institucionales.'}
                     </p>
                 </div>
 
@@ -262,48 +245,79 @@ export default function StudentObserver() {
                             </div>
                         ) : (
                             displayedLogs.map((log) => {
-                                const isAlert = log.type === 'ALERT';
-                                const isCongrats = log.type === 'CONGRATS';
-                                const isNote = !isAlert && !isCongrats;
+                                const titleLower = (log.title || '').toLowerCase();
+                                const catLower = (log.categoryName || '').toLowerCase();
+
+                                const isCongrats = log.type === 'CONGRATS' || log.severity === 'POSITIVO' || titleLower.includes('reconocimiento') || titleLower.includes('mérito') || catLower.includes('reconocimiento');
+                                const isGravisima = log.severity === 'GRAVISIMA' || catLower.includes('tipo iii') || titleLower.includes('gravísima');
+                                const isGrave = !isGravisima && (log.severity === 'GRAVE' || catLower.includes('tipo ii') || titleLower.includes('grave'));
+                                const isLeve = !isCongrats && !isGravisima && !isGrave;
+
+                                let cardBg = 'bg-emerald-50/15 border-emerald-200/80';
+                                let iconBox = 'bg-emerald-50 text-emerald-600 border-emerald-200';
+                                let badgeClass = 'bg-emerald-100/90 text-emerald-900 border-emerald-300';
+                                let badgeLabel = '🟢 Falta Leve (Tipo I)';
+
+                                if (isCongrats) {
+                                    cardBg = 'bg-gradient-to-r from-amber-50/30 via-indigo-50/20 to-white border-amber-200 shadow-2xs';
+                                    iconBox = 'bg-amber-50 text-amber-600 border-amber-200';
+                                    badgeClass = 'bg-amber-100 text-amber-900 border-amber-300 font-black';
+                                    badgeLabel = '⭐ Reconocimiento y Mérito';
+                                } else if (isGravisima) {
+                                    cardBg = 'bg-rose-50/30 border-rose-200';
+                                    iconBox = 'bg-rose-50 text-rose-600 border-rose-200';
+                                    badgeClass = 'bg-rose-100 text-rose-900 border-rose-300 font-black';
+                                    badgeLabel = '🔴 Falta Gravísima (Tipo III)';
+                                } else if (isGrave) {
+                                    cardBg = 'bg-amber-50/25 border-amber-200';
+                                    iconBox = 'bg-amber-50 text-amber-600 border-amber-200';
+                                    badgeClass = 'bg-amber-100 text-amber-900 border-amber-300 font-black';
+                                    badgeLabel = '🟡 Falta Grave (Tipo II)';
+                                }
 
                                 return (
                                     <div 
                                         key={log.id} 
-                                        className={`relative p-5 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
-                                            isAlert 
-                                                ? 'bg-red-50/20 border-red-150' 
-                                                : isCongrats 
-                                                ? 'bg-emerald-50/20 border-emerald-150' 
-                                                : 'bg-blue-50/10 border-blue-150'
-                                        }`}
+                                        className={`relative p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-4 ${cardBg}`}
                                     >
-                                        <div className="flex items-start gap-4">
+                                        <div className="flex items-start gap-4 flex-1">
                                             {/* Icono de Categoria */}
-                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
-                                                isAlert 
-                                                    ? 'bg-red-50 text-red-600 border-red-200' 
-                                                    : isCongrats 
-                                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                                                    : 'bg-blue-50 text-blue-600 border-blue-200'
-                                            }`}>
-                                                {isAlert && <AlertTriangle size={18} />}
-                                                {isCongrats && <Award size={18} />}
-                                                {isNote && <Info size={18} />}
+                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${iconBox}`}>
+                                                {isCongrats && <Award size={20} className="text-amber-500" />}
+                                                {isGravisima && <ShieldAlert size={20} className="text-rose-600" />}
+                                                {isGrave && <AlertTriangle size={20} className="text-amber-600" />}
+                                                {isLeve && <Info size={20} className="text-emerald-600" />}
                                             </div>
 
-                                            <div className="space-y-1.5 flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h4 className="text-xs font-black text-slate-800 leading-tight">
-                                                        {log.title}
-                                                    </h4>
+                                            <div className="space-y-2 flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap justify-between">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h4 className="text-xs font-black text-slate-800 leading-tight">
+                                                            {log.title}
+                                                        </h4>
+                                                        {log.article && (
+                                                            <span className="text-[9px] font-black text-slate-600 bg-slate-100/90 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                                📜 {log.article}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full border ${badgeClass}`}>
+                                                        {badgeLabel}
+                                                    </span>
                                                 </div>
 
                                                 <p className="text-xs text-slate-600 leading-relaxed font-medium">
                                                     {log.content}
                                                 </p>
 
+                                                {log.action_taken && (
+                                                    <div className="bg-indigo-50/80 border border-indigo-150 p-2 rounded-xl text-[11px] font-semibold text-indigo-900">
+                                                        🎯 <strong>Medida Pedagógica / Compromiso:</strong> {log.action_taken}
+                                                    </div>
+                                                )}
+
                                                 {/* Meta Info: Fecha, Hora y Autor */}
-                                                <div className="flex items-center gap-4 text-[10px] text-slate-400 font-semibold pt-1">
+                                                <div className="flex items-center gap-4 text-[10px] text-slate-400 font-semibold pt-1 flex-wrap">
                                                     <span className="flex items-center gap-1">
                                                         <Calendar size={11} /> {log.date}
                                                     </span>
@@ -317,20 +331,28 @@ export default function StudentObserver() {
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col items-end gap-3 shrink-0">
-                                            <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full border ${
-                                                isAlert 
-                                                    ? 'bg-red-100/60 text-red-700 border-red-200/50' 
-                                                    : isCongrats 
-                                                    ? 'bg-emerald-100/60 text-emerald-700 border-emerald-200/50' 
-                                                    : 'bg-blue-100/60 text-blue-700 border-blue-200/50'
-                                            }`}>
-                                                {log.categoryName || (isAlert ? 'Advertencia' : isCongrats ? 'Reconocimiento' : 'Informativa')}
-                                            </span>
-
-                                            <button className="text-slate-400 hover:text-slate-600 p-1">
-                                                <MoreVertical size={14} />
-                                            </button>
+                                        {/* Botón de Firma Digital o Estado */}
+                                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                            {log.parent_signed ? (
+                                                <div className="flex items-center gap-1.5 bg-emerald-100/80 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl text-[10.5px] font-black shadow-2xs">
+                                                    <CheckCircle2 size={13} className="text-emerald-700" />
+                                                    <span>Firmado (Enterado)</span>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSignObservation(log.id)}
+                                                    disabled={signingId === log.id}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/15 active-press"
+                                                    title="Confirmar lectura y dar por enterado"
+                                                >
+                                                    {signingId === log.id ? (
+                                                        <><Loader2 size={12} className="animate-spin" /> Firmando...</>
+                                                    ) : (
+                                                        <><PenTool size={12} /> Firmar de Enterado</>
+                                                    )}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 );

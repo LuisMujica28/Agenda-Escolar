@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { Search, GraduationCap, Users, UserX, UserCheck, UserMinus } from 'lucide-react';
+import { Search, GraduationCap, Users, UserX, UserCheck, UserMinus, Zap } from 'lucide-react';
+import QuickObservationModal from '../../components/QuickObservationModal';
 
 export default function StudentSearch() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -11,6 +12,8 @@ export default function StudentSearch() {
     const [selectedCourse, setSelectedCourse] = useState('');
     const [statusFilter, setStatusFilter] = useState('activo'); // 'all', 'activo', 'retirado'
     const [loading, setLoading] = useState(false);
+    const [quickObsModalOpen, setQuickObsModalOpen] = useState(false);
+    const [quickObsStudentId, setQuickObsStudentId] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -217,11 +220,25 @@ export default function StudentSearch() {
                                             </div>
                                             <p className="text-[10px] font-mono text-gray-400 mt-0.5">{student.id_code}</p>
                                         </div>
-                                                                  <div className="flex items-center gap-2">
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setQuickObsStudentId(student.id);
+                                                setQuickObsModalOpen(true);
+                                            }}
+                                            className="bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200 text-xs font-black px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow-2xs active-press"
+                                            title="Registrar falta rápida o mérito"
+                                        >
+                                            <Zap size={13} />
+                                            <span className="hidden sm:inline">Falta Rápida</span>
+                                        </button>
                                         <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1.5 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition">
                                             Gestionar
                                         </span>
-                                    </div>         </div>
+                                    </div>
                                 </div>
                             );
                         })}
@@ -234,6 +251,15 @@ export default function StudentSearch() {
                     </div>
                 </div>
             )}
+
+            <QuickObservationModal
+                isOpen={quickObsModalOpen}
+                onClose={() => {
+                    setQuickObsModalOpen(false);
+                    setQuickObsStudentId(null);
+                }}
+                initialStudentId={quickObsStudentId}
+            />
         </div>
     );
 }

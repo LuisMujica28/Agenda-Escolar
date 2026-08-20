@@ -7,12 +7,13 @@ import {
     Loader2, BookOpen, Calendar as CalendarIcon, ClipboardList, 
     MessageSquare, User, FileText, Award, Star, Bell, 
     ChevronRight, CheckCircle2, AlertTriangle, TrendingUp,
-    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send, UserMinus, UserCheck, RefreshCw
+    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send, UserMinus, UserCheck, RefreshCw, Zap
 } from 'lucide-react';
 import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS, MOCK_PARENTS } from '../lib/mockData';
 import { getStudentForUser } from '../lib/getStudentForUser';
 import CircularDetailModal from '../components/CircularDetailModal';
 import CircularReadersModal from '../components/CircularReadersModal';
+import QuickObservationModal from '../components/QuickObservationModal';
 
 export default function Dashboard() {
     const { currentUser, userRole } = useAuth();
@@ -20,6 +21,7 @@ export default function Dashboard() {
 
     // Common States
     const [loading, setLoading] = useState(true);
+    const [showQuickObsModal, setShowQuickObsModal] = useState(false);
     const [circulars, setCirculars] = useState([]);
     const [readCirculars, setReadCirculars] = useState([]);
     const [selectedCircular, setSelectedCircular] = useState(null);
@@ -624,7 +626,7 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
-        if (!currentUser) return;
+        if (!currentUser || !userRole) return;
 
         async function loadDashboardData() {
             setLoading(true);
@@ -913,11 +915,11 @@ export default function Dashboard() {
     const formattedCalendarMonthTitle = calendarMonthName.charAt(0).toUpperCase() + calendarMonthName.slice(1);
     const calendarDaysList = getCalendarDays();
 
-    if (loading) {
+    if (loading || !userRole) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
                 <Loader2 className="animate-spin text-indigo-600" size={48} />
-                <p className="text-sm font-semibold text-gray-500 animate-pulse">Cargando panel escolar institucional...</p>
+                <p className="text-sm font-semibold text-gray-500 animate-pulse">Cargando perfil y datos del estudiante...</p>
             </div>
         );
     }
@@ -1232,7 +1234,21 @@ export default function Dashboard() {
                         <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                             <Sparkles className="text-indigo-600" size={20} /> Acciones Rápidas del Docente
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                            <button 
+                                onClick={() => setShowQuickObsModal(true)} 
+                                className="bg-amber-500 hover:bg-amber-600 text-white p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-md shadow-amber-500/20 hover-elevate active-press transition"
+                            >
+                                <div className="flex items-center justify-between w-full">
+                                    <Zap className="text-white group-hover:scale-110 transition-transform" size={28} />
+                                    <span className="text-[9.5px] bg-black/20 text-white px-2 py-0.5 rounded-full font-black">1 Toque</span>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-white">⚡ Anotación Rápida</h4>
+                                    <p className="text-[10px] text-amber-100 mt-1 leading-normal font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
+                                </div>
+                            </button>
+
                             <Link 
                                 to="/teacher/search" 
                                 className="bg-indigo-50/20 border border-indigo-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70"
@@ -2141,6 +2157,11 @@ export default function Dashboard() {
                     onClose={() => setReadersModalCircular(null)}
                 />
             )}
+
+            <QuickObservationModal
+                isOpen={showQuickObsModal}
+                onClose={() => setShowQuickObsModal(false)}
+            />
         </>
     );
 }

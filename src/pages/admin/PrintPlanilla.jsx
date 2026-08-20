@@ -92,18 +92,26 @@ export default function PrintPlanilla() {
         loadCourses();
     }, []);
 
-    // Cargar lista única de docentes basados en class_sheets
+    // Cargar lista única de docentes basados en users / teachers
     useEffect(() => {
         async function loadTeachers() {
             try {
-                const snap = await getDocs(collection(db, 'class_sheets'));
-                if (!snap.empty) {
-                    const emails = snap.docs.map(doc => doc.data().teacher_email).filter(Boolean);
-                    const uniqueEmails = Array.from(new Set(emails)).sort();
-                    setTeachersList(uniqueEmails);
-                    if (uniqueEmails.length > 0) {
-                        setSelectedTeacher(uniqueEmails[0]);
-                    }
+                const uSnap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['teacher', 'admin'])));
+                let list = uSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (list.length === 0) {
+                    const tSnap = await getDocs(collection(db, 'teachers'));
+                    list = tSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
+
+                // Filtrar los que tengan nombre o email y ordenar alfabéticamente
+                list = list
+                    .filter(t => t.name || t.email)
+                    .sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
+
+                setTeachersList(list);
+                if (list.length > 0) {
+                    setSelectedTeacher(list[0].email || list[0].id);
                 }
             } catch (e) {
                 console.error("Error al cargar docentes:", e);
@@ -116,19 +124,29 @@ export default function PrintPlanilla() {
     useEffect(() => {
         if (printMode === 'batch' && selectedTeacher) {
             // Modo Docente
-            async function loadTeacherAssignments() {
-                try {
-                    const snap = await getDocs(collection(db, 'class_sheets'));
-                    const list = snap.docs
-                        .map(doc => doc.data())
-                        .filter(d => d.teacher_email === selectedTeacher)
-                        .map(d => ({ course: d.course, subject: d.subject, checked: true }));
+            const currentTeacherObj = teachersList.find(t => t.email === selectedTeacher || t.id === selectedTeacher);
+            if (currentTeacherObj) {
+                if (Array.isArray(currentTeacherObj.academic_load) && currentTeacherObj.academic_load.length > 0) {
+                    const list = currentTeacherObj.academic_load.map(item => ({
+                        course: item.course,
+                        subject: item.subject,
+                        checked: true
+                    }));
                     setBatchClasses(list);
-                } catch (e) {
-                    console.error("Error al cargar asignaturas del docente:", e);
+                } else if (Array.isArray(currentTeacherObj.courses) && Array.isArray(currentTeacherObj.subjects)) {
+                    const list = [];
+                    currentTeacherObj.courses.forEach(c => {
+                        currentTeacherObj.subjects.forEach(s => {
+                            list.push({ course: c, subject: s, checked: true });
+                        });
+                    });
+                    setBatchClasses(list);
+                } else {
+                    setBatchClasses([]);
                 }
+            } else {
+                setBatchClasses([]);
             }
-            loadTeacherAssignments();
         } else if (printMode === 'course' && selectedCourse) {
             // Modo Lote por Curso (Todas las asignaturas del curso)
             const list = subjects.map(s => ({ course: selectedCourse, subject: s, checked: true }));
@@ -143,7 +161,7 @@ export default function PrintPlanilla() {
             });
             setBatchClasses(list);
         }
-    }, [printMode, selectedTeacher, selectedCourse, courses]);
+    }, [printMode, selectedTeacher, selectedCourse, courses, teachersList]);
 
     // Cargar estudiantes y calificaciones de una planilla única
     const fetchPlanillaData = async () => {
@@ -373,7 +391,23 @@ export default function PrintPlanilla() {
                         <div className="flex justify-between items-center bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-1 mt-1 text-[7.5px] leading-none font-semibold text-slate-600">
                             <div>
                                 Docente Asignado: <span className="text-slate-900 uppercase font-bold">
-                                    {printMode === 'batch' && selectedTeacher ? selectedTeacher : (currentUser?.displayName || currentUser?.email)}
+                                    {(() => {
+                                        if (printMode === 'batch' && selectedTeacher) {
+                                            const t = teachersList.find(item => item.email === selectedTeacher || item.id === selectedTeacher);
+                                            if (t) return t.name;
+                                        }
+                                        const assigned = teachersList.find(t => {
+                                            if (t.academic_load && Array.isArray(t.academic_load)) {
+                                                return t.academic_load.some(a => a.course === courseName && a.subject === subjectName);
+                                            }
+                                            if (t.courses && t.subjects) {
+                                                return t.courses.includes(courseName) && t.subjects.includes(subjectName);
+                                            }
+                                            return false;
+                                        });
+                                        if (assigned) return assigned.name;
+                                        return currentUser?.displayName || currentUser?.email || 'DOCENTE INSTITUCIONAL';
+                                    })()}
                                 </span>
                             </div>
                             <div>
@@ -862,7 +896,7 @@ export default function PrintPlanilla() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {printMode === 'batch' && (
                                 <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Seleccionar Docente (Correo)</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Seleccionar Docente</label>
                                     <select 
                                         className="w-full bg-gray-55 border border-gray-150 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
                                         value={selectedTeacher}
@@ -870,10 +904,12 @@ export default function PrintPlanilla() {
                                         disabled={loadingBatch}
                                     >
                                         {teachersList.length === 0 ? (
-                                            <option value="">No hay docentes vinculados a planillas</option>
+                                            <option value="">No hay docentes registrados</option>
                                         ) : (
-                                            teachersList.map(email => (
-                                                <option key={email} value={email}>{email}</option>
+                                            teachersList.map(t => (
+                                                <option key={t.email || t.id} value={t.email || t.id}>
+                                                    {t.name} {t.position ? `— ${t.position}` : `(${t.email})`}
+                                                </option>
                                             ))
                                         )}
                                     </select>

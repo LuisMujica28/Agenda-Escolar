@@ -1,5 +1,5 @@
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import { MOCK_STUDENTS } from './mockData';
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { MOCK_STUDENTS } from './mockData.js';
 
 /**
  * Calcula un puntaje de coincidencia entre el correo/usuario activo y un estudiante.
@@ -82,10 +82,6 @@ function calculateStudentMatchScore(student, userEmail, userId) {
 export async function getStudentForUser(db, currentUser) {
     if (!currentUser) return null;
 
-    if (currentUser.uid?.startsWith('fake-')) {
-        return MOCK_STUDENTS[0];
-    }
-
     try {
         const allStudentsSnap = await getDocs(collection(db, 'students'));
         if (allStudentsSnap.empty) {
@@ -107,17 +103,23 @@ export async function getStudentForUser(db, currentUser) {
         }
 
         if (bestStudent && highestScore > 0) {
+            // Auto-vincular parent_uids en Firestore si no está presente
+            if (currentUser.uid && (!bestStudent.parent_uids || !bestStudent.parent_uids.includes(currentUser.uid))) {
+                try {
+                    await updateDoc(doc(db, 'students', bestStudent.id), {
+                        parent_uids: arrayUnion(currentUser.uid)
+                    });
+                } catch (e) {
+                    // Silently continue
+                }
+            }
             return bestStudent;
         }
 
-        // Fallback únicamente si es cuenta genérica de prueba (demo / colegio.com)
-        if (currentUser.email && (currentUser.email.includes('demo') || currentUser.email.includes('colegio.com'))) {
-            return allStudents[0];
-        }
-
-        return allStudents[0];
+        return allStudents[0] || MOCK_STUDENTS[0];
     } catch (err) {
         console.error("Error al buscar estudiante para el usuario:", err);
         return MOCK_STUDENTS[0];
     }
 }
+
