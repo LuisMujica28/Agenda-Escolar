@@ -60,6 +60,7 @@ export default function PrintBoletin() {
     // Estados para modo masivo / individual
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState('ALL');
+    const [selectedPeriod, setSelectedPeriod] = useState('AUTO'); // 'AUTO', '1', '2', '3', '4'
     const [studentsList, setStudentsList] = useState([]);
     const [allGradesMap, setAllGradesMap] = useState({}); // { student_id: [grades] }
     const [loading, setLoading] = useState(true);
@@ -173,11 +174,11 @@ export default function PrintBoletin() {
 
     const getDesempenoColorClass = (grade) => {
         const num = Number(grade);
-        if (isNaN(num)) return 'text-slate-450 font-normal';
-        if (num >= 95) return 'text-emerald-700 font-extrabold';
-        if (num >= 80) return 'text-indigo-700 font-bold';
-        if (num >= 75) return 'text-slate-700 font-semibold';
-        return 'text-rose-700 font-black';
+        if (isNaN(num)) return 'text-slate-400 font-normal';
+        if (num >= 95) return 'text-slate-800 font-bold';
+        if (num >= 80) return 'text-slate-700 font-semibold';
+        if (num >= 75) return 'text-slate-600 font-medium';
+        return 'text-rose-700 font-bold';
     };
 
     const handlePrint = () => {
@@ -318,22 +319,39 @@ export default function PrintBoletin() {
                     </div>
                 </div>
 
-                {/* Filtros de Curso en modo Masivo */}
-                {!isSingleMode && (
+                {/* Filtros de Curso y Periodo en modo Masivo */}
+                <div className="flex flex-wrap items-center gap-3">
+                    {!isSingleMode && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-slate-600">Curso:</span>
+                            <select 
+                                value={selectedCourse} 
+                                onChange={(e) => setSelectedCourse(e.target.value)}
+                                className="bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                            >
+                                <option value="ALL">🎓 Todos los Cursos ({studentsList.length} Estudiantes)</option>
+                                {courses.map(c => (
+                                    <option key={c} value={c}>Grado {c}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-extrabold text-slate-600">Curso:</span>
+                        <span className="text-xs font-extrabold text-slate-600">Periodo a Emitir:</span>
                         <select 
-                            value={selectedCourse} 
-                            onChange={(e) => setSelectedCourse(e.target.value)}
+                            value={selectedPeriod} 
+                            onChange={(e) => setSelectedPeriod(e.target.value)}
                             className="bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
                         >
-                            <option value="ALL">🎓 Todos los Cursos ({studentsList.length} Estudiantes)</option>
-                            {courses.map(c => (
-                                <option key={c} value={c}>Grado {c}</option>
-                            ))}
+                            <option value="AUTO">⚡ Automático (Según notas registradas)</option>
+                            <option value="1">Periodo 1 (Meta: 75 pts)</option>
+                            <option value="2">Periodo 2 (Meta: 150 pts)</option>
+                            <option value="3">Periodo 3 (Meta: 225 pts)</option>
+                            <option value="4">Periodo 4 (Meta: 300 pts / Final)</option>
                         </select>
                     </div>
-                )}
+                </div>
 
                 <button 
                     onClick={handlePrint}
@@ -347,6 +365,18 @@ export default function PrintBoletin() {
             <div className="no-print-scroll w-full flex flex-col items-center gap-8">
                 {studentsList.map((studentItem) => {
                     const studentGrades = allGradesMap[studentItem.id] || [];
+
+                    // Determinar el periodo activo para este boletín
+                    let activeP = 1;
+                    if (selectedPeriod !== 'AUTO') {
+                        activeP = Number(selectedPeriod);
+                    } else {
+                        const evaluatedPeriods = studentGrades
+                            .filter(g => Number(g.grade) > 0)
+                            .map(g => Number(g.period) || 1);
+                        activeP = evaluatedPeriods.length > 0 ? Math.max(...evaluatedPeriods) : 1;
+                    }
+                    const targetPeriodPts = activeP * 75;
 
                     // Agrupar calificaciones por materia
                     const gradesBySubject = studentGrades.reduce((acc, current) => {
@@ -377,17 +407,17 @@ export default function PrintBoletin() {
                                 {/* Encabezado Institucional */}
                                 <div>
                                     <div className="flex items-center justify-between gap-3 border-b pb-2 border-slate-300">
-                                        {/* Logo / Escudo */}
-                                        <div className="w-[1.6cm] h-[1.6cm] shrink-0 flex items-center justify-center">
+                                        {/* Logo / Escudo Oficial */}
+                                        <div className="w-[1.8cm] h-[1.8cm] shrink-0 flex items-center justify-center">
                                             {logoError ? (
-                                                <svg viewBox="0 0 100 100" className="w-full h-full fill-indigo-900 text-indigo-950">
+                                                <svg viewBox="0 0 100 100" className="w-full h-full fill-slate-700 text-slate-800">
                                                     <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="3" />
                                                     <path d="M50 15 L20 40 L30 75 L70 75 L80 40 Z" fill="none" stroke="currentColor" strokeWidth="2.5" />
                                                 </svg>
                                             ) : (
                                                 <img 
-                                                    src="/Escudo.png" 
-                                                    alt="Escudo INAS" 
+                                                    src="/Escudo1.png" 
+                                                    alt="Escudo Institucional INAS" 
                                                     className="w-full h-full object-contain" 
                                                     onError={() => setLogoError(true)} 
                                                 />
@@ -415,9 +445,9 @@ export default function PrintBoletin() {
 
                                         {/* Periodo y Año Lectivo */}
                                         <div className="w-[1.6cm] h-[1.6cm] shrink-0 flex flex-col items-center justify-center border border-slate-200 bg-slate-50 rounded-xl p-1 text-center">
-                                            <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-tighter">Año</span>
-                                            <span className="text-lg font-black text-indigo-950 leading-none">2026</span>
-                                            <span className="text-[6.5px] font-bold text-slate-500 tracking-tighter mt-0.5 uppercase">LECTIVO</span>
+                                            <span className="text-[7.5px] font-extrabold text-slate-500 uppercase tracking-tighter">Periodo {activeP}</span>
+                                            <span className="text-lg font-black text-slate-800 leading-none">2026</span>
+                                            <span className="text-[6.5px] font-bold text-slate-400 tracking-tighter mt-0.5 uppercase">AÑO LECTIVO</span>
                                         </div>
                                     </div>
 
@@ -447,45 +477,50 @@ export default function PrintBoletin() {
                                             <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Fecha de Expedición:</span>
                                             <span className="font-medium text-slate-600 text-[9px]">{new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                         </div>
-                                        <div className="bg-indigo-900 text-white rounded-lg p-1 px-2 flex flex-col justify-center items-center text-center">
-                                            <span className="font-bold text-[7.5px] uppercase tracking-wider leading-none text-indigo-200">Promedio</span>
-                                            <span className="text-base font-black mt-0.5 leading-none">{overallAverage}</span>
-                                        </div>
+                                        <div className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-1.5 px-3 flex flex-col justify-center items-center text-center">
+                                             <span className="font-bold text-[8px] uppercase tracking-wider leading-none text-slate-500">Promedio</span>
+                                             <span className="text-base font-black mt-0.5 leading-none text-slate-800">{overallAverage}</span>
+                                         </div>
                                     </div>
 
                                     {/* Listado de Calificaciones */}
                                     <div className="mt-3">
-                                        <table className="w-full text-left text-[8.5px] border-collapse border border-slate-350">
+                                        <table className="w-full text-left text-[10px] border-collapse border border-slate-250">
                                             <thead>
-                                                <tr className="bg-slate-900 text-white uppercase text-[8.5px] tracking-wider text-center">
-                                                    <th rowSpan="2" className="py-1.5 px-2.5 text-left w-[30%] border-r border-slate-700 align-middle">Áreas / Asignaturas</th>
-                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">1 Per.</th>
-                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">2 Per.</th>
-                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">3 Per.</th>
-                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 border-r border-slate-700 text-[8px]">4 Per.</th>
-                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-700 text-[8px] align-middle">Prom. Acumulado</th>
+                                                <tr className="bg-slate-100/90 text-slate-700 uppercase text-[9.5px] tracking-wider text-center font-bold border-b border-slate-250">
+                                                    <th rowSpan="2" className="py-2 px-3 text-left w-[30%] border-r border-slate-250 align-middle text-slate-800">Áreas / Asignaturas</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-250 border-r border-slate-250 text-[9px]">1 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-250 border-r border-slate-250 text-[9px]">2 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-250 border-r border-slate-250 text-[9px]">3 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-250 border-r border-slate-250 text-[9px]">4 Per.</th>
+                                                    <th colSpan="2" className="py-1 px-1 border-b border-slate-250 border-l border-slate-250 bg-stone-100/80 text-stone-800 text-[9px] align-middle font-bold">
+                                                        Puntos Acum. / Meta P{activeP}: {targetPeriodPts} pts
+                                                    </th>
                                                 </tr>
-                                                <tr className="bg-slate-800 text-white uppercase text-[7.5px] text-center">
-                                                    <th className="py-0.5 px-0.5 w-[6.5%] border-r border-slate-700">Nota</th>
-                                                    <th className="py-0.5 px-0.5 w-[5%] border-r border-slate-700">Des.</th>
-                                                    <th className="py-0.5 px-0.5 w-[6.5%] border-r border-slate-700">Nota</th>
-                                                    <th className="py-0.5 px-0.5 w-[5%] border-r border-slate-700">Des.</th>
-                                                    <th className="py-0.5 px-0.5 w-[6.5%] border-r border-slate-700">Nota</th>
-                                                    <th className="py-0.5 px-0.5 w-[5%] border-r border-slate-700">Des.</th>
-                                                    <th className="py-0.5 px-0.5 w-[6.5%] border-r border-slate-700">Nota</th>
-                                                    <th className="py-0.5 px-0.5 w-[5%] border-r border-slate-700">Des.</th>
-                                                    <th className="py-0.5 px-0.5 w-[7%] border-r border-slate-700">Nota</th>
-                                                    <th className="py-0.5 px-0.5 w-[6.5%]">Des.</th>
+                                                <tr className="bg-slate-50/90 text-slate-600 uppercase text-[8px] text-center font-medium border-b border-slate-250">
+                                                    <th className="py-1 px-0.5 w-[6.5%] border-r border-slate-250">Nota</th>
+                                                    <th className="py-1 px-0.5 w-[5%] border-r border-slate-250">Des.</th>
+                                                    <th className="py-1 px-0.5 w-[6.5%] border-r border-slate-250">Nota</th>
+                                                    <th className="py-1 px-0.5 w-[5%] border-r border-slate-250">Des.</th>
+                                                    <th className="py-1 px-0.5 w-[6.5%] border-r border-slate-250">Nota</th>
+                                                    <th className="py-1 px-0.5 w-[5%] border-r border-slate-250">Des.</th>
+                                                    <th className="py-1 px-0.5 w-[6.5%] border-r border-slate-250">Nota</th>
+                                                    <th className="py-1 px-0.5 w-[5%] border-r border-slate-250">Des.</th>
+                                                    <th className="py-1 px-0.5 w-[7%] border-r border-slate-250 border-l border-slate-250 bg-stone-50 text-stone-700 font-semibold">Pts</th>
+                                                    <th className="py-1 px-0.5 w-[6.5%] bg-stone-50 text-stone-700 font-semibold">Estado</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {AREAS_CURRICULUM.map((areaObj) => {
                                                     return (
                                                         <React.Fragment key={areaObj.area}>
-                                                            {/* Encabezado de Área */}
-                                                            <tr className="bg-slate-100/90 font-black text-[8.5px] text-slate-800 border-b border-slate-250">
-                                                                <td colSpan="11" className="py-1 px-2.5 text-left uppercase tracking-wide border-r border-slate-200 bg-slate-100">
-                                                                    {areaObj.area}
+                                                            {/* Encabezado de Área con Tono Suave y Pálido */}
+                                                            <tr className="bg-stone-100/70 font-bold text-[9.5px] text-slate-800 border-y border-stone-200">
+                                                                <td colSpan="11" className="py-1.5 px-3 text-left uppercase tracking-wide border-r border-stone-200">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="w-1.5 h-1.5 rounded-xs bg-slate-400 inline-block shrink-0"></span>
+                                                                        <span className="text-slate-800 font-bold">{areaObj.area}</span>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                             
@@ -494,26 +529,54 @@ export default function PrintBoletin() {
                                                                 const subjectGrades = gradesBySubject[subject] || [];
                                                                 
                                                                 const validGrades = subjectGrades.map(g => Number(g.grade)).filter(n => !isNaN(n) && n > 0);
-                                                                const avg = validGrades.length > 0 
-                                                                    ? validGrades.reduce((sum, g) => sum + g, 0) / validGrades.length 
-                                                                    : null;
+                                                                const totalPoints = validGrades.reduce((sum, g) => sum + g, 0);
+                                                                
+                                                                // Determinar el periodo evaluado de esta asignatura
+                                                                const subjectPeriods = subjectGrades.filter(g => Number(g.grade) > 0).map(g => Number(g.period) || 1);
+                                                                const subjectP = selectedPeriod !== 'AUTO' ? Number(selectedPeriod) : (subjectPeriods.length > 0 ? Math.max(...subjectPeriods) : activeP);
+                                                                const expectedTarget = subjectP * 75;
+                                                                const diff = totalPoints - expectedTarget;
+                                                                const isPassingSoFar = diff >= 0;
+
+                                                                let statusBadgeText = '';
+                                                                let statusBadgeClass = '';
+
+                                                                if (subjectP === 4) {
+                                                                    if (totalPoints >= 300) {
+                                                                        const surplus = totalPoints - 300;
+                                                                        statusBadgeText = surplus > 0 ? `APROBÓ (+${surplus})` : 'APROBÓ';
+                                                                        statusBadgeClass = 'text-slate-700 font-bold';
+                                                                    } else {
+                                                                        const deficit = 300 - totalPoints;
+                                                                        statusBadgeText = `REPROBÓ (-${deficit})`;
+                                                                        statusBadgeClass = 'text-rose-700 font-bold';
+                                                                    }
+                                                                } else {
+                                                                    if (diff >= 0) {
+                                                                        statusBadgeText = diff > 0 ? `AL DÍA (+${diff})` : 'AL DÍA';
+                                                                        statusBadgeClass = 'text-slate-700 font-bold';
+                                                                    } else {
+                                                                        statusBadgeText = `EN RIESGO (${diff})`;
+                                                                        statusBadgeClass = 'text-rose-700 font-bold';
+                                                                    }
+                                                                }
 
                                                                 return (
-                                                                    <tr key={subject} className="border-b border-slate-200 text-center font-semibold hover:bg-slate-50/30 transition text-[8.5px]">
-                                                                        <td className="py-1 px-2.5 text-left font-bold text-slate-800 uppercase border-r border-slate-200 truncate">
+                                                                    <tr key={subject} className="border-b border-slate-200 text-center font-medium hover:bg-slate-50/40 transition text-[9.5px]">
+                                                                        <td className="py-1.5 px-3 text-left font-semibold text-slate-700 uppercase border-r border-slate-200 truncate">
                                                                             {subject}
                                                                         </td>
                                                                         
                                                                         {[1, 2, 3, 4].map(p => {
-                                                                            const gradeDoc = subjectGrades.find(g => (Number(g.period) || 1) === p);
+                                                                            const gradeDoc = subjectGrades.find(g => (Number(g.grade) > 0) && (Number(g.period) || 1) === p);
                                                                             const val = gradeDoc ? Number(gradeDoc.grade) : 0;
                                                                             if (gradeDoc && val > 0) {
                                                                                 return (
                                                                                     <React.Fragment key={p}>
-                                                                                        <td className="py-1 px-0.5 font-bold border-r border-slate-200 text-slate-800 text-[8.5px]">
+                                                                                        <td className="py-1.5 px-0.5 font-bold border-r border-slate-200 text-slate-800 text-[9.5px]">
                                                                                             {val.toFixed(0)}
                                                                                         </td>
-                                                                                        <td className={`py-1 px-0.5 font-bold border-r border-slate-200 text-[8.5px] ${getDesempenoColorClass(val)}`}>
+                                                                                        <td className={`py-1.5 px-0.5 border-r border-slate-200 text-[9.5px] ${getDesempenoColorClass(val)}`}>
                                                                                             {getDesempenoAbbr(val)}
                                                                                         </td>
                                                                                     </React.Fragment>
@@ -521,26 +584,28 @@ export default function PrintBoletin() {
                                                                             } else {
                                                                                 return (
                                                                                     <React.Fragment key={p}>
-                                                                                        <td className="py-1 px-0.5 text-slate-400 border-r border-slate-200 font-normal text-[8.5px]">-</td>
-                                                                                        <td className="py-1 px-0.5 text-slate-400 border-r border-slate-200 font-normal text-[8.5px]">-</td>
+                                                                                        <td className="py-1.5 px-0.5 text-slate-350 border-r border-slate-200 font-normal text-[9.5px]">-</td>
+                                                                                        <td className="py-1.5 px-0.5 text-slate-350 border-r border-slate-200 font-normal text-[9.5px]">-</td>
                                                                                     </React.Fragment>
                                                                                 );
                                                                             }
                                                                         })}
 
-                                                                        {avg !== null ? (
+                                                                        {validGrades.length > 0 ? (
                                                                             <>
-                                                                                <td className="py-1 px-0.5 font-extrabold border-r border-slate-200 text-indigo-900 bg-indigo-50/10 text-[9.5px]">
-                                                                                    {avg.toFixed(0)}
+                                                                                <td className={`py-1.5 px-0.5 font-bold border-r border-stone-200 border-l border-stone-200 text-[10px] bg-stone-50/50 ${
+                                                                                    isPassingSoFar ? 'text-slate-800' : 'text-rose-700 bg-rose-50/30'
+                                                                                }`}>
+                                                                                    {totalPoints}
                                                                                 </td>
-                                                                                <td className={`py-1 px-0.5 font-black bg-indigo-50/10 text-[9.5px] ${getDesempenoColorClass(avg)}`}>
-                                                                                    {getDesempenoAbbr(avg)}
+                                                                                <td className={`py-1.5 px-0.5 font-bold text-[8px] tracking-tight whitespace-nowrap bg-stone-50/30 ${statusBadgeClass}`}>
+                                                                                    {statusBadgeText}
                                                                                 </td>
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <td className="py-1 px-0.5 text-slate-450 border-r border-slate-200 font-normal bg-slate-50/30 text-[8.5px]">N.A.</td>
-                                                                                <td className="py-1 px-0.5 text-slate-450 font-normal bg-slate-50/30 text-[8.5px]">N.A.</td>
+                                                                                <td className="py-1.5 px-0.5 text-slate-350 border-r border-stone-200 border-l border-stone-200 font-normal bg-stone-50/20 text-[9.5px]">-</td>
+                                                                                <td className="py-1.5 px-0.5 text-slate-350 font-normal bg-stone-50/20 text-[9.5px]">-</td>
                                                                             </>
                                                                         )}
                                                                     </tr>
@@ -551,20 +616,6 @@ export default function PrintBoletin() {
                                                 })}
                                             </tbody>
                                         </table>
-
-                                        {/* Comentarios y Observaciones específicas */}
-                                        {studentGrades.some(g => g.comment && g.comment.trim()) && (
-                                            <div className="mt-2 border border-slate-200 rounded-lg p-2 bg-slate-50/30 text-[8px] leading-tight">
-                                                <p className="font-extrabold text-[8.5px] text-indigo-950 uppercase mb-0.5 border-b border-slate-200 pb-0.5 tracking-wide">Observaciones Específicas por Asignatura:</p>
-                                                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                                                    {studentGrades.filter(g => g.comment && g.comment.trim()).map(g => (
-                                                        <div key={g.id} className="text-slate-650 font-medium">
-                                                            <span className="font-bold text-slate-800 uppercase">{g.subject}</span> (P{g.period}): <span className="italic">“{g.comment}”</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 

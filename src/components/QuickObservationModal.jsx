@@ -18,6 +18,7 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
     const [searchStudent, setSearchStudent] = useState('');
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [loadingStudents, setLoadingStudents] = useState(false);
+    const [showStudentPickerMobile, setShowStudentPickerMobile] = useState(false);
 
     // Estado de la falta / novedad
     const [activeCategoryTab, setActiveCategoryTab] = useState('TIPO_1'); // TIPO_1, TIPO_2, TIPO_3, RECONOCIMIENTO
@@ -36,6 +37,8 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
 
     useEffect(() => {
         if (!isOpen) return;
+        setSuccessState(false);
+        setErrorMessage('');
 
         async function fetchStudents() {
             setLoadingStudents(true);
@@ -57,6 +60,9 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
                     if (currentSt && currentSt.grade) {
                         setSelectedCourseFilter(currentSt.grade);
                     }
+                    setShowStudentPickerMobile(false);
+                } else {
+                    setShowStudentPickerMobile(true);
                 }
             } catch (err) {
                 console.error("Error al cargar estudiantes en modal rápido:", err);
@@ -247,45 +253,45 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
     const presetsForCategory = CONVIVENCIA_PRESETS.filter(p => p.category === activeCategoryTab);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/65 backdrop-blur-xs animate-fade-in overflow-y-auto">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-slate-950/70 backdrop-blur-xs animate-fade-in overflow-y-auto">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl overflow-hidden my-auto max-h-[96vh] sm:max-h-[92vh] flex flex-col">
                 
                 {/* Header del Modal */}
-                <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-400/15 border border-amber-400/30 text-amber-400 flex items-center justify-center shrink-0">
-                            <Zap size={22} className="animate-pulse" />
+                <div className="bg-slate-900 text-white p-3.5 sm:p-5 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-400/15 border border-amber-400/30 text-amber-400 flex items-center justify-center shrink-0">
+                            <Zap size={18} className="animate-pulse" />
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-base sm:text-lg font-black tracking-tight">
-                                    Registro Rápido de Faltas y Observador
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                <h2 className="text-sm sm:text-base font-black tracking-tight truncate">
+                                    Anotación y Falta Rápida
                                 </h2>
-                                <span className="bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-[10px] font-black px-2 py-0.5 rounded-full">
+                                <span className="bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full">
                                     Manual INAS
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-400 font-medium">
-                                Diligencia en 3 clics y notifica automáticamente a la familia.
+                            <p className="text-[10.5px] sm:text-xs text-slate-400 font-medium truncate">
+                                Registra en el observador y notifica de inmediato a los acudientes.
                             </p>
                         </div>
                     </div>
 
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-white p-2 rounded-2xl hover:bg-slate-800 transition"
+                        className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition shrink-0 ml-2"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 </div>
 
                 {/* Mensaje de Éxito Emergente */}
                 {successState && (
-                    <div className="p-6 bg-emerald-50 border-b border-emerald-200 text-emerald-900 flex flex-col items-center justify-center gap-2 text-center">
-                        <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center animate-bounce">
-                            <CheckCircle2 size={28} />
+                    <div className="p-4 sm:p-6 bg-emerald-50 border-b border-emerald-200 text-emerald-900 flex flex-col items-center justify-center gap-2 text-center">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center animate-bounce">
+                            <CheckCircle2 size={24} />
                         </div>
-                        <h3 className="text-base font-black">¡Anotación Guardada y Notificada con Éxito!</h3>
+                        <h3 className="text-sm sm:text-base font-black">¡Anotación Guardada y Notificada con Éxito!</h3>
                         <p className="text-xs text-emerald-700 font-medium">
                             Se registró en el observador de {selectedStudentIds.length} estudiante(s) y se despachó el mensaje a los padres.
                         </p>
@@ -293,125 +299,166 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
                 )}
 
                 {/* Contenido Principal con 2 Columnas Divididas */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
                     
                     {/* Columna Izquierda: Selección de Estudiante(s) (5 de 12) */}
-                    <div className="lg:col-span-5 flex flex-col gap-3 border-b lg:border-b-0 lg:border-r border-slate-200 pb-5 lg:pb-0 lg:pr-5">
+                    <div className="lg:col-span-5 flex flex-col gap-3 border-b lg:border-b-0 lg:border-r border-slate-200 pb-4 lg:pb-0 lg:pr-5">
                         
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                <Users size={15} className="text-indigo-600" />
-                                1. Seleccionar Estudiante(s)
-                            </label>
-                            <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
-                                {selectedStudentIds.length} elegido(s)
-                            </span>
-                        </div>
-
-                        {/* Buscador y Filtro por Curso */}
-                        <div className="space-y-2">
-                            <div className="relative">
-                                <Search size={14} className="absolute left-3 top-3 text-slate-400 pointer-events-none" />
-                                <input
-                                    type="text"
-                                    value={searchStudent}
-                                    onChange={e => setSearchStudent(e.target.value)}
-                                    placeholder="Buscar por apellido o nombre..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-9 pr-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-indigo-600/20 outline-none"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2">
-                                <select
-                                    value={selectedCourseFilter}
-                                    onChange={e => setSelectedCourseFilter(e.target.value)}
-                                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none"
-                                >
-                                    <option value="ALL">Todos los Cursos</option>
-                                    {courses.map(c => (
-                                        <option key={c} value={c}>Curso {c}</option>
-                                    ))}
-                                </select>
-
+                        {/* Selector Compacto en Mobile cuando ya hay estudiante seleccionado */}
+                        {selectedStudentIds.length > 0 && !showStudentPickerMobile && (
+                            <div className="lg:hidden bg-indigo-50/70 border border-indigo-200/80 p-3 rounded-2xl flex items-center justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <span className="text-[10px] font-black text-indigo-900 uppercase block tracking-wider">
+                                        👤 Alumno(s) Seleccionado(s) ({selectedStudentIds.length})
+                                    </span>
+                                    <p className="text-xs font-bold text-slate-800 truncate">
+                                        {selectedStudentIds.length === 1 
+                                            ? (() => {
+                                                const st = students.find(s => s.id === selectedStudentIds[0]);
+                                                return st ? (st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name) : '1 seleccionado';
+                                            })()
+                                            : `${selectedStudentIds.length} alumnos seleccionados`
+                                        }
+                                    </p>
+                                </div>
                                 <button
                                     type="button"
-                                    onClick={handleSelectAllCurrentFilter}
-                                    className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 rounded-xl transition shrink-0"
+                                    onClick={() => setShowStudentPickerMobile(true)}
+                                    className="text-[10px] font-black text-indigo-700 bg-white border border-indigo-300 px-2.5 py-1.5 rounded-xl hover:bg-indigo-50 shadow-2xs shrink-0"
                                 >
-                                    {filteredStudents.length > 0 && filteredStudents.every(s => selectedStudentIds.includes(s.id))
-                                        ? 'Desmarcar lista'
-                                        : 'Marcar lista'}
+                                    Cambiar
                                 </button>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Lista Scrollable de Estudiantes */}
-                        <div className="flex-1 min-h-[220px] max-h-[300px] overflow-y-auto space-y-1.5 pr-1 border border-slate-100 rounded-2xl p-1 bg-slate-50/50">
-                            {loadingStudents ? (
-                                <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
-                                    <Loader2 className="animate-spin text-indigo-600" size={24} />
-                                    <span className="text-xs font-bold">Cargando listado oficial...</span>
-                                </div>
-                            ) : filteredStudents.length === 0 ? (
-                                <div className="py-8 text-center text-slate-400 text-xs font-medium">
-                                    No se encontraron estudiantes para este filtro.
-                                </div>
-                            ) : (
-                                filteredStudents.map(st => {
-                                    const isSelected = selectedStudentIds.includes(st.id);
-                                    const displayName = st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name;
+                        {/* Listado Completo de Estudiantes (visible en desktop o si se expande en móvil) */}
+                        <div className={`space-y-3 ${selectedStudentIds.length > 0 && !showStudentPickerMobile ? 'hidden lg:block' : 'block'}`}>
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Users size={15} className="text-indigo-600" />
+                                    1. Seleccionar Estudiante(s)
+                                </label>
+                                <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                                    {selectedStudentIds.length} elegido(s)
+                                </span>
+                            </div>
 
-                                    return (
-                                        <div
-                                            key={st.id}
-                                            onClick={() => toggleStudentSelection(st.id)}
-                                            className={`p-2 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ${
-                                                isSelected
-                                                    ? 'bg-indigo-50 border-indigo-300 shadow-2xs'
-                                                    : 'bg-white border-slate-200/80 hover:bg-slate-100/70'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <div className={`w-5 h-5 rounded-md flex items-center justify-center text-xs font-black shrink-0 transition ${
-                                                    isSelected ? 'bg-indigo-600 text-white' : 'border border-slate-300 bg-white text-transparent'
-                                                }`}>
-                                                    <Check size={12} strokeWidth={3} />
+                            {/* Buscador y Filtro por Curso */}
+                            <div className="space-y-2">
+                                <div className="relative">
+                                    <Search size={14} className="absolute left-3 top-2.5 text-slate-400 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        value={searchStudent}
+                                        onChange={e => setSearchStudent(e.target.value)}
+                                        placeholder="Buscar por apellido o nombre..."
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-indigo-600/20 outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between gap-2">
+                                    <select
+                                        value={selectedCourseFilter}
+                                        onChange={e => setSelectedCourseFilter(e.target.value)}
+                                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none"
+                                    >
+                                        <option value="ALL">Todos los Cursos</option>
+                                        {courses.map(c => (
+                                            <option key={c} value={c}>Curso {c}</option>
+                                        ))}
+                                    </select>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectAllCurrentFilter}
+                                        className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 rounded-xl transition shrink-0"
+                                    >
+                                        {filteredStudents.length > 0 && filteredStudents.every(s => selectedStudentIds.includes(s.id))
+                                            ? 'Desmarcar'
+                                            : 'Marcar todo'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Lista Scrollable de Estudiantes */}
+                            <div className="flex-1 min-h-[160px] max-h-[220px] lg:max-h-[300px] overflow-y-auto space-y-1.5 pr-1 border border-slate-100 rounded-2xl p-1 bg-slate-50/50">
+                                {loadingStudents ? (
+                                    <div className="py-8 flex flex-col items-center justify-center text-slate-400 gap-2">
+                                        <Loader2 className="animate-spin text-indigo-600" size={20} />
+                                        <span className="text-xs font-bold">Cargando listado...</span>
+                                    </div>
+                                ) : filteredStudents.length === 0 ? (
+                                    <div className="py-6 text-center text-slate-400 text-xs font-medium">
+                                        No se encontraron estudiantes.
+                                    </div>
+                                ) : (
+                                    filteredStudents.map(st => {
+                                        const isSelected = selectedStudentIds.includes(st.id);
+                                        const displayName = st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name;
+
+                                        return (
+                                            <div
+                                                key={st.id}
+                                                onClick={() => toggleStudentSelection(st.id)}
+                                                className={`p-2 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ${
+                                                    isSelected
+                                                        ? 'bg-indigo-50 border-indigo-300 shadow-2xs'
+                                                        : 'bg-white border-slate-200/80 hover:bg-slate-100/70'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div className={`w-5 h-5 rounded-md flex items-center justify-center text-xs font-black shrink-0 transition ${
+                                                        isSelected ? 'bg-indigo-600 text-white' : 'border border-slate-300 bg-white text-transparent'
+                                                    }`}>
+                                                        <Check size={12} strokeWidth={3} />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-bold text-slate-800 truncate leading-tight">
+                                                            {displayName}
+                                                        </p>
+                                                        <span className="text-[9.5px] font-semibold text-slate-400">
+                                                            Curso <strong className="text-slate-600">{st.grade}</strong> {st.id_code ? `• ${st.id_code}` : ''}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-slate-800 truncate leading-tight">
-                                                        {displayName}
-                                                    </p>
-                                                    <span className="text-[9.5px] font-semibold text-slate-400">
-                                                        Curso <strong className="text-slate-600">{st.grade}</strong> {st.id_code ? `• ${st.id_code}` : ''}
+                                                {isSelected && (
+                                                    <span className="text-[9px] font-black text-indigo-700 bg-indigo-100 px-1.5 py-0.2 rounded-md">
+                                                        Elegido
                                                     </span>
-                                                </div>
+                                                )}
                                             </div>
-                                            {isSelected && (
-                                                <span className="text-[9px] font-black text-indigo-700 bg-indigo-100 px-1.5 py-0.2 rounded-md">
-                                                    Elegido
-                                                </span>
-                                            )}
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* Botón para contraer selector en móvil una vez elegido */}
+                            {selectedStudentIds.length > 0 && showStudentPickerMobile && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStudentPickerMobile(false)}
+                                    className="lg:hidden w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-xs"
+                                >
+                                    Listo ({selectedStudentIds.length} alumnos) ✓
+                                </button>
                             )}
                         </div>
 
                     </div>
 
                     {/* Columna Derecha: Catálogo de Faltas y Editor Rápido (7 de 12) */}
-                    <div className="lg:col-span-7 flex flex-col gap-4">
+                    <div className="lg:col-span-7 flex flex-col gap-3 sm:gap-4">
                         
                         {/* Selector de Nivel de Falta */}
                         <div>
-                            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block mb-2">
-                                2. Tipo de Situación / Falta (Manual de Convivencia)
+                            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block mb-1.5">
+                                2. Tipo de Situación / Falta (Manual INAS)
                             </label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-100 p-1 rounded-2xl">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-100 p-1 rounded-2xl">
                                 <button
                                     type="button"
                                     onClick={() => setActiveCategoryTab('TIPO_1')}
-                                    className={`py-2 px-2 rounded-xl text-[11px] font-black transition text-center ${
+                                    className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                         activeCategoryTab === 'TIPO_1' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
@@ -420,7 +467,7 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
                                 <button
                                     type="button"
                                     onClick={() => setActiveCategoryTab('TIPO_2')}
-                                    className={`py-2 px-2 rounded-xl text-[11px] font-black transition text-center ${
+                                    className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                         activeCategoryTab === 'TIPO_2' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
@@ -429,7 +476,7 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
                                 <button
                                     type="button"
                                     onClick={() => setActiveCategoryTab('TIPO_3')}
-                                    className={`py-2 px-2 rounded-xl text-[11px] font-black transition text-center ${
+                                    className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                         activeCategoryTab === 'TIPO_3' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
@@ -438,7 +485,7 @@ export default function QuickObservationModal({ isOpen, onClose, initialStudentI
                                 <button
                                     type="button"
                                     onClick={() => setActiveCategoryTab('RECONOCIMIENTO')}
-                                    className={`py-2 px-2 rounded-xl text-[11px] font-black transition text-center ${
+                                    className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                         activeCategoryTab === 'RECONOCIMIENTO' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                     }`}
                                 >

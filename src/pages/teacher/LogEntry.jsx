@@ -261,78 +261,78 @@ export default function LogEntry() {
         }
     }
 
-    if (!student) return <div className="p-8 text-center">Cargando alumno...</div>;
+    if (!student) return <div className="p-8 text-center text-sm font-bold text-gray-500">Cargando ficha del alumno...</div>;
 
     return (
-        <div className="max-w-lg mx-auto bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="max-w-xl mx-auto bg-white rounded-2xl sm:rounded-3xl border shadow-sm overflow-hidden">
             {/* Header del Alumno */}
-            <div className="bg-gray-50 border-b p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+            <div className="bg-gray-50 border-b p-3.5 sm:p-5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     <button 
                         onClick={() => navigate('/teacher/search')} 
-                        className="text-gray-500 hover:text-gray-700 p-1 bg-white border rounded-lg shadow-sm transition"
+                        className="text-gray-500 hover:text-gray-700 p-1.5 bg-white border rounded-xl shadow-xs transition shrink-0"
                     >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size={18} />
                     </button>
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-800">
+                    <div className="min-w-0 flex-1 text-left">
+                        <h2 className="text-sm sm:text-base font-bold text-gray-800 truncate">
                             {student.lastName && student.firstName 
                                 ? `${student.lastName} ${student.firstName}` 
                                 : student.name}
                         </h2>
-                        <p className="text-xs text-gray-500">Curso: {student.grade} | Gestionar Historial</p>
+                        <p className="text-[11px] sm:text-xs text-gray-500 truncate">Curso: <strong className="text-gray-700">{student.grade}</strong> | {student.id_code || 'Ficha del Alumno'}</p>
                     </div>
                 </div>
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
                     <img src={student.photo_url} alt="student" className="w-full h-full object-cover" />
                 </div>
             </div>
 
             {/* Pestañas de Gestión */}
-            <div className="flex border-b text-sm font-semibold text-gray-500 bg-gray-50/50">
+            <div className="flex border-b text-xs sm:text-sm font-bold text-gray-500 bg-gray-50/50">
                 <button
                     onClick={() => setActiveTab('observer')}
-                    className={`flex-1 py-3 text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
-                        activeTab === 'observer' ? 'border-primary text-primary bg-white' : 'border-transparent hover:text-gray-700'
+                    className={`flex-1 py-2.5 sm:py-3 text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
+                        activeTab === 'observer' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent hover:text-gray-700'
                     }`}
                 >
-                    <FileText size={16} /> Observador
+                    <FileText size={15} /> Observador
                 </button>
                 <button
                     onClick={() => setActiveTab('attendance')}
-                    className={`flex-1 py-3 text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
-                        activeTab === 'attendance' ? 'border-primary text-primary bg-white' : 'border-transparent hover:text-gray-700'
+                    className={`flex-1 py-2.5 sm:py-3 text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
+                        activeTab === 'attendance' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent hover:text-gray-700'
                     }`}
                 >
-                    <UserCheck size={16} /> Asistencia
+                    <UserCheck size={15} /> Asistencia
                 </button>
                 <button
                     onClick={() => setActiveTab('grades')}
-                    className={`flex-1 py-3 text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
-                        activeTab === 'grades' ? 'border-primary text-primary bg-white' : 'border-transparent hover:text-gray-700'
+                    className={`flex-1 py-2.5 sm:py-3 text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
+                        activeTab === 'grades' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent hover:text-gray-700'
                     }`}
                 >
-                    <Award size={16} /> Notas
+                    <Award size={15} /> Notas
                 </button>
             </div>
 
             {/* Contenido según pestaña */}
-            <div className="p-6">
+            <div className="p-3.5 sm:p-6">
                 
                 {/* 1. Formulario del Observador y Presets de Convivencia */}
                 {activeTab === 'observer' && (
-                    <div className="space-y-6">
-                        <form onSubmit={handleSaveObserver} className="space-y-4">
+                    <div className="space-y-5 sm:space-y-6">
+                        <form onSubmit={handleSaveObserver} className="space-y-3.5 sm:space-y-4">
                             {/* Selector de Categoría de Falta */}
                             <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
-                                    Tipo de Situación (Manual de Convivencia)
+                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5 text-left">
+                                    Tipo de Situación (Manual INAS)
                                 </label>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-100 p-1 rounded-2xl">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-100 p-1 rounded-2xl">
                                     <button
                                         type="button"
                                         onClick={() => setCategoryTab('TIPO_1')}
-                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                        className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                             categoryTab === 'TIPO_1' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                         }`}
                                     >
@@ -341,7 +341,7 @@ export default function LogEntry() {
                                     <button
                                         type="button"
                                         onClick={() => setCategoryTab('TIPO_2')}
-                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                        className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                             categoryTab === 'TIPO_2' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                         }`}
                                     >
@@ -350,7 +350,7 @@ export default function LogEntry() {
                                     <button
                                         type="button"
                                         onClick={() => setCategoryTab('TIPO_3')}
-                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                        className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                             categoryTab === 'TIPO_3' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                         }`}
                                     >
@@ -359,7 +359,7 @@ export default function LogEntry() {
                                     <button
                                         type="button"
                                         onClick={() => setCategoryTab('RECONOCIMIENTO')}
-                                        className={`py-2 px-1.5 rounded-xl text-[10.5px] font-black transition text-center ${
+                                        className={`py-1.5 sm:py-2 px-1 rounded-xl text-[10.5px] sm:text-[11px] font-black transition text-center leading-tight ${
                                             categoryTab === 'RECONOCIMIENTO' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                                         }`}
                                     >

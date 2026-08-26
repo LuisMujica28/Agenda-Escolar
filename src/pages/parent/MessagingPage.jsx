@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
+import { getStudentForUser } from '../../lib/getStudentForUser';
 import { 
     Loader2, Mail, Send, Inbox, MessageSquare, PlusCircle, Edit3, 
     Search, SlidersHorizontal, Paperclip, Smile, Download, Reply, MoreVertical, 
@@ -138,21 +139,36 @@ export default function MessagingPage() {
             if (!currentUser) return;
             setLoading(true);
             try {
-                // 1. Cargar Mensajes reales de Firestore
-                const qMsg = query(
-                    collection(db, 'messages'),
-                    where(activeTab === 'inbox' ? 'receiver_id' : 'sender_id', '==', currentUser.uid)
-                );
-                const mSnap = await getDocs(qMsg);
-                let msgList = mSnap.docs.map(docData => {
-                    const d = docData.data();
+                // 1. Obtener estudiante vinculado al acudiente (si aplica)
+                const studentData = await getStudentForUser(db, currentUser);
+                const studentId = studentData?.id || null;
+                const studentGrade = studentData?.grade || null;
+
+                // 2. Cargar Mensajes reales de Firestore
+                const mSnap = await getDocs(collection(db, 'messages'));
+                const rawDocs = mSnap.docs.map(docData => ({ id: docData.id, ...docData.data() }));
+
+                const filteredDocs = rawDocs.filter(d => {
+                    if (activeTab === 'sent') {
+                        return d.sender_id === currentUser.uid;
+                    }
+                    // activeTab === 'inbox'
+                    if (d.receiver_id === currentUser.uid) return true;
+                    if (d.receiver_id === 'ALL_PARENTS') return true;
+                    if (Array.isArray(d.target_parent_uids) && d.target_parent_uids.includes(currentUser.uid)) return true;
+                    if (studentId && Array.isArray(d.target_students) && d.target_students.includes(studentId)) return true;
+                    if (studentGrade && d.target_course === studentGrade) return true;
+                    return false;
+                });
+
+                let msgList = filteredDocs.map(d => {
                     return {
-                        id: docData.id,
+                        id: d.id,
                         sender_id: d.sender_id,
                         sender_name: d.sender_name,
                         sender_role: d.sender_role,
-                        sender_initials: d.sender_name ? d.sender_name.slice(0, 2).toUpperCase() : 'US',
-                        sender_color: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+                        sender_initials: d.sender_name ? d.sender_name.slice(0, 2).toUpperCase() : 'IN',
+                        sender_color: d.category === 'Asistencia' ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200',
                         receiver_id: d.receiver_id,
                         receiver_name: d.receiver_name,
                         target_type: d.target_type,
@@ -169,7 +185,8 @@ export default function MessagingPage() {
                         read_by: d.read_by || [],
                         category: d.category || 'Academia',
                         priority: d.priority || 'Normal',
-                        dueDate: d.due_date || '27/07/2026'
+                        dueDate: d.due_date || '27/07/2026',
+                        created_at: d.created_at
                     };
                 });
 
@@ -180,7 +197,7 @@ export default function MessagingPage() {
                 }
 
                 setMessages(msgList);
-                if (msgList.length > 0 && !selectedMessage) {
+                if (msgList.length > 0) {
                     setSelectedMessage(msgList[0]);
                 }
 
@@ -390,6 +407,8 @@ export default function MessagingPage() {
 
     const getCategoryBadgeStyle = (cat) => {
         switch (cat) {
+            case 'Asistencia':
+                return 'bg-rose-50 text-rose-700 border-rose-200 font-extrabold';
             case 'Academia':
                 return 'bg-blue-50 text-blue-700 border-blue-200';
             case 'Convivencia':
@@ -671,7 +690,7 @@ export default function MessagingPage() {
                                 {/* Pestañas Claras de Tipo de Destinatario */}
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-extrabold text-slate-700">¿A quién va dirigida esta comunicación? *</label>
-                                    <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1.5 rounded-2xl">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-100 p-1.5 rounded-2xl">
                                         <button
                                             type="button"
                                             onClick={() => setTargetMode('STUDENT')}

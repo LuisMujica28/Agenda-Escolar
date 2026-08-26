@@ -124,21 +124,92 @@ export default function GradesCard() {
             ) : (
                 <div className="space-y-4">
                     {Object.entries(gradesBySubject).map(([subject, subjectGrades]) => {
-                        const subjectAverage = (subjectGrades.reduce((sum, g) => sum + Number(g.grade), 0) / subjectGrades.length).toFixed(1);
-                        const isPassing = Number(subjectAverage) >= 75;
+                        const totalPoints = subjectGrades.reduce((sum, g) => sum + Number(g.grade || 0), 0);
+                        const maxPeriod = Math.max(...subjectGrades.map(g => Number(g.period) || 1), 1);
+                        const expectedTarget = maxPeriod * 75;
+                        const isPassingSoFar = totalPoints >= expectedTarget;
+                        const remainingPeriods = Math.max(0, 4 - maxPeriod);
+                        const neededFor300 = Math.max(0, 300 - totalPoints);
+                        const avgNeeded = remainingPeriods > 0 ? (neededFor300 / remainingPeriods).toFixed(1) : 0;
+                        const progressPct = Math.min(100, Math.round((totalPoints / 300) * 100));
 
                         return (
                             <div key={subject} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition">
-                                {/* Título de materia y promedio de materia */}
-                                <div className="bg-gray-50 px-5 py-4 border-b flex justify-between items-center">
-                                    <h4 className="font-bold text-gray-800 text-base">{subject}</h4>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs text-gray-500">Promedio de materia:</span>
-                                        <span className={`text-sm font-extrabold px-3 py-0.5 rounded-full ${
-                                            isPassing ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                        }`}>
-                                            {subjectAverage} / 100
-                                        </span>
+                                {/* Encabezado de Materia y Barra hacia los 300 Puntos */}
+                                <div className="bg-slate-50/80 px-5 py-4 border-b space-y-2.5">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <h4 className="font-black text-slate-800 text-base">{subject}</h4>
+                                            <p className="text-[11px] text-slate-500 font-medium">
+                                                Meta Anual: <strong className="text-slate-700">300 pts</strong> • Meta a Periodo {maxPeriod}: <strong className="text-slate-700">{expectedTarget} pts</strong>
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs font-black px-3 py-1 rounded-xl shadow-2xs border ${
+                                                isPassingSoFar 
+                                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                                                    : 'bg-rose-50 text-rose-800 border-rose-200'
+                                            }`}>
+                                                {totalPoints} / 300 PUNTOS
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Barra de Progreso hacia los 300 Puntos */}
+                                    <div className="space-y-1">
+                                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
+                                            <div 
+                                                className={`h-full rounded-full transition-all duration-500 ${
+                                                    isPassingSoFar ? 'bg-indigo-600' : 'bg-rose-500'
+                                                }`}
+                                                style={{ width: `${progressPct}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="flex justify-between text-[9px] font-bold text-slate-400">
+                                            <span>0 pts</span>
+                                            <span>P1: 75</span>
+                                            <span>P2: 150</span>
+                                            <span>P3: 225</span>
+                                            <span className="text-indigo-600 font-black">Meta: 300 pts</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Mensaje inteligente para la familia */}
+                                    <div className={`p-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+                                        isPassingSoFar 
+                                            ? 'bg-emerald-50/70 text-emerald-900 border border-emerald-100' 
+                                            : 'bg-rose-50/70 text-rose-900 border border-rose-100'
+                                    }`}>
+                                        {remainingPeriods > 0 ? (
+                                            isPassingSoFar ? (
+                                                <>
+                                                    <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+                                                    <span>
+                                                        ¡Excelente ritmo! Lleva <strong>{totalPoints} pts</strong> (+{totalPoints - expectedTarget} sobre la meta de {expectedTarget} pts a Periodo {maxPeriod}).
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <AlertCircle size={15} className="text-rose-600 shrink-0" />
+                                                    <span>
+                                                        Lleva <strong>{totalPoints} pts</strong> (le faltan <strong>{expectedTarget - totalPoints} pts</strong> para alcanzar la meta de {expectedTarget} pts a Periodo {maxPeriod}).
+                                                    </span>
+                                                </>
+                                            )
+                                        ) : (
+                                            totalPoints >= 300 ? (
+                                                <>
+                                                    <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+                                                    <span>🏆 <strong>Aprobó la Asignatura</strong> con un acumulado anual de {totalPoints} / 300 puntos (+{totalPoints - 300} pts).</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <AlertCircle size={15} className="text-rose-600 shrink-0" />
+                                                    <span>❌ <strong>Reprobó la Asignatura</strong>: acumuló {totalPoints} pts (le faltaron {300 - totalPoints} pts para los 300 requeridos).</span>
+                                                </>
+                                            )
+                                        )}
                                     </div>
                                 </div>
 

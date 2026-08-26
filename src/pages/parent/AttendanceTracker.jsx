@@ -33,9 +33,16 @@ export default function AttendanceTracker() {
                 );
                 const aSnap = await getDocs(qAttendance);
                 
-                // Firestore client-side sort since composite index might be needed for where + orderBy
+                // Firestore client-side sort handling all date structures
                 const records = aSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                records.sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+                const getSortTime = (r) => {
+                    if (r.date?.seconds) return r.date.seconds * 1000;
+                    if (r.date instanceof Date) return r.date.getTime();
+                    if (r.date_str) return new Date(r.date_str + 'T12:00:00').getTime();
+                    if (r.created_at?.seconds) return r.created_at.seconds * 1000;
+                    return 0;
+                };
+                records.sort((a, b) => getSortTime(b) - getSortTime(a));
                 setAttendance(records);
             } catch (error) {
                 console.error("Error al cargar asistencia:", error);
@@ -77,6 +84,33 @@ export default function AttendanceTracker() {
         'LATE': { label: 'Llegada Tarde', bg: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: <Clock size={16} className="text-yellow-600" /> },
         'ABSENT': { label: 'Inasistencia', bg: 'bg-red-100 text-red-800 border-red-200', icon: <Ban size={16} className="text-red-600" /> },
         'EXCUSED': { label: 'Falta Justificada', bg: 'bg-blue-100 text-blue-800 border-blue-200', icon: <Calendar size={16} className="text-blue-600" /> }
+    };
+
+    const formatRecordDate = (record) => {
+        let d = null;
+        if (record.date?.seconds) {
+            d = new Date(record.date.seconds * 1000);
+        } else if (record.date instanceof Date) {
+            d = record.date;
+        } else if (typeof record.date === 'string' && record.date) {
+            d = new Date(record.date.includes('T') ? record.date : record.date + 'T12:00:00');
+        } else if (record.date_str) {
+            d = new Date(record.date_str + 'T12:00:00');
+        } else if (record.created_at?.seconds) {
+            d = new Date(record.created_at.seconds * 1000);
+        }
+
+        if (!d || isNaN(d.getTime())) {
+            return record.date_str || 'Fecha no registrada';
+        }
+
+        const dateFormatted = d.toLocaleDateString('es-CO', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        return dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
     };
 
     return (
@@ -126,43 +160,56 @@ export default function AttendanceTracker() {
             </div>
 
             {/* Listado de Historial */}
-            <h3 className="text-lg font-bold text-gray-800 mb-4 px-1 flex items-center gap-2">
-                <Calendar size={20} className="text-primary" /> Historial de Novedades
+            <h3 className="text-lg font-bold text-gray-800 mb-4 px-1 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                    <Calendar size={20} className="text-primary" /> Historial de Novedades
+                </span>
+                <span className="text-xs font-semibold text-gray-400">
+                    {absences + lates + excused} novedad(es) registrada(s)
+                </span>
             </h3>
 
-            {attendance.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100 text-gray-500">
-                    No se registran novedades de asistencia en la plataforma.
+            {attendance.filter(r => r.status !== 'PRESENT').length === 0 ? (
+                <div className="text-center py-10 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <CheckCircle2 className="mx-auto text-emerald-500 mb-2" size={36} />
+                    <h4 className="font-bold text-gray-800">¡Sin novedades de inasistencia!</h4>
+                    <p className="text-xs text-gray-500 mt-1">El estudiante se encuentra al día y no presenta reportes de faltas o retardos.</p>
                 </div>
             ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
-                    {attendance.map((record) => {
-                        const config = statusConfig[record.status] || { label: record.status, bg: 'bg-gray-100 text-gray-800 border-gray-200', icon: null };
-                        
-                        return (
-                            <div key={record.id} className="p-4 sm:px-6 hover:bg-gray-50/50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-gray-800">
-                                            {record.date?.seconds 
-                                                ? new Date(record.date.seconds * 1000).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-                                                : 'Fecha desconocida'}
-                                        </span>
+                    {attendance
+                        .filter(r => r.status !== 'PRESENT')
+                        .map((record) => {
+                            const config = statusConfig[record.status] || { label: record.status, bg: 'bg-gray-100 text-gray-800 border-gray-200', icon: null };
+                            
+                            return (
+                                <div key={record.id} className="p-4 sm:px-6 hover:bg-gray-50/50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                    <div className="space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-semibold text-gray-800">
+                                                {formatRecordDate(record)}
+                                            </span>
+                                            {record.time_str && (
+                                                <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                                                    <Clock size={12} />
+                                                    {record.time_str}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {record.excuse_note && (
+                                            <p className="text-xs text-gray-500 italic bg-gray-50 p-2 rounded border border-dashed border-gray-200 mt-1">
+                                                Motivo: &ldquo;{record.excuse_note}&rdquo;
+                                            </p>
+                                        )}
                                     </div>
-                                    {record.excuse_note && (
-                                        <p className="text-xs text-gray-500 italic bg-gray-50 p-2 rounded border border-dashed border-gray-200 mt-1">
-                                            Motivo: &ldquo;{record.excuse_note}&rdquo;
-                                        </p>
-                                    )}
-                                </div>
 
-                                <div className={`px-3 py-1 rounded-full border text-xs font-semibold flex items-center gap-1.5 ${config.bg}`}>
-                                    {config.icon}
-                                    {config.label}
+                                    <div className={`px-3 py-1 rounded-full border text-xs font-semibold flex items-center gap-1.5 ${config.bg}`}>
+                                        {config.icon}
+                                        {config.label}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
                 </div>
             )}
         </div>

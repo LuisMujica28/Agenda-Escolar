@@ -21,7 +21,8 @@ import PrintPlanilla from './pages/admin/PrintPlanilla';
 import PrintConsolidado from './pages/admin/PrintConsolidado';
 import PrintFormularioInscripcion from './pages/admin/PrintFormularioInscripcion';
 import AcademicStats from './pages/admin/AcademicStats';
-import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2, Layers, Award } from 'lucide-react';
+import DailyAttendance from './pages/teacher/DailyAttendance';
+import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2, Layers, Award, UserCheck } from 'lucide-react';
 import IaChatBot from './components/IaChatBot';
 
 function Layout({ children }) {
@@ -63,6 +64,15 @@ function Layout({ children }) {
               }`}
             >
               <HomeIcon size={18} /> Inicio (Tablero)
+            </Link>
+            <Link 
+              to="/teacher/daily-attendance" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/teacher/daily-attendance') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <UserCheck size={18} /> Pase de Lista Diario
             </Link>
             <Link 
               to="/teacher/search" 
@@ -199,6 +209,15 @@ function Layout({ children }) {
               }`}
             >
               <HomeIcon size={18} /> Inicio (Tablero)
+            </Link>
+            <Link 
+              to="/teacher/daily-attendance" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/teacher/daily-attendance') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <UserCheck size={18} /> Pase de Lista Diario
             </Link>
             <Link 
               to="/admin/import" 
@@ -467,6 +486,7 @@ function App() {
           <Route path="/planilla-print" element={<PrintPlanilla />} />
 
           {/* Teacher Routes */}
+          <Route path="/teacher/daily-attendance" element={<Layout><DailyAttendance /></Layout>} />
           <Route path="/teacher/search" element={<Layout><StudentSearch /></Layout>} />
           <Route path="/teacher/log/:studentId" element={<Layout><LogEntry /></Layout>} />
           <Route path="/teacher/create-task" element={<Layout><CreateTask /></Layout>} />

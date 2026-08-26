@@ -859,7 +859,7 @@ export default function CreateCircular() {
                                 {/* Logo institucional en la vista previa */}
                                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-dashed">
                                     <div className="w-8 h-8 rounded bg-white flex items-center justify-center shrink-0 border shadow-sm">
-                                        <img src="/Escudo.png" alt="Logo" className="w-6 h-6 object-contain" />
+                                        <img src="/Escudo1.png" alt="Logo" className="w-6 h-6 object-contain" />
                                     </div>
                                     <div className="font-sans">
                                         <h4 className="text-[9px] font-black uppercase tracking-wide text-slate-900 leading-none">Instituto Nueva América</h4>

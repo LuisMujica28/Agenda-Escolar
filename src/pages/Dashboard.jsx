@@ -212,20 +212,25 @@ export default function Dashboard() {
         setStudentGrade(student.grade || '');
         setStudentCode(student.id_code || '');
         
-        // Cargar datos de acudiente
-        setParentEmail('');
-        setParentName('');
+        // Cargar datos de acudiente desde estudiante o desde colección 'users'
+        let foundEmail = student.email_padre || student.email || '';
+        let foundName = student.nombre_padre || '';
+
         if (student.parent_uids && student.parent_uids.length > 0) {
             try {
                 const pDoc = await getDoc(doc(db, 'users', student.parent_uids[0]));
                 if (pDoc.exists()) {
-                    setParentEmail(pDoc.data().email || '');
-                    setParentName(pDoc.data().name || '');
+                    const uData = pDoc.data();
+                    if (uData.email) foundEmail = uData.email;
+                    if (uData.name) foundName = uData.name;
                 }
             } catch (e) {
                 console.error("Error al cargar datos del acudiente:", e);
             }
         }
+
+        setParentEmail(foundEmail);
+        setParentName(foundName);
         setShowAddStudentModal(true);
     };
 
@@ -240,9 +245,11 @@ export default function Dashboard() {
         setAddingStudent(true);
         try {
             let parentUid = null;
-            const hasParentInfo = parentEmail.trim() && parentName.trim();
+            const cleanParentEmail = parentEmail.trim();
+            const cleanParentName = parentName.trim();
+            const hasParentEmail = Boolean(cleanParentEmail && cleanParentEmail.includes('@'));
 
-            if (hasParentInfo) {
+            if (hasParentEmail) {
                 parentUid = 'fake-parent-' + Date.now();
                 
                 // Si estamos editando y ya tiene un acudiente asociado, usamos ese UID
@@ -271,12 +278,12 @@ export default function Dashboard() {
                         // Solo crear cuenta de Auth si no existe ya
                         const tempApp = initializeApp(firebaseConfig, 'TempApp_' + Date.now());
                         const tempAuth = getAuth(tempApp);
-                        const cred = await createUserWithEmailAndPassword(tempAuth, parentEmail.trim(), 'colegio2026');
+                        const cred = await createUserWithEmailAndPassword(tempAuth, cleanParentEmail, 'colegio2026');
                         parentUid = cred.user.uid;
                         await deleteApp(tempApp);
                     } catch (authError) {
                         if (authError.code === 'auth/email-already-in-use') {
-                            const qUser = query(collection(db, 'users'), where('email', '==', parentEmail.trim()));
+                            const qUser = query(collection(db, 'users'), where('email', '==', cleanParentEmail));
                             const uSnap = await getDocs(qUser);
                             if (!uSnap.empty) {
                                 parentUid = uSnap.docs[0].id;
@@ -291,9 +298,9 @@ export default function Dashboard() {
 
                 // Guardar o actualizar perfil del acudiente en Firestore
                 await setDoc(doc(db, 'users', parentUid), {
-                    email: parentEmail.trim(),
+                    email: cleanParentEmail,
                     role: 'parent',
-                    name: parentName.trim(),
+                    name: cleanParentName || `Acudiente de ${studentFirstName.trim()} ${studentLastName.trim()}`,
                     created_at: new Date()
                 }, { merge: true });
             } else if (isEditMode) {
@@ -307,28 +314,29 @@ export default function Dashboard() {
             const fullName = `${studentFirstName.trim()} ${studentLastName.trim()}`;
             const avatarSeed = studentFirstName.trim();
 
+            const studentDataToSave = {
+                name: fullName.toUpperCase(),
+                firstName: studentFirstName.trim().toUpperCase(),
+                lastName: studentLastName.trim().toUpperCase(),
+                grade: studentGrade.toUpperCase(),
+                id_code: studentCode.trim().toUpperCase(),
+                email_padre: cleanParentEmail,
+                email: cleanParentEmail,
+                nombre_padre: cleanParentName || (cleanParentEmail ? `Acudiente de ${fullName}` : ''),
+                parent_uids: parentUid ? [parentUid] : (isEditMode ? (adminStudents.find(s => s.id === editingStudentId)?.parent_uids || []) : [])
+            };
+
             if (isEditMode) {
                 // Actualizar estudiante existente
-                await setDoc(doc(db, 'students', editingStudentId), {
-                    name: fullName.toUpperCase(),
-                    firstName: studentFirstName.trim().toUpperCase(),
-                    lastName: studentLastName.trim().toUpperCase(),
-                    grade: studentGrade.toUpperCase(),
-                    id_code: studentCode.trim().toUpperCase(),
-                    parent_uids: parentUid ? [parentUid] : []
-                }, { merge: true });
+                await setDoc(doc(db, 'students', editingStudentId), studentDataToSave, { merge: true });
 
                 alert(`Estudiante ${fullName} modificado con éxito.`);
             } else {
                 // Crear estudiante nuevo
                 const studentDoc = await addDoc(collection(db, 'students'), {
-                    name: fullName.toUpperCase(),
-                    firstName: studentFirstName.trim().toUpperCase(),
-                    lastName: studentLastName.trim().toUpperCase(),
-                    grade: studentGrade.toUpperCase(),
-                    id_code: studentCode.trim().toUpperCase(),
+                    ...studentDataToSave,
                     photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
-                    parent_uids: parentUid ? [parentUid] : []
+                    created_at: new Date()
                 });
 
                 // Crear calificación inicial para que no esté vacío
@@ -1194,113 +1202,127 @@ export default function Dashboard() {
             {userRole === 'teacher' && (
                 <div className="space-y-6">
                     {/* Tarjetas de Estadísticas */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                        <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
                             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
                                 <Users size={24} />
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Estudiantes del Plantel</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-1">{totalStudentsCount}</p>
+                            <div className="text-left">
+                                <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Estudiantes del Plantel</p>
+                                <p className="text-2xl font-extrabold text-gray-800 mt-0.5">{totalStudentsCount}</p>
                             </div>
                         </div>
 
-                        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+                        <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
                             <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
                                 <ClipboardList size={24} />
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Mis Tareas Publicadas</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-1">{myTasksCount}</p>
+                            <div className="text-left">
+                                <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Mis Tareas Publicadas</p>
+                                <p className="text-2xl font-extrabold text-gray-800 mt-0.5">{myTasksCount}</p>
                             </div>
                         </div>
 
                         <div 
                             onClick={handleOpenCircularsModal}
-                            className="bg-white border border-gray-100 rounded-3xl p-6 flex items-center gap-4 cursor-pointer hover-elevate active-press hover:bg-slate-50/50"
+                            className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 flex items-center gap-4 cursor-pointer hover-elevate active-press hover:bg-slate-50/50 shadow-sm"
                         >
                             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
                                 <Bell size={24} />
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Anuncios en el Tablón</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-1">{circulars.length}</p>
+                            <div className="text-left">
+                                <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Anuncios en el Tablón</p>
+                                <p className="text-2xl font-extrabold text-gray-800 mt-0.5">{circulars.length}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Acciones Rápidas del Profesor */}
-                    <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
-                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                        <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
                             <Sparkles className="text-indigo-600" size={20} /> Acciones Rápidas del Docente
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                            <button 
-                                onClick={() => setShowQuickObsModal(true)} 
-                                className="bg-amber-500 hover:bg-amber-600 text-white p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-md shadow-amber-500/20 hover-elevate active-press transition"
+                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+                            <Link 
+                                to="/teacher/daily-attendance" 
+                                className="bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-indigo-600/25 hover-elevate active-press transition"
                             >
                                 <div className="flex items-center justify-between w-full">
-                                    <Zap className="text-white group-hover:scale-110 transition-transform" size={28} />
-                                    <span className="text-[9.5px] bg-black/20 text-white px-2 py-0.5 rounded-full font-black">1 Toque</span>
+                                    <UserCheck className="text-white group-hover:scale-110 transition-transform" size={26} />
+                                    <span className="text-[9px] bg-white/20 text-white px-2 py-0.5 rounded-full font-black">Nuevo</span>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-black text-white">⚡ Anotación Rápida</h4>
-                                    <p className="text-[10px] text-amber-100 mt-1 leading-normal font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
+                                    <h4 className="text-xs sm:text-sm font-black text-white leading-tight">📋 Pase de Lista</h4>
+                                    <p className="text-[10px] text-indigo-100 mt-1 leading-tight font-medium">Llama lista salón por salón y notifica inasistencias por correo.</p>
+                                </div>
+                            </Link>
+
+                            <button 
+                                onClick={() => setShowQuickObsModal(true)} 
+                                className="bg-amber-500 hover:bg-amber-600 text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-amber-500/20 hover-elevate active-press transition"
+                            >
+                                <div className="flex items-center justify-between w-full">
+                                    <Zap className="text-white group-hover:scale-110 transition-transform" size={26} />
+                                    <span className="text-[9px] bg-black/20 text-white px-2 py-0.5 rounded-full font-black">1 Toque</span>
+                                </div>
+                                <div>
+                                    <h4 className="text-xs sm:text-sm font-black text-white leading-tight">⚡ Anotación Rápida</h4>
+                                    <p className="text-[10px] text-amber-100 mt-1 leading-tight font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
                                 </div>
                             </button>
 
                             <Link 
                                 to="/teacher/search" 
-                                className="bg-indigo-50/20 border border-indigo-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70"
+                                className="bg-indigo-50/20 border border-indigo-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70 transition"
                             >
-                                <Users className="text-indigo-600 group-hover:scale-110 transition-transform" size={28} />
+                                <Users className="text-indigo-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Buscar Alumno</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Registra comportamiento, asistencia o notas para cualquier alumno.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Buscar Alumno</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Registra comportamiento, asistencia o notas para cualquier alumno.</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/teacher/create-task" 
-                                className="bg-emerald-50/20 border border-emerald-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-emerald-50/70"
+                                className="bg-emerald-50/20 border border-emerald-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-emerald-50/70 transition"
                             >
-                                <ClipboardList className="text-emerald-600 group-hover:scale-110 transition-transform" size={28} />
+                                <ClipboardList className="text-emerald-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Crear Nueva Tarea</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Asigna tareas escolares directamente a cualquier curso (como el 1001).</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Crear Nueva Tarea</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Asigna tareas escolares directamente a cualquier curso (como el 1001).</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/teacher/sync-grades" 
-                                className="bg-violet-50/20 border border-violet-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-violet-50/70"
+                                className="bg-violet-50/20 border border-violet-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-violet-50/70 transition"
                             >
-                                <BookOpen className="text-violet-600 group-hover:scale-110 transition-transform" size={28} />
+                                <BookOpen className="text-violet-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Sincronizar Notas</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Carga calificaciones directamente desde planillas de Google Sheets.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Sincronizar Notas</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Carga calificaciones directamente desde planillas de Google Sheets.</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/messages" 
-                                className="bg-amber-50/20 border border-amber-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-amber-50/70"
+                                className="bg-amber-50/20 border border-amber-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-amber-50/70 transition"
                             >
-                                <MessageSquare className="text-amber-500 group-hover:scale-110 transition-transform" size={28} />
+                                <MessageSquare className="text-amber-500 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Buzón de Mensajes</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Responde inquietudes e intercambia mensajes con acudientes.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Buzón de Mensajes</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Responde inquietudes e intercambia mensajes con acudientes.</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/admin/stats" 
-                                className="bg-blue-50/20 border border-blue-100/50 p-5 rounded-2xl text-left flex flex-col justify-between h-36 group shadow-inner hover-elevate active-press hover:bg-blue-50/70"
+                                className="bg-blue-50/20 border border-blue-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-blue-50/70 transition"
                             >
-                                <BarChart2 className="text-blue-600 group-hover:scale-110 transition-transform" size={28} />
+                                <BarChart2 className="text-blue-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-sm font-bold text-gray-800">Estadísticas</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-normal">Analiza promedios, rendimientos y alertas académicas de cursos.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Estadísticas</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Analiza promedios, rendimientos y alertas académicas de cursos.</p>
                                 </div>
                             </Link>
                         </div>

@@ -783,10 +783,11 @@ export default function SyncGrades() {
                                                 </th>
                                             )}
 
-                                            {/* Promedio Acumulado Header */}
+                                            {/* Puntos Acumulados Header - Modelo 300 Puntos INAS */}
                                             {Number(selectedPeriod) >= 2 && (
-                                                <th className="p-3 text-center w-24 bg-amber-100/70 text-amber-950 font-black border-l border-amber-200">
-                                                    PROM. ACUM.
+                                                <th className="p-2.5 text-center w-36 bg-amber-100/80 text-amber-950 font-black border-l border-amber-200">
+                                                    <div className="text-[11px] uppercase tracking-tight">PUNTOS ACUM.</div>
+                                                    <div className="text-[8.5px] font-bold text-amber-800/90">Meta P{selectedPeriod}: {Number(selectedPeriod) * 75} pts</div>
                                                 </th>
                                             )}
 
@@ -1004,36 +1005,68 @@ export default function SyncGrades() {
                                                         </td>
                                                     )}
 
-                                                    {/* CELDA PROMEDIO ACUMULADO */}
+                                                    {/* CELDA PUNTOS ACUMULADOS (Modelo 300 Puntos INAS) */}
                                                     {Number(selectedPeriod) >= 2 && (() => {
                                                         const curP = Number(selectedPeriod);
-                                                        const validScores = [];
+                                                        const expectedTarget = curP * 75;
+                                                        let totalPoints = 0;
+                                                        let countedPeriods = 0;
 
                                                         for (let p = 1; p <= curP; p++) {
                                                             if (p === curP) {
                                                                 if (row.definitiva !== '-' && Number(row.definitiva) > 0) {
-                                                                    validScores.push(Number(row.definitiva));
+                                                                    totalPoints += Number(row.definitiva);
+                                                                    countedPeriods++;
                                                                 }
                                                             } else {
                                                                 if (row.history && row.history[p] && Number(row.history[p]) > 0) {
-                                                                    validScores.push(Number(row.history[p]));
+                                                                    totalPoints += Number(row.history[p]);
+                                                                    countedPeriods++;
                                                                 }
                                                             }
                                                         }
 
-                                                        const avgVal = validScores.length > 0 
-                                                            ? (validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1)
-                                                            : '-';
+                                                        if (countedPeriods === 0) {
+                                                            return (
+                                                                <td className="p-2.5 text-center font-mono border-l border-amber-200 bg-amber-50/30 text-slate-300">
+                                                                    -
+                                                                </td>
+                                                            );
+                                                        }
+
+                                                        const diff = totalPoints - expectedTarget;
+                                                        const isPassingPeriod = diff >= 0;
+                                                        const remainingPeriods = 4 - curP;
+                                                        const neededFor300 = Math.max(0, 300 - totalPoints);
+                                                        const avgNeeded = remainingPeriods > 0 ? (neededFor300 / remainingPeriods).toFixed(1) : 0;
 
                                                         return (
-                                                            <td className="p-3 text-center font-black font-mono text-amber-900 bg-amber-50/40 border-l border-amber-200">
-                                                                {avgVal !== '-' ? (
-                                                                    <span className="px-2 py-0.5 rounded-md text-[11px] bg-amber-100/80 text-amber-900 border border-amber-200">
-                                                                        {avgVal}
+                                                            <td className="p-2 text-center font-mono border-l border-amber-200 bg-amber-50/40 min-w-[130px]">
+                                                                <div className="flex flex-col items-center gap-0.5">
+                                                                    <span className={`text-xs font-black px-2 py-0.5 rounded-md inline-block ${
+                                                                        isPassingPeriod 
+                                                                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' 
+                                                                            : 'bg-rose-100 text-rose-900 border border-rose-300'
+                                                                    }`}>
+                                                                        {totalPoints} <span className="text-[9px] font-bold text-slate-500">/ {expectedTarget}</span>
                                                                     </span>
-                                                                ) : (
-                                                                    <span className="text-amber-300 font-normal">-</span>
-                                                                )}
+
+                                                                    {curP < 4 ? (
+                                                                        <span className={`text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-md leading-tight ${
+                                                                            isPassingPeriod ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'
+                                                                        }`}>
+                                                                            {isPassingPeriod 
+                                                                                ? `+${diff} sobre meta` 
+                                                                                : `Faltan ${Math.abs(diff)} pts para meta`}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                                                            totalPoints >= 300 ? 'text-emerald-800 bg-emerald-100' : 'text-rose-800 bg-rose-100'
+                                                                        }`}>
+                                                                            {totalPoints >= 300 ? '✓ Aprobó (300+)' : `✗ Reprobó (-${300 - totalPoints})`}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </td>
                                                         );
                                                     })()}

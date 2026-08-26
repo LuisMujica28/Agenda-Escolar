@@ -133,12 +133,12 @@ export default function StudentObserver() {
         <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-12">
             
             {/* Header del Observador con Ilustración */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white p-6 rounded-3xl border border-indigo-100/50 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-indigo-100/50 relative overflow-hidden">
                 <div className="space-y-1 text-left z-10">
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">
                         Observador de: {currentStudent ? (currentStudent.lastName && currentStudent.firstName ? `${currentStudent.firstName} ${currentStudent.lastName}` : currentStudent.name) : 'Estudiante'}
                     </h1>
-                    <p className="text-xs text-slate-500 font-medium">
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
                         {currentStudent ? `Curso: ${currentStudent.grade} • Código ID: ${currentStudent.id_code || 'INAS-2026'}` : 'Consulta el comportamiento, observaciones y acuerdos institucionales.'}
                     </p>
                 </div>
@@ -155,78 +155,78 @@ export default function StudentObserver() {
             </div>
 
             {/* Banner de Métricas Rápidas Superior (3 Cards) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                 {/* Card 1: Observaciones registradas */}
-                <div className="bg-white border border-slate-150 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 text-left">
+                <div className="bg-white border border-slate-150 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3 text-left">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Eye size={22} />
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <Eye size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase">Observaciones registradas</p>
-                            <p className="text-xl font-black text-slate-800 leading-tight">{logs.length}</p>
+                            <p className="text-[9.5px] font-bold text-slate-400 uppercase">Observaciones</p>
+                            <p className="text-lg sm:text-xl font-black text-slate-800 leading-tight">{logs.length}</p>
                             <span className="text-[9px] text-slate-400 font-semibold">Este año escolar</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Card 2: Última actualización */}
-                <div className="bg-white border border-slate-150 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 text-left">
+                <div className="bg-white border border-slate-150 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3 text-left">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <CheckCircle2 size={22} />
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase">Última actualización</p>
-                            <p className="text-sm font-black text-slate-800 leading-tight">20 de julio de 2026</p>
+                            <p className="text-[9.5px] font-bold text-slate-400 uppercase">Última actualización</p>
+                            <p className="text-xs sm:text-sm font-black text-slate-800 leading-tight">20 de julio de 2026</p>
                             <span className="text-[9px] text-slate-400 font-semibold">10:45 a. m.</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Card 3: Manual de Convivencia */}
-                <div className="bg-white border border-slate-150 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 text-left">
+                <div className="bg-white border border-slate-150 rounded-2xl p-3.5 sm:p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left sm:col-span-2 md:col-span-1">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                            <Shield size={22} />
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                            <Shield size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase">Manual de Convivencia</p>
-                            <p className="text-sm font-black text-slate-800 leading-tight">Disponible</p>
-                            <span className="text-[9px] text-slate-400 font-semibold">Versión 2026</span>
+                            <p className="text-[9.5px] font-bold text-slate-400 uppercase">Manual Convivencia</p>
+                            <p className="text-xs sm:text-sm font-black text-slate-800 leading-tight">Disponible 2026</p>
+                            <span className="text-[9px] text-slate-400 font-semibold">Reglamento Oficial</span>
                         </div>
                     </div>
                     <button 
                         onClick={() => setShowManualModal(true)}
-                        className="border border-indigo-200 text-indigo-600 font-extrabold text-[11px] px-3 py-2 rounded-xl hover:bg-indigo-50 transition shrink-0 flex items-center gap-1 shadow-sm"
+                        className="border border-indigo-200 text-indigo-600 font-extrabold text-[10.5px] px-3 py-1.5 rounded-xl hover:bg-indigo-50 transition shrink-0 flex items-center justify-center gap-1 shadow-2xs w-full sm:w-auto"
                     >
-                        <BookOpen size={13} /> Ver Manual de Convivencia
+                        <BookOpen size={12} /> Ver Manual
                     </button>
                 </div>
             </div>
 
             {/* Layout de 2 Columnas */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
                 
                 {/* Columna Izquierda (Observaciones del Alumno) */}
-                <div className="lg:col-span-2 bg-white border border-slate-150 rounded-3xl p-6 shadow-sm space-y-6">
+                <div className="lg:col-span-2 bg-white border border-slate-150 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                         <div className="flex items-center gap-2 text-left">
-                            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                                 <Info size={16} />
                             </div>
                             <div>
-                                <h2 className="text-base font-black text-slate-800 tracking-tight">Observaciones del alumno</h2>
+                                <h2 className="text-sm sm:text-base font-black text-slate-800 tracking-tight">Observaciones del alumno</h2>
                                 <p className="text-[10px] text-slate-400 font-medium">Registro de comportamientos y situaciones relevantes.</p>
                             </div>
                         </div>
 
                         {/* Botón de Filtro */}
-                        <div className="relative shrink-0">
+                        <div className="relative shrink-0 w-full sm:w-auto">
                             <select 
                                 value={filterType} 
                                 onChange={(e) => setFilterType(e.target.value)}
-                                className="appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-extrabold rounded-xl px-4 py-2 pr-8 cursor-pointer focus:ring-2 focus:ring-indigo-600/20 outline-none"
+                                className="w-full sm:w-auto appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-extrabold rounded-xl px-4 py-2 pr-8 cursor-pointer focus:ring-2 focus:ring-indigo-600/20 outline-none"
                             >
                                 <option value="ALL">Filtrar por tipo (Todos)</option>
                                 <option value="NOTE">Informativa</option>
@@ -238,7 +238,7 @@ export default function StudentObserver() {
                     </div>
 
                     {/* Timeline de Observaciones */}
-                    <div className="space-y-4 text-left">
+                    <div className="space-y-3 sm:space-y-4 text-left">
                         {displayedLogs.length === 0 ? (
                             <div className="text-center py-10 text-slate-400 font-medium text-xs">
                                 No se encontraron observaciones con los filtros seleccionados.
@@ -259,12 +259,12 @@ export default function StudentObserver() {
                                 let badgeLabel = '🟢 Falta Leve (Tipo I)';
 
                                 if (isCongrats) {
-                                    cardBg = 'bg-gradient-to-r from-amber-50/30 via-indigo-50/20 to-white border-amber-200 shadow-2xs';
-                                    iconBox = 'bg-amber-50 text-amber-600 border-amber-200';
+                                    cardBg = 'bg-amber-50/25 border-amber-300/80';
+                                    iconBox = 'bg-amber-100 text-amber-600 border-amber-300';
                                     badgeClass = 'bg-amber-100 text-amber-900 border-amber-300 font-black';
                                     badgeLabel = '⭐ Reconocimiento y Mérito';
                                 } else if (isGravisima) {
-                                    cardBg = 'bg-rose-50/30 border-rose-200';
+                                    cardBg = 'bg-rose-50/25 border-rose-200';
                                     iconBox = 'bg-rose-50 text-rose-600 border-rose-200';
                                     badgeClass = 'bg-rose-100 text-rose-900 border-rose-300 font-black';
                                     badgeLabel = '🔴 Falta Gravísima (Tipo III)';
@@ -278,46 +278,46 @@ export default function StudentObserver() {
                                 return (
                                     <div 
                                         key={log.id} 
-                                        className={`relative p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-4 ${cardBg}`}
+                                        className={`relative p-3.5 sm:p-5 rounded-2xl border transition-all flex flex-col gap-3 ${cardBg}`}
                                     >
-                                        <div className="flex items-start gap-4 flex-1">
+                                        <div className="flex items-start gap-3 sm:gap-4 flex-1">
                                             {/* Icono de Categoria */}
-                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${iconBox}`}>
-                                                {isCongrats && <Award size={20} className="text-amber-500" />}
-                                                {isGravisima && <ShieldAlert size={20} className="text-rose-600" />}
-                                                {isGrave && <AlertTriangle size={20} className="text-amber-600" />}
-                                                {isLeve && <Info size={20} className="text-emerald-600" />}
+                                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border ${iconBox}`}>
+                                                {isCongrats && <Award size={18} className="text-amber-500" />}
+                                                {isGravisima && <ShieldAlert size={18} className="text-rose-600" />}
+                                                {isGrave && <AlertTriangle size={18} className="text-amber-600" />}
+                                                {isLeve && <Info size={18} className="text-emerald-600" />}
                                             </div>
 
-                                            <div className="space-y-2 flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap justify-between">
-                                                    <div className="flex items-center gap-2 flex-wrap">
+                                            <div className="space-y-1.5 sm:space-y-2 flex-1 min-w-0">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
                                                         <h4 className="text-xs font-black text-slate-800 leading-tight">
                                                             {log.title}
                                                         </h4>
                                                         {log.article && (
-                                                            <span className="text-[9px] font-black text-slate-600 bg-slate-100/90 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                            <span className="text-[8.5px] sm:text-[9px] font-black text-slate-600 bg-slate-100/90 border border-slate-200 px-1.5 py-0.5 rounded-md flex items-center gap-1">
                                                                 📜 {log.article}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <span className={`text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full border ${badgeClass}`}>
+                                                    <span className={`text-[9px] sm:text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border self-start sm:self-auto ${badgeClass}`}>
                                                         {badgeLabel}
                                                     </span>
                                                 </div>
 
-                                                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                                <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-medium">
                                                     {log.content}
                                                 </p>
 
                                                 {log.action_taken && (
-                                                    <div className="bg-indigo-50/80 border border-indigo-150 p-2 rounded-xl text-[11px] font-semibold text-indigo-900">
+                                                    <div className="bg-indigo-50/80 border border-indigo-150 p-2 rounded-xl text-[10.5px] sm:text-[11px] font-semibold text-indigo-900">
                                                         🎯 <strong>Medida Pedagógica / Compromiso:</strong> {log.action_taken}
                                                     </div>
                                                 )}
 
                                                 {/* Meta Info: Fecha, Hora y Autor */}
-                                                <div className="flex items-center gap-4 text-[10px] text-slate-400 font-semibold pt-1 flex-wrap">
+                                                <div className="flex items-center gap-3 sm:gap-4 text-[9.5px] sm:text-[10px] text-slate-400 font-semibold pt-1 flex-wrap">
                                                     <span className="flex items-center gap-1">
                                                         <Calendar size={11} /> {log.date}
                                                     </span>
@@ -332,9 +332,9 @@ export default function StudentObserver() {
                                         </div>
 
                                         {/* Botón de Firma Digital o Estado */}
-                                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                        <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between sm:justify-end gap-2">
                                             {log.parent_signed ? (
-                                                <div className="flex items-center gap-1.5 bg-emerald-100/80 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl text-[10.5px] font-black shadow-2xs">
+                                                <div className="flex items-center gap-1.5 bg-emerald-100/80 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl text-[10px] sm:text-[10.5px] font-black shadow-2xs w-full sm:w-auto justify-center">
                                                     <CheckCircle2 size={13} className="text-emerald-700" />
                                                     <span>Firmado (Enterado)</span>
                                                 </div>
@@ -343,7 +343,7 @@ export default function StudentObserver() {
                                                     type="button"
                                                     onClick={() => handleSignObservation(log.id)}
                                                     disabled={signingId === log.id}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/15 active-press"
+                                                    className="w-full sm:w-auto justify-center bg-indigo-600 hover:bg-indigo-700 text-white text-[10.5px] sm:text-[11px] font-black px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/15 active-press"
                                                     title="Confirmar lectura y dar por enterado"
                                                 >
                                                     {signingId === log.id ? (

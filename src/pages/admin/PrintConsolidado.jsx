@@ -389,8 +389,8 @@ export default function PrintConsolidado() {
                                                 </svg>
                                             ) : (
                                                 <img 
-                                                    src="/Escudo.png" 
-                                                    alt="Escudo" 
+                                                    src="/Escudo1.png" 
+                                                    alt="Escudo Institucional" 
                                                     className="w-full h-full object-contain" 
                                                     onError={() => setLogoError(true)} 
                                                 />

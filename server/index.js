@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { VertexAI } from '@google-cloud/vertexai';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -45,6 +46,35 @@ if (fs.existsSync(credentialsPath)) {
     useDemoAI = true;
 }
 
+// Configurar transportador de correo (Nodemailer)
+const smtpUser = process.env.SMTP_USER;
+const smtpPass = process.env.SMTP_PASS;
+const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+
+let mailTransporter = null;
+let isEmailConfigured = false;
+
+if (smtpUser && smtpPass) {
+    try {
+        mailTransporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: {
+                user: smtpUser,
+                pass: smtpPass
+            }
+        });
+        isEmailConfigured = true;
+        console.log(`📧 Servicio de correo SMTP configurado exitosamente con cuenta: ${smtpUser}`);
+    } catch (err) {
+        console.error("❌ Error al inicializar transportador SMTP:", err);
+    }
+} else {
+    console.warn("ℹ️ SMTP_USER / SMTP_PASS no configurados en .env. El envío de correos operará en MODO SIMULACIÓN Y REGISTRO.");
+}
+
 // Cargar Manual de Convivencia
 const manualPath = path.join(__dirname, 'data/manual_convivencia.txt');
 let manualContent = '';
@@ -54,6 +84,137 @@ if (fs.existsSync(manualPath)) {
 } else {
     console.warn("⚠️ Advertencia: No se encontró data/manual_convivencia.txt.");
 }
+
+// Generador de Plantilla HTML para Notificación de Asistencia
+const generateAttendanceEmailHtml = ({
+    student_name,
+    student_grade,
+    parent_name,
+    status,
+    date_str,
+    time_str,
+    teacher_name,
+    notes
+}) => {
+    const isAbsent = status === 'ABSENT';
+    const titleText = isAbsent ? 'Alerta de Inasistencia Escolar' : 'Reporte de Llegada Tarde';
+    const statusLabel = isAbsent ? 'INASISTENCIA REGISTRADA' : 'LLEGADA TARDE / RETARDO';
+    const badgeBg = isAbsent ? '#fee2e2' : '#fef3c7';
+    const badgeColor = isAbsent ? '#991b1b' : '#92400e';
+    const headerGradient = isAbsent 
+        ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)' 
+        : 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)';
+
+    return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${titleText}</title>
+    </head>
+    <body style="margin: 0; padding: 20px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+            
+            <!-- Encabezado Institucional -->
+            <tr>
+                <td style="background: ${headerGradient}; padding: 32px 24px; text-align: center; color: #ffffff;">
+                    <div style="font-size: 13px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; opacity: 0.9; margin-bottom: 6px;">
+                        Instituto Nueva América de Suba (INAS)
+                    </div>
+                    <h1 style="margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2;">
+                        ${titleText}
+                    </h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.95;">
+                        Control y Seguimiento Diario de Asistencia
+                    </p>
+                </td>
+            </tr>
+
+            <!-- Cuerpo del Mensaje -->
+            <tr>
+                <td style="padding: 30px 24px;">
+                    <p style="font-size: 16px; margin: 0 0 16px 0; color: #334155; line-height: 1.5;">
+                        Estimado(a) Acudiente <strong>${parent_name || 'Padre de Familia'}</strong>:
+                    </p>
+                    <p style="font-size: 15px; margin: 0 0 20px 0; color: #475569; line-height: 1.6;">
+                        Le informamos que en el llamado a lista diario de la jornada escolar, se ha registrado la siguiente novedad de asistencia respecto a su acudido(a):
+                    </p>
+
+                    <!-- Tarjeta de Detalles del Estudiante -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; overflow: hidden;">
+                        <tr>
+                            <td style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+                                <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Estudiante</span>
+                                <strong style="font-size: 17px; color: #0f172a;">${student_name}</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 20px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff;">
+                                <table width="100%">
+                                    <tr>
+                                        <td width="50%">
+                                            <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Curso / Grado</span>
+                                            <strong style="font-size: 15px; color: #1e293b;">${student_grade}</strong>
+                                        </td>
+                                        <td width="50%">
+                                            <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Fecha del Reporte</span>
+                                            <strong style="font-size: 15px; color: #1e293b;">${date_str} ${time_str ? `(${time_str})` : ''}</strong>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 14px 20px; border-bottom: 1px solid #e2e8f0;">
+                                <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px;">Estado Reportado</span>
+                                <span style="display: inline-block; background-color: ${badgeBg}; color: ${badgeColor}; padding: 6px 14px; border-radius: 9999px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px;">
+                                    ${statusLabel}
+                                </span>
+                            </td>
+                        </tr>
+                        ${notes ? `
+                        <tr>
+                            <td style="padding: 14px 20px; background-color: #ffffff;">
+                                <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Observación del Docente</span>
+                                <span style="font-size: 14px; color: #334155; line-height: 1.4;">${notes}</span>
+                            </td>
+                        </tr>
+                        ` : ''}
+                        <tr>
+                            <td style="padding: 12px 20px; background-color: #f1f5f9; font-size: 13px; color: #64748b;">
+                                Registrado por: <strong>${teacher_name || 'Coordinación / Docencia INAS'}</strong>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Aviso de Justificación -->
+                    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; margin-bottom: 24px;">
+                        <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+                            <strong>📌 ¿Qué debo hacer si es una inasistencia justificada?</strong><br>
+                            Si el estudiante se encuentra enfermo o ausente por fuerza mayor, por favor ingrese a la <strong>Agenda Virtual Escolar</strong> o radique la incapacidad médica ante la secretaría del colegio dentro de los 3 días hábiles siguientes.
+                        </p>
+                    </div>
+
+                    <p style="font-size: 14px; color: #64748b; line-height: 1.5; margin: 0;">
+                        Este es un mensaje automático de control institucional para la seguridad y tranquilidad de los hogares.
+                    </p>
+                </td>
+            </tr>
+
+            <!-- Pie de Página Institucional -->
+            <tr>
+                <td style="background-color: #f8fafc; padding: 20px 24px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                    <strong>Instituto Nueva América de Suba (INAS)</strong><br>
+                    Formando líderes con excelencia y valores<br>
+                    Bogotá D.C., Colombia • Agenda Virtual Escolar
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    `;
+};
 
 // System Instruction para Gemini
 const getSystemInstruction = (role) => {
@@ -78,6 +239,112 @@ const getSystemInstruction = (role) => {
     - No inventes números de teléfono, direcciones ni nombres de docentes que no estén en el manual.
     - Mantén las respuestas breves y directas al grano.`;
 };
+
+// Endpoint para Notificación de Inasistencias y Retardos por Correo
+app.post('/api/attendance/notify', async (req, res) => {
+    const { records, sender_name } = req.body;
+
+    if (!records || !Array.isArray(records) || records.length === 0) {
+        return res.status(400).json({ error: 'No se enviaron registros de inasistencia para notificar.' });
+    }
+
+    const results = [];
+    let sentCount = 0;
+    let simulatedCount = 0;
+    let failedCount = 0;
+
+    for (const record of records) {
+        const {
+            student_id,
+            student_name,
+            student_grade,
+            parent_name,
+            parent_email,
+            status,
+            date_str,
+            time_str,
+            notes
+        } = record;
+
+        const effectiveEmail = (parent_email || '').trim();
+        const isAbsent = status === 'ABSENT';
+        const subject = isAbsent 
+            ? `🚨 [INAS] Alerta de Inasistencia: ${student_name} (${student_grade}) - ${date_str}`
+            : `⏰ [INAS] Reporte de Llegada Tarde: ${student_name} (${student_grade}) - ${date_str}`;
+
+        const htmlContent = generateAttendanceEmailHtml({
+            student_name,
+            student_grade,
+            parent_name,
+            status,
+            date_str,
+            time_str: time_str || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            teacher_name: sender_name || 'Coordinación INAS',
+            notes
+        });
+
+        if (!effectiveEmail || !effectiveEmail.includes('@')) {
+            results.push({
+                student_id,
+                student_name,
+                status: 'SKIPPED_NO_EMAIL',
+                message: 'No tiene correo de acudiente registrado'
+            });
+            continue;
+        }
+
+        // Si tenemos SMTP configurado, enviar correo real
+        if (isEmailConfigured && mailTransporter) {
+            try {
+                await mailTransporter.sendMail({
+                    from: `"Instituto Nueva América" <${smtpUser}>`,
+                    to: effectiveEmail,
+                    subject,
+                    html: htmlContent
+                });
+                sentCount++;
+                results.push({
+                    student_id,
+                    student_name,
+                    email: effectiveEmail,
+                    status: 'SENT',
+                    mode: 'SMTP_REAL'
+                });
+            } catch (mailErr) {
+                console.error(`❌ Error al enviar correo a ${effectiveEmail}:`, mailErr);
+                failedCount++;
+                results.push({
+                    student_id,
+                    student_name,
+                    email: effectiveEmail,
+                    status: 'FAILED',
+                    error: mailErr.message
+                });
+            }
+        } else {
+            // MODO SIMULACIÓN Y REGISTRO EN CONSOLA
+            console.log(`📨 [SIMULACIÓN CORREO] Para: ${effectiveEmail} | Asunto: ${subject}`);
+            simulatedCount++;
+            results.push({
+                student_id,
+                student_name,
+                email: effectiveEmail,
+                status: 'SENT',
+                mode: 'SIMULATED',
+                preview_subject: subject
+            });
+        }
+    }
+
+    return res.json({
+        success: true,
+        total: records.length,
+        sentCount: isEmailConfigured ? sentCount : simulatedCount,
+        failedCount,
+        isSimulated: !isEmailConfigured,
+        results
+    });
+});
 
 // Endpoint principal de Chat
 app.post('/api/ia/chat', async (req, res) => {
@@ -155,3 +422,4 @@ app.post('/api/ia/chat', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Servidor backend escolar corriendo en http://localhost:${PORT}`);
 });
+

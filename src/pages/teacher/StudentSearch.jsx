@@ -109,29 +109,32 @@ export default function StudentSearch() {
                 <p className="text-xs text-gray-500 mt-1">Selecciona un curso para ver sus estudiantes, registrar novedades o marcar estado (Activo / Retirado).</p>
             </div>
 
-            {/* Selector de Cursos (Tabs) */}
-            <div className="space-y-3">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cursos Disponibles</label>
-                <div className="flex flex-wrap gap-2">
+            {/* Selección de Grados */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cursos Disponibles</p>
+                    <span className="text-[11px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-full">
+                        {courses.length} Cursos Registrados
+                    </span>
+                </div>
+                
+                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:flex-wrap no-scrollbar">
                     {courses.map(course => {
-                        const count = students.filter(s => s.grade === course && s.status !== 'retirado').length;
+                        const count = getCourseStudentCount(course);
                         const isSelected = selectedCourse === course;
                         return (
                             <button
                                 key={course}
-                                onClick={() => {
-                                    setSelectedCourse(course);
-                                    setSearchTerm('');
-                                }}
-                                className={`px-4 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 border shadow-sm ${
-                                    isSelected
-                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/10'
-                                        : 'bg-white hover:bg-gray-50 border-gray-100 text-gray-600'
+                                onClick={() => setSelectedCourse(course)}
+                                className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                                    isSelected 
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-100'
                                 }`}
                             >
                                 <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-600'} shrink-0`}></span>
                                 Curso {course}
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${
                                     isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
                                 }`}>
                                     {count}
@@ -145,56 +148,56 @@ export default function StudentSearch() {
             {/* Buscador por Nombre y Listado */}
             {selectedCourse && (
                 <div className="space-y-4 pt-2">
-                    <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                         <div className="relative flex-1">
                             <input
                                 type="text"
                                 placeholder={`Buscar estudiante en curso ${selectedCourse}...`}
-                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none shadow-sm text-sm"
+                                className="w-full pl-9 pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none shadow-xs text-xs sm:text-sm"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
-                            <Search className="absolute left-3.5 top-3.5 text-gray-400" size={18} />
+                            <Search className="absolute left-3 top-3 text-gray-400" size={16} />
                         </div>
 
                         {/* Filtro de Estado: Activos / Retirados / Todos */}
-                        <div className="flex items-center bg-gray-100 p-1 rounded-2xl border border-gray-200/60 shrink-0 text-xs font-bold">
+                        <div className="grid grid-cols-3 sm:flex items-center bg-gray-100 p-1 rounded-2xl border border-gray-200/60 shrink-0 text-[10.5px] sm:text-xs font-bold w-full sm:w-auto">
                             <button
                                 onClick={() => setStatusFilter('activo')}
-                                className={`px-3 py-1.5 rounded-xl transition ${statusFilter === 'activo' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-2 sm:px-3 py-1.5 rounded-xl transition text-center ${statusFilter === 'activo' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 🟢 Activos ({courseStudents.filter(s => s.status !== 'retirado').length})
                             </button>
                             <button
                                 onClick={() => setStatusFilter('retirado')}
-                                className={`px-3 py-1.5 rounded-xl transition ${statusFilter === 'retirado' ? 'bg-white text-rose-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-2 sm:px-3 py-1.5 rounded-xl transition text-center ${statusFilter === 'retirado' ? 'bg-white text-rose-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 🔴 Retirados ({courseStudents.filter(s => s.status === 'retirado').length})
                             </button>
                             <button
                                 onClick={() => setStatusFilter('all')}
-                                className={`px-3 py-1.5 rounded-xl transition ${statusFilter === 'all' ? 'bg-white text-indigo-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-2 sm:px-3 py-1.5 rounded-xl transition text-center ${statusFilter === 'all' ? 'bg-white text-indigo-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Todos ({courseStudents.length})
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         {loading ? (
-                            <p className="text-sm text-gray-500">Cargando listado oficial...</p>
+                            <p className="text-xs sm:text-sm text-gray-500 py-6 text-center col-span-full">Cargando listado oficial...</p>
                         ) : filtered.map(student => {
                             const isRetirado = student.status === 'retirado';
                             return (
                                 <div
                                     key={student.id}
                                     onClick={() => navigate(`/teacher/log/${student.id}`)}
-                                    className={`p-4 rounded-2xl border shadow-sm hover:shadow-md transition cursor-pointer flex justify-between items-center group relative ${
+                                    className={`p-3.5 sm:p-4 rounded-2xl border shadow-xs hover:shadow-md transition cursor-pointer flex flex-col sm:flex-row justify-between sm:items-center gap-3 group relative ${
                                         isRetirado ? 'bg-rose-50/30 border-rose-200' : 'bg-white border-gray-100 hover:border-indigo-200'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-12 h-12 rounded-2xl overflow-hidden border flex items-center justify-center shrink-0 ${
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className={`w-11 h-11 rounded-2xl overflow-hidden border flex items-center justify-center shrink-0 ${
                                             isRetirado ? 'bg-rose-100 border-rose-200' : 'bg-indigo-50 border-indigo-100/50'
                                         }`}>
                                             {student.photo_url ? (
@@ -205,15 +208,15 @@ export default function StudentSearch() {
                                                 </span>
                                             )}
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-bold text-gray-800 group-hover:text-indigo-600 transition text-sm">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <p className="font-bold text-gray-800 group-hover:text-indigo-600 transition text-xs sm:text-sm truncate">
                                                     {student.lastName && student.firstName 
                                                         ? `${student.lastName} ${student.firstName}` 
                                                         : student.name}
                                                 </p>
                                                 {isRetirado && (
-                                                    <span className="text-[9px] bg-rose-100 text-rose-700 font-extrabold px-2 py-0.5 rounded-full border border-rose-200">
+                                                    <span className="text-[8.5px] bg-rose-100 text-rose-700 font-extrabold px-1.5 py-0.2 rounded-full border border-rose-200 shrink-0">
                                                         RETIRADO
                                                     </span>
                                                 )}
@@ -221,7 +224,8 @@ export default function StudentSearch() {
                                             <p className="text-[10px] font-mono text-gray-400 mt-0.5">{student.id_code}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
+
+                                    <div className="flex items-center justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                                         <button
                                             type="button"
                                             onClick={(e) => {
@@ -229,13 +233,13 @@ export default function StudentSearch() {
                                                 setQuickObsStudentId(student.id);
                                                 setQuickObsModalOpen(true);
                                             }}
-                                            className="bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200 text-xs font-black px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow-2xs active-press"
+                                            className="bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200 text-[11px] sm:text-xs font-black px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow-2xs active-press"
                                             title="Registrar falta rápida o mérito"
                                         >
                                             <Zap size={13} />
-                                            <span className="hidden sm:inline">Falta Rápida</span>
+                                            <span>Falta Rápida</span>
                                         </button>
-                                        <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1.5 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition">
+                                        <span className="bg-indigo-50 text-indigo-600 text-[11px] sm:text-xs font-bold px-3 py-1.5 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition">
                                             Gestionar
                                         </span>
                                     </div>
