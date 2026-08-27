@@ -7,7 +7,7 @@ import {
     Loader2, BookOpen, Calendar as CalendarIcon, ClipboardList, 
     MessageSquare, User, FileText, Award, Star, Bell, 
     ChevronRight, CheckCircle2, AlertTriangle, TrendingUp,
-    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send, UserMinus, UserCheck, RefreshCw, Zap
+    Users, PlusCircle, ShieldAlert, ArrowRight, Sparkles, Upload, Table, Printer, Trash2, Edit, Edit2, X, BarChart2, Send, UserMinus, UserCheck, RefreshCw, Zap, Camera, Image as ImageIcon
 } from 'lucide-react';
 import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS, MOCK_PARENTS } from '../lib/mockData';
 import { getStudentForUser } from '../lib/getStudentForUser';
@@ -196,12 +196,51 @@ export default function Dashboard() {
     const [studentLastName, setStudentLastName] = useState('');
     const [studentGrade, setStudentGrade] = useState('');
     const [studentCode, setStudentCode] = useState('');
+    const [studentPhotoUrl, setStudentPhotoUrl] = useState('');
     const [parentEmail, setParentEmail] = useState('');
     const [parentName, setParentName] = useState('');
     const [addingStudent, setAddingStudent] = useState(false);
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingStudentId, setEditingStudentId] = useState(null);
+
+    // Procesar y comprimir foto seleccionada para guardado directo
+    const handleStudentPhotoFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 480;
+
+                if (width > height) {
+                    if (width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    }
+                } else {
+                    if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                setStudentPhotoUrl(optimizedDataUrl);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
 
     // Iniciar edición de estudiante
     const handleStartEdit = async (student) => {
@@ -211,6 +250,7 @@ export default function Dashboard() {
         setStudentLastName(student.lastName || '');
         setStudentGrade(student.grade || '');
         setStudentCode(student.id_code || '');
+        setStudentPhotoUrl(student.photo_url || '');
         
         // Cargar datos de acudiente desde estudiante o desde colección 'users'
         let foundEmail = student.email_padre || student.email || '';
@@ -312,7 +352,17 @@ export default function Dashboard() {
             }
 
             const fullName = `${studentFirstName.trim()} ${studentLastName.trim()}`;
-            const avatarSeed = studentFirstName.trim();
+            const avatarSeed = encodeURIComponent(studentFirstName.trim() || 'Estudiante');
+            const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+            const effectivePhoto = studentPhotoUrl || (isEditMode ? (adminStudents.find(s => s.id === editingStudentId)?.photo_url || fallbackAvatar) : fallbackAvatar);
+
+            // Calcular el siguiente número consecutivo de folio inmutable
+            const maxExistingFolio = adminStudents.reduce((max, s) => {
+                const num = parseInt(s.folioNumber || s.masterFolio || '0', 10);
+                return isNaN(num) ? max : Math.max(max, num);
+            }, adminStudents.length);
+            const nextFolioNumber = String(maxExistingFolio + 1).padStart(3, '0');
+            const existingFolio = adminStudents.find(s => s.id === editingStudentId)?.folioNumber;
 
             const studentDataToSave = {
                 name: fullName.toUpperCase(),
@@ -320,6 +370,8 @@ export default function Dashboard() {
                 lastName: studentLastName.trim().toUpperCase(),
                 grade: studentGrade.toUpperCase(),
                 id_code: studentCode.trim().toUpperCase(),
+                folioNumber: isEditMode ? (existingFolio || nextFolioNumber) : nextFolioNumber,
+                photo_url: effectivePhoto,
                 email_padre: cleanParentEmail,
                 email: cleanParentEmail,
                 nombre_padre: cleanParentName || (cleanParentEmail ? `Acudiente de ${fullName}` : ''),
@@ -335,7 +387,6 @@ export default function Dashboard() {
                 // Crear estudiante nuevo
                 const studentDoc = await addDoc(collection(db, 'students'), {
                     ...studentDataToSave,
-                    photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
                     created_at: new Date()
                 });
 
@@ -368,6 +419,7 @@ export default function Dashboard() {
             setStudentLastName('');
             setStudentGrade('');
             setStudentCode('');
+            setStudentPhotoUrl('');
             setParentEmail('');
             setParentName('');
             setShowAddStudentModal(false);
@@ -1935,6 +1987,65 @@ export default function Dashboard() {
                         </div>
 
                         <form onSubmit={handleAddStudent} className="space-y-4">
+                            {/* Subir / Cambiar Foto del Estudiante (Perfil y Formulario 3x4) */}
+                            <div className="flex items-center gap-4 p-3 bg-indigo-50/40 border border-indigo-100 rounded-2xl">
+                                <div className="relative group shrink-0">
+                                    <div className="w-16 h-20 rounded-xl bg-white border-2 border-indigo-200 overflow-hidden shadow-xs flex items-center justify-center">
+                                        {studentPhotoUrl ? (
+                                            <img src={studentPhotoUrl} alt="Foto Estudiante" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center text-indigo-300">
+                                                <User size={26} />
+                                                <span className="text-[8px] font-bold text-slate-400 mt-0.5">3 x 4 cm</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => document.getElementById('modal-student-photo-input')?.click()}
+                                        className="absolute -bottom-1 -right-1 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-full shadow-md transition active-press"
+                                        title="Seleccionar foto"
+                                    >
+                                        <Camera size={12} />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 space-y-1 text-left">
+                                    <label className="text-xs font-black text-slate-800 block">
+                                        Foto del Estudiante
+                                    </label>
+                                    <p className="text-[10px] text-slate-500 leading-tight font-medium">
+                                        Visible en el perfil, carnet y formulario 3x4 cm.
+                                    </p>
+                                    <div className="flex items-center gap-2 pt-0.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => document.getElementById('modal-student-photo-input')?.click()}
+                                            className="px-3 py-1.5 bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+                                        >
+                                            <Upload size={12} /> {studentPhotoUrl ? 'Cambiar Foto' : 'Subir Foto'}
+                                        </button>
+                                        {studentPhotoUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setStudentPhotoUrl('')}
+                                                className="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition"
+                                                title="Quitar foto"
+                                            >
+                                                Quitar
+                                            </button>
+                                        )}
+                                    </div>
+                                    <input 
+                                        id="modal-student-photo-input" 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden" 
+                                        onChange={handleStudentPhotoFileChange} 
+                                    />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-500 uppercase">Nombres</label>

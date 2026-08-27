@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Printer, FileText, UserCheck, Search, FileCode, Filter, RefreshCw, CheckCircle2, Clock, FileCheck2, Check, X, ShieldAlert } from 'lucide-react';
+import { Loader2, ArrowLeft, Printer, FileText, UserCheck, Search, FileCode, Filter, RefreshCw, CheckCircle2, Clock, FileCheck2, Check, X, ShieldAlert, Camera, Upload, Image as ImageIcon } from 'lucide-react';
 
 export default function PrintFormularioInscripcion() {
     const { studentId } = useParams();
@@ -21,6 +21,7 @@ export default function PrintFormularioInscripcion() {
     // Estado del formulario editable (para afinar datos antes de imprimir)
     const [formData, setFormData] = useState({
         formNumber: '001',
+        photo_url: '',
         rh: '',
         cursoIngresa: '',
         tipoIngreso: '', // ANTIGUO | NUEVO | REPITENTE
@@ -106,7 +107,7 @@ export default function PrintFormularioInscripcion() {
                 });
 
                 list.forEach((st, idx) => {
-                    st.masterFolio = String(idx + 1).padStart(3, '0');
+                    st.masterFolio = st.folioNumber ? String(st.folioNumber).padStart(3, '0') : String(idx + 1).padStart(3, '0');
                 });
 
                 setStudentsList(list);
@@ -244,6 +245,7 @@ export default function PrintFormularioInscripcion() {
         setFormData(prev => ({
             ...prev,
             formNumber: autoFormNum,
+            photo_url: s.photo_url || '',
             primerApellido: pApellido.toUpperCase(),
             segundoApellido: sApellido.toUpperCase(),
             nombres: nom.toUpperCase(),
@@ -314,6 +316,57 @@ export default function PrintFormularioInscripcion() {
         }));
     }, [selectedStudentId, studentsList, isBlankMode]);
 
+    // Función para procesar y optimizar foto del estudiante directamente
+    const handleFormPhotoChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 480;
+
+                if (width > height) {
+                    if (width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    }
+                } else {
+                    if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+                setFormData(prev => ({ ...prev, photo_url: optimizedDataUrl }));
+
+                if (selectedStudentId) {
+                    try {
+                        await updateDoc(doc(db, 'students', selectedStudentId), {
+                            photo_url: optimizedDataUrl
+                        });
+                        setStudentsList(prev => prev.map(st => st.id === selectedStudentId ? { ...st, photo_url: optimizedDataUrl } : st));
+                        alert("¡Foto actualizada en el perfil del estudiante y en el formulario con éxito!");
+                    } catch (err) {
+                        console.error("Error guardando foto en Firestore:", err);
+                    }
+                }
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
     // Función para activar modo formulario en blanco
     const handleSetBlankMode = () => {
         setIsBlankMode(true);
@@ -321,6 +374,7 @@ export default function PrintFormularioInscripcion() {
         setFormData(prev => ({
             ...prev,
             formNumber: '001',
+            photo_url: '',
             primerApellido: '',
             segundoApellido: '',
             nombres: '',
@@ -476,6 +530,17 @@ export default function PrintFormularioInscripcion() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Botón Adjuntar / Cambiar Foto */}
+                        <button 
+                            type="button"
+                            onClick={() => document.getElementById('form-photo-upload-input')?.click()}
+                            disabled={isBlankMode}
+                            className="font-bold px-3.5 py-2 rounded-2xl transition text-xs flex items-center gap-1.5 shrink-0 border bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs disabled:opacity-40"
+                            title="Subir o cambiar foto 3x4 del estudiante"
+                        >
+                            <Camera size={15} /> {formData.photo_url ? 'Cambiar Foto 3x4' : 'Adjuntar Foto 3x4'}
+                        </button>
+
                         {/* Botón Imprimir en Blanco */}
                         <button 
                             onClick={handleSetBlankMode}
@@ -689,11 +754,39 @@ export default function PrintFormularioInscripcion() {
                                 </div>
                             </div>
 
-                            {/* Foto Obligatoria & No. Folio */}
+                            {/* Foto Obligatoria (3x4 cm) */}
                             <div className="flex flex-col items-end gap-1">
-                                <div className="w-[2.4cm] h-[3.1cm] border border-black flex items-center justify-center text-center p-1 text-[11px] font-serif leading-tight bg-slate-50/50">
-                                    Foto<br />Obligatoria
+                                <div 
+                                    className="w-[2.4cm] h-[3.1cm] border border-black flex items-center justify-center text-center p-0.5 text-[11px] font-serif leading-tight bg-slate-50/50 overflow-hidden relative group cursor-pointer"
+                                    title={isBlankMode ? "Espacio oficial de fotografía 3x4 cm" : "Clic para cambiar o subir foto 3x4 cm"}
+                                    onClick={() => !isBlankMode && document.getElementById('form-photo-upload-input')?.click()}
+                                >
+                                    {!isBlankMode && formData.photo_url ? (
+                                        <img 
+                                            src={formData.photo_url} 
+                                            alt="Foto del Estudiante" 
+                                            className="w-full h-full object-cover" 
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center text-slate-800">
+                                            <span className="text-[10px] font-serif font-bold leading-tight">Foto<br />Obligatoria</span>
+                                            <span className="text-[8px] font-sans text-slate-500 mt-0.5">3 x 4 cm</span>
+                                        </div>
+                                    )}
+                                    {!isBlankMode && (
+                                        <div className="absolute inset-0 bg-indigo-900/60 text-white flex flex-col items-center justify-center text-[8px] font-bold opacity-0 group-hover:opacity-100 transition no-print">
+                                            <Camera size={14} className="mb-0.5" />
+                                            Cambiar
+                                        </div>
+                                    )}
                                 </div>
+                                <input 
+                                    id="form-photo-upload-input" 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                    onChange={handleFormPhotoChange} 
+                                />
                             </div>
                         </div>
 
