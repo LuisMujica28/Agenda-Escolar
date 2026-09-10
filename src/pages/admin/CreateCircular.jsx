@@ -250,7 +250,7 @@ export default function CreateCircular() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-12 relative">
+        <div className="w-full max-w-[1440px] mx-auto space-y-6 animate-fade-in pb-12 relative">
             {/* Notificación Flotante */}
             {notification.show && (
                 <div className={`fixed top-6 right-6 z-50 p-4 rounded-2xl shadow-xl border flex items-center gap-3 animate-slide-in-right ${

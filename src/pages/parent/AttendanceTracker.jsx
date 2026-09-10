@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { Loader2, Calendar, CheckCircle2, AlertTriangle, Clock, Ban } from 'lucide-react';
 import { getStudentForUser } from '../../lib/getStudentForUser';
+import { getStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../../lib/avatarHelper';
 
 export default function AttendanceTracker() {
     const { currentUser } = useAuth();
@@ -118,8 +119,13 @@ export default function AttendanceTracker() {
             {/* Header del estudiante */}
             <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
-                        <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-50 border border-slate-200">
+                        <img 
+                            src={getStudentPhoto(student.photo_url)} 
+                            alt="Student" 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                        />
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-gray-800">

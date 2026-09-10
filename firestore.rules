@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // FUNCIONES AUXILIARES DE SEGURIDAD Y PERMISOS
+    // =====================================================================
+
+    // Verificar si el usuario ha iniciado sesión
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verificar si el correo pertenece al dominio oficial institucional
+    function isInstitutionalDomain() {
+      return isAuthenticated() && 
+        (request.auth.token.email.matches('.*@inas[.]edu[.]co$') || 
+         request.auth.token.email == 'admin@colegio.com');
+    }
+
+    // Obtener los datos del usuario en la colección 'users'
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Verificar rol de Administrador
+    function isAdmin() {
+      return isInstitutionalDomain() && 
+        (getUserData().role == 'admin' || request.auth.token.email == 'admin@colegio.com');
+    }
+
+    // Verificar rol de Docente
+    function isTeacher() {
+      return isInstitutionalDomain() && (getUserData().role == 'teacher' || isAdmin());
+    }
+
+    // Verificar rol de Padre / Acudiente
+    function isParent() {
+      return isInstitutionalDomain() && (getUserData().role == 'parent' || isAdmin());
+    }
+
+    // =====================================================================
+    // REGLAS POR COLECCIÓN
+    // =====================================================================
+
+    // 1. USUARIOS (users)
+    // Cada usuario solo puede leer su propio perfil; el admin puede gestionar todos.
+    match /users/{userId} {
+      allow read: if isInstitutionalDomain() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // 2. ESTUDIANTES (students)
+    // Docentes y Admin pueden ver todos. Padres solo el estudiante asociado a su correo.
+    match /students/{studentId} {
+      allow read: if isInstitutionalDomain() && (
+        isAdmin() || 
+        isTeacher() || 
+        resource.data.email == request.auth.token.email || 
+        resource.data.parent_email == request.auth.token.email
+      );
+      allow write: if isAdmin();
+    }
+
+    // 3. CALIFICACIONES Y BOLETINES (grades)
+    // Profesores y directivos pueden editar notas. Estudiantes y padres solo consultar.
+    match /grades/{gradeId} {
+      allow read: if isInstitutionalDomain();
+      allow write: if isTeacher();
+    }
+
+    // 4. OBSERVADOR DEL ALUMNO (observation_logs)
+    // Profesores y Admin redactan faltas o reconocimientos.
+    // Los acudientes solo pueden actualizar su firma digital ("FIRMADO").
+    match /observation_logs/{logId} {
+      allow read: if isInstitutionalDomain();
+      allow create: if isTeacher();
+      allow delete: if isAdmin();
+      allow update: if isTeacher() || (
+        isParent() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'signed_at', 'parent_signature', 'signed_by'])
+      );
+    }
+
+    // 5. CIRCULARES Y COMUNICADOS (circulars)
+    // Toda la comunidad autenticada puede leer. Solo Admin puede crear o publicar.
+    match /circulars/{circularId} {
+      allow read: if isInstitutionalDomain();
+      allow write: if isAdmin();
+    }
+
+    // 6. CURSOS Y ASIGNATURAS (courses)
+    match /courses/{courseId} {
+      allow read: if isInstitutionalDomain();
+      allow write: if isAdmin();
+    }
+
+    // 7. FORMULARIOS DE ASPIRANTES Y MATRÍCULAS (aspirants)
+    // Información altamente confidencial: acceso exclusivo a Secretaría y Rectoría.
+    match /aspirants/{aspirantId} {
+      allow read, write: if isAdmin();
+    }
+
+    // 8. ASISTENCIA DIARIA (attendance)
+    match /attendance/{attendanceId} {
+      allow read: if isInstitutionalDomain();
+      allow write: if isTeacher();
+    }
+
+    // 9. TAREAS Y ACTIVIDADES ESCOLARES (tasks)
+    match /tasks/{taskId} {
+      allow read: if isInstitutionalDomain();
+      allow write: if isTeacher();
+    }
+
+    // 10. MENSAJERÍA INSTITUCIONAL (messages)
+    match /messages/{messageId} {
+      allow read: if isInstitutionalDomain() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.recipientId == request.auth.uid || 
+        isAdmin()
+      );
+      allow create: if isInstitutionalDomain() && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // REGLA POR DEFECTO: Denegar cualquier otra operación no explícita
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

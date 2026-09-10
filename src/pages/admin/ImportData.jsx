@@ -436,7 +436,7 @@ export default function ImportData() {
                             secondLastName: secondLastName.toUpperCase(),
                             grade: row.curso,
                             id_code: row.codigo,
-                            photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(firstName)}`,
+                            photo_url: '',
                             parent_uids: [parentUid]
                         });
                         studentId = docRef.id;

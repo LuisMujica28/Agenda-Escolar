@@ -481,7 +481,7 @@ export default function MessagingPage() {
     const unreadCount = messages.filter(m => m.isNew && m.sender_id !== currentUser?.uid).length;
 
     return (
-        <div className="space-y-5 animate-fade-in max-w-7xl mx-auto pb-10">
+        <div className="space-y-5 animate-fade-in w-full max-w-[1440px] mx-auto pb-10">
             
             {/* Header Superior y Barra de Navegación Integrada */}
             <div className="bg-white rounded-3xl border border-slate-150 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">

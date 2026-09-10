@@ -11,9 +11,11 @@ import {
 } from 'lucide-react';
 import { MOCK_NEWS, MOCK_STUDENTS, MOCK_LOGS, MOCK_PARENTS } from '../lib/mockData';
 import { getStudentForUser } from '../lib/getStudentForUser';
+import { getStudentPhoto, isValidStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../lib/avatarHelper';
 import CircularDetailModal from '../components/CircularDetailModal';
 import CircularReadersModal from '../components/CircularReadersModal';
 import QuickObservationModal from '../components/QuickObservationModal';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Dashboard() {
     const { currentUser, userRole } = useAuth();
@@ -33,6 +35,34 @@ export default function Dashboard() {
     const [showCircularsModal, setShowCircularsModal] = useState(false);
     const [allCirculars, setAllCirculars] = useState([]);
     const [loadingAllCirculars, setLoadingAllCirculars] = useState(false);
+
+    // Modal de Confirmación seguro (reemplaza window.confirm)
+    const [confirmModalConfig, setConfirmModalConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmText: 'Confirmar',
+        cancelText: 'Cancelar',
+        confirmVariant: 'danger',
+        onConfirm: null,
+        details: null
+    });
+
+    const showConfirm = ({ title, message, confirmText = 'Confirmar', cancelText = 'Cancelar', confirmVariant = 'danger', details = null, onConfirm }) => {
+        setConfirmModalConfig({
+            isOpen: true,
+            title,
+            message,
+            confirmText,
+            cancelText,
+            confirmVariant,
+            details,
+            onConfirm: async () => {
+                setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+                if (onConfirm) await onConfirm();
+            }
+        });
+    };
 
     // State for interactive mini calendar
     const [calendarDate, setCalendarDate] = useState(new Date(2026, 6, 1));
@@ -250,7 +280,7 @@ export default function Dashboard() {
         setStudentLastName(student.lastName || '');
         setStudentGrade(student.grade || '');
         setStudentCode(student.id_code || '');
-        setStudentPhotoUrl(student.photo_url || '');
+        setStudentPhotoUrl(isValidStudentPhoto(student.photo_url) ? student.photo_url : '');
         
         // Cargar datos de acudiente desde estudiante o desde colección 'users'
         let foundEmail = student.email_padre || student.email || '';
@@ -352,9 +382,9 @@ export default function Dashboard() {
             }
 
             const fullName = `${studentFirstName.trim()} ${studentLastName.trim()}`;
-            const avatarSeed = encodeURIComponent(studentFirstName.trim() || 'Estudiante');
-            const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
-            const effectivePhoto = studentPhotoUrl || (isEditMode ? (adminStudents.find(s => s.id === editingStudentId)?.photo_url || fallbackAvatar) : fallbackAvatar);
+            const existingPhoto = adminStudents.find(s => s.id === editingStudentId)?.photo_url;
+            const cleanExisting = isValidStudentPhoto(existingPhoto) ? existingPhoto : '';
+            const effectivePhoto = isValidStudentPhoto(studentPhotoUrl) ? studentPhotoUrl : (isEditMode ? cleanExisting : '');
 
             // Calcular el siguiente número consecutivo de folio inmutable
             const maxExistingFolio = adminStudents.reduce((max, s) => {
@@ -448,47 +478,56 @@ export default function Dashboard() {
         }
     };
 
-    const handleDeleteStudent = async (studentId, studentName) => {
-        const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${studentName}? Esta acción borrará al alumno y sus calificaciones.`);
-        if (!confirmDelete) return;
+    const handleDeleteStudent = (studentId, studentName) => {
+        showConfirm({
+            title: "¿Eliminar Estudiante?",
+            message: `¿Estás seguro de que deseas eliminar permanentemente a ${studentName}?\n\nEsta acción borrará al alumno y todas sus calificaciones del sistema.`,
+            confirmText: "Sí, Eliminar Alumno",
+            confirmVariant: "danger",
+            onConfirm: async () => {
+                try {
+                    await deleteDoc(doc(db, 'students', studentId));
 
-        try {
-            await deleteDoc(doc(db, 'students', studentId));
+                    const qGrades = query(collection(db, 'grades'), where('student_id', '==', studentId));
+                    const gSnap = await getDocs(qGrades);
+                    for (const gradeDoc of gSnap.docs) {
+                        await deleteDoc(doc(db, 'grades', gradeDoc.id));
+                    }
 
-            const qGrades = query(collection(db, 'grades'), where('student_id', '==', studentId));
-            const gSnap = await getDocs(qGrades);
-            for (const gradeDoc of gSnap.docs) {
-                await deleteDoc(doc(db, 'grades', gradeDoc.id));
+                    const sSnap = await getDocs(collection(db, 'students'));
+                    const studentsList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setAdminStudents(studentsList);
+                    setTotalStudentsCount(studentsList.length);
+                } catch (err) {
+                    console.error("Error al eliminar estudiante:", err);
+                    alert("Error al eliminar estudiante: " + err.message);
+                }
             }
-
-            const sSnap = await getDocs(collection(db, 'students'));
-            const studentsList = sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setAdminStudents(studentsList);
-            setTotalStudentsCount(studentsList.length);
-            alert(`Estudiante ${studentName} eliminado correctamente.`);
-        } catch (err) {
-            console.error("Error al eliminar estudiante:", err);
-            alert("Error al eliminar estudiante: " + err.message);
-        }
+        });
     };
 
-    const handleToggleStudentStatus = async (student) => {
+    const handleToggleStudentStatus = (student) => {
         const isRetirado = student.status === 'retirado';
         const newStatus = isRetirado ? 'activo' : 'retirado';
         const displayName = student.lastName && student.firstName ? `${student.lastName} ${student.firstName}` : student.name;
-        const confirmMsg = isRetirado
-            ? `¿Confirmas REACTIVAR a ${displayName} como Alumno Activo?`
-            : `¿Confirmas marcar a ${displayName} como RETIRADO?\n\nSus notas y boletines permanecerán 100% intactos para expedir certificados o boletines, pero NO aparecerá en las estadísticas académicas ni rankings.`;
 
-        if (window.confirm(confirmMsg)) {
-            try {
-                await updateDoc(doc(db, 'students', student.id), { status: newStatus });
-                setAdminStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: newStatus } : s));
-            } catch (err) {
-                console.error("Error al cambiar estado del estudiante:", err);
-                alert("Error al actualizar el estado del estudiante.");
+        showConfirm({
+            title: isRetirado ? "¿Reactivar Estudiante?" : "¿Marcar como Retirado?",
+            message: isRetirado
+                ? `¿Confirmas REACTIVAR a ${displayName} como Alumno Activo?`
+                : `¿Confirmas marcar a ${displayName} como RETIRADO?\n\nSus notas y boletines permanecerán 100% intactos para expedir certificados o boletines, pero NO aparecerá en estadísticas académicas ni rankings.`,
+            confirmText: isRetirado ? "Sí, Reactivar" : "Sí, Marcar Retirado",
+            confirmVariant: isRetirado ? "success" : "warning",
+            onConfirm: async () => {
+                try {
+                    await updateDoc(doc(db, 'students', student.id), { status: newStatus });
+                    setAdminStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: newStatus } : s));
+                } catch (err) {
+                    console.error("Error al cambiar estado del estudiante:", err);
+                    alert("Error al actualizar el estado del estudiante.");
+                }
             }
-        }
+        });
     };
 
     const handleCreateCourse = async () => {
@@ -512,49 +551,53 @@ export default function Dashboard() {
         }
     };
 
-    const handleDeleteCourse = async (courseName) => {
-        const confirmDelete = window.confirm(`⚠️ ADVERTENCIA CRÍTICA ⚠️\n\n¿Estás completamente seguro de que deseas eliminar permanentemente el Curso ${courseName}?\n\nEsta acción borrará el curso de la lista y eliminará permanentemente a TODOS los estudiantes de este curso junto con sus calificaciones.`);
-        if (!confirmDelete) return;
+    const handleDeleteCourse = (courseName) => {
+        showConfirm({
+            title: "⚠️ ADVERTENCIA CRÍTICA",
+            message: `¿Estás completamente seguro de que deseas eliminar permanentemente el Curso ${courseName}?\n\nEsta acción borrará el curso de la lista y eliminará permanentemente a TODOS los estudiantes de este curso junto con sus calificaciones.`,
+            confirmText: "Sí, Eliminar Curso y Alumnos",
+            confirmVariant: "danger",
+            onConfirm: async () => {
+                try {
+                    await deleteDoc(doc(db, 'courses', courseName));
 
-        try {
-            await deleteDoc(doc(db, 'courses', courseName));
+                    const qStudents = query(collection(db, 'students'), where('grade', '==', courseName));
+                    const sSnap = await getDocs(qStudents);
+                    for (const studentDoc of sSnap.docs) {
+                        const studentId = studentDoc.id;
+                        const qGrades = query(collection(db, 'grades'), where('student_id', '==', studentId));
+                        const gSnap = await getDocs(qGrades);
+                        for (const gradeDoc of gSnap.docs) {
+                            await deleteDoc(doc(db, 'grades', gradeDoc.id));
+                        }
+                        await deleteDoc(doc(db, 'students', studentId));
+                    }
 
-            const qStudents = query(collection(db, 'students'), where('grade', '==', courseName));
-            const sSnap = await getDocs(qStudents);
-            for (const studentDoc of sSnap.docs) {
-                const studentId = studentDoc.id;
-                const qGrades = query(collection(db, 'grades'), where('student_id', '==', studentId));
-                const gSnap = await getDocs(qGrades);
-                for (const gradeDoc of gSnap.docs) {
-                    await deleteDoc(doc(db, 'grades', gradeDoc.id));
+                    // Recargar listados
+                    const cSnap = await getDocs(collection(db, 'courses'));
+                    let coursesList = [];
+                    if (!cSnap.empty) {
+                        coursesList = cSnap.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    } else {
+                        const allStSnap = await getDocs(collection(db, 'students'));
+                        const dynamicCourses = Array.from(new Set(allStSnap.docs.map(d => d.data().grade).filter(Boolean)));
+                        coursesList = dynamicCourses.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    }
+                    setAdminCourses(coursesList);
+                    if (coursesList.length > 0) {
+                        setSelectedAdminCourse(coursesList[0]);
+                    }
+
+                    const stSnap = await getDocs(collection(db, 'students'));
+                    const updatedStudents = stSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setAdminStudents(updatedStudents);
+                    setTotalStudentsCount(updatedStudents.length);
+                } catch (err) {
+                    console.error("Error al eliminar curso:", err);
+                    alert("Error al eliminar curso: " + err.message);
                 }
-                await deleteDoc(doc(db, 'students', studentId));
             }
-
-            alert(`Curso ${courseName} y todos sus datos relacionados han sido eliminados.`);
-
-            // Recargar listados
-            const cSnap = await getDocs(collection(db, 'courses'));
-            let coursesList = [];
-            if (!cSnap.empty) {
-                coursesList = cSnap.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-            }
-            setAdminCourses(coursesList);
-
-            const studSnap = await getDocs(collection(db, 'students'));
-            const studentsList = studSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setAdminStudents(studentsList);
-            setTotalStudentsCount(studentsList.length);
-
-            if (coursesList.length > 0) {
-                setSelectedAdminCourse(coursesList[0]);
-            } else {
-                setSelectedAdminCourse('');
-            }
-        } catch (err) {
-            console.error("Error al eliminar curso:", err);
-            alert("Error al eliminar curso: " + err.message);
-        }
+        });
     };
 
     const mergeDemoReads = (circs) => {
@@ -570,9 +613,15 @@ export default function Dashboard() {
         const studentsInCourse = adminStudents.filter(s => s.grade === currentCourse);
         if (studentsInCourse.length === 0) {
             // Si el curso no tiene alumnos pero la pestaña existe, ofrecemos eliminar el curso vacío
-            if (confirm(`El curso "${currentCourse}" no tiene estudiantes. ¿Deseas eliminar la pestaña "${currentCourse}"?`)) {
-                await handleDeleteCourse(currentCourse);
-            }
+            showConfirm({
+                title: "¿Eliminar Curso Vacío?",
+                message: `El curso "${currentCourse}" no tiene estudiantes asignados.\n¿Deseas eliminar la pestaña "${currentCourse}"?`,
+                confirmText: "Sí, Eliminar",
+                confirmVariant: "danger",
+                onConfirm: async () => {
+                    handleDeleteCourse(currentCourse);
+                }
+            });
             return;
         }
 
@@ -587,40 +636,54 @@ export default function Dashboard() {
 
         const targetCourse = newCourse.trim().toUpperCase();
 
-        if (!confirm(`¿Confirmas cambiar el curso de ${studentsInCourse.length} estudiantes de "${currentCourse}" a "${targetCourse}"?`)) {
-            return;
-        }
+        showConfirm({
+            title: "¿Reasignar Curso en Lote?",
+            message: `¿Confirmas cambiar el curso de ${studentsInCourse.length} estudiantes de "${currentCourse}" a "${targetCourse}"?`,
+            confirmText: "Sí, Reasignar",
+            confirmVariant: "primary",
+            onConfirm: async () => {
+                try {
+                    setLoading(true);
+                    const { doc, updateDoc, setDoc, deleteDoc } = await import('firebase/firestore');
 
-        try {
-            setLoading(true);
-            const { doc, updateDoc, setDoc, deleteDoc } = await import('firebase/firestore');
+                    for (const s of studentsInCourse) {
+                        if (!s.id.startsWith('st-')) {
+                            await updateDoc(doc(db, 'students', s.id), {
+                                grade: targetCourse
+                            });
+                        }
+                    }
 
-            for (const s of studentsInCourse) {
-                if (!s.id.startsWith('st-')) {
-                    await updateDoc(doc(db, 'students', s.id), {
-                        grade: targetCourse
-                    });
+                    // 1. Crear/Asegurar el curso destino en Firestore
+                    await setDoc(doc(db, 'courses', targetCourse), { created_at: new Date() }, { merge: true });
+
+                    // 2. Si el curso actual ya quedó sin alumnos, eliminarlo de la lista de cursos
+                    const remainingInOld = adminStudents.filter(s => s.grade === currentCourse && s.id.startsWith('st-'));
+                    if (remainingInOld.length === 0) {
+                        await deleteDoc(doc(db, 'courses', currentCourse));
+                    }
+
+                    // 3. Recargar cursos desde Firestore
+                    const cSnap = await getDocs(collection(db, 'courses'));
+                    const coursesList = cSnap.docs.map(d => d.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    setAdminCourses(coursesList);
+                    setSelectedAdminCourse(targetCourse);
+
+                    // 4. Recargar estudiantes
+                    const sSnap = await getDocs(collection(db, 'students'));
+                    const sList = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setAdminStudents(sList);
+                    setTotalStudentsCount(sList.length);
+
+                    alert(`¡Éxito! Se han reasignado los ${studentsInCourse.length} estudiantes a "${targetCourse}".`);
+                } catch (err) {
+                    console.error("Error al reasignar curso en lote:", err);
+                    alert("Ocurrió un error al reasignar el curso.");
+                } finally {
+                    setLoading(false);
                 }
             }
-
-            // 1. Crear/Asegurar el curso destino en Firestore
-            await setDoc(doc(db, 'courses', targetCourse), { created_at: new Date() }, { merge: true });
-
-            // 2. Eliminar el documento del curso antiguo para que la pestaña 10B desaparezca
-            try {
-                await deleteDoc(doc(db, 'courses', currentCourse));
-            } catch (dErr) {
-                console.warn("No se pudo borrar el curso antiguo de Firestore:", dErr);
-            }
-
-            alert(`✅ ¡Éxito! ${studentsInCourse.length} estudiantes fueron trasladados al curso ${targetCourse} y la pestaña ${currentCourse} fue eliminada.`);
-            window.location.reload();
-        } catch (err) {
-            console.error("Error al reasignar curso masivamente:", err);
-            alert("⚠️ Hubo un error al reasignar el curso: " + err.message);
-        } finally {
-            setLoading(false);
-        }
+        });
     };
 
     const handleOpenCircularsModal = async () => {
@@ -663,26 +726,30 @@ export default function Dashboard() {
         }
     };
 
-    const handleDeleteCircular = async (circularId) => {
-        if (!window.confirm('¿Está seguro de que desea eliminar esta circular? Esta acción no se puede deshacer.')) {
-            return;
-        }
-        
-        try {
-            if (currentUser.uid.startsWith('fake-')) {
-                const updated = allCirculars.filter(c => c.id !== circularId);
-                setAllCirculars(updated);
-                localStorage.setItem('demo_circulars', JSON.stringify(updated));
-                setCirculars(updated.slice(0, 3));
-            } else {
-                await deleteDoc(doc(db, 'circulars', circularId));
-                setAllCirculars(prev => prev.filter(c => c.id !== circularId));
-                setCirculars(prev => prev.filter(c => c.id !== circularId));
+    const handleDeleteCircular = (circularId) => {
+        showConfirm({
+            title: "¿Eliminar Circular?",
+            message: "¿Está seguro de que desea eliminar esta circular institucional?\n\nEsta acción no se puede deshacer.",
+            confirmText: "Sí, Eliminar Circular",
+            confirmVariant: "danger",
+            onConfirm: async () => {
+                try {
+                    if (currentUser.uid.startsWith('fake-')) {
+                        const updated = allCirculars.filter(c => c.id !== circularId);
+                        setAllCirculars(updated);
+                        localStorage.setItem('demo_circulars', JSON.stringify(updated));
+                        setCirculars(updated.slice(0, 3));
+                    } else {
+                        await deleteDoc(doc(db, 'circulars', circularId));
+                        setAllCirculars(prev => prev.filter(c => c.id !== circularId));
+                        setCirculars(prev => prev.filter(c => c.id !== circularId));
+                    }
+                } catch (error) {
+                    console.error("Error deleting circular:", error);
+                    alert("No se pudo eliminar la circular. Intente nuevamente.");
+                }
             }
-        } catch (error) {
-            console.error("Error deleting circular:", error);
-            alert("No se pudo eliminar la circular. Intente nuevamente.");
-        }
+        });
     };
 
     useEffect(() => {
@@ -1016,7 +1083,12 @@ export default function Dashboard() {
                     {userRole === 'parent' && student && (
                         <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 shadow-sm">
                             <div className="w-12 h-12 rounded-full overflow-hidden bg-white/95 border-2 border-indigo-400 shrink-0 shadow-inner">
-                                <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
+                                <img 
+                                    src={getStudentPhoto(student.photo_url)} 
+                                    alt="Estudiante" 
+                                    className="w-full h-full object-cover" 
+                                    onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                />
                             </div>
                             <div className="text-left">
                                 <p className="text-xs text-indigo-200 font-bold uppercase leading-none">Estudiante</p>
@@ -1311,7 +1383,7 @@ export default function Dashboard() {
 
                             <button 
                                 onClick={() => setShowQuickObsModal(true)} 
-                                className="bg-amber-500 hover:bg-amber-600 text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-amber-500/20 hover-elevate active-press transition"
+                                className="bg-[#D99458] hover:bg-[#C57E3F] text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-[#D99458]/25 hover-elevate active-press transition"
                             >
                                 <div className="flex items-center justify-between w-full">
                                     <Zap className="text-white group-hover:scale-110 transition-transform" size={26} />
@@ -1319,62 +1391,62 @@ export default function Dashboard() {
                                 </div>
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-black text-white leading-tight">⚡ Anotación Rápida</h4>
-                                    <p className="text-[10px] text-amber-100 mt-1 leading-tight font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
+                                    <p className="text-[10px] text-[#FAF4EC] mt-1 leading-tight font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
                                 </div>
                             </button>
 
                             <Link 
                                 to="/teacher/search" 
-                                className="bg-indigo-50/20 border border-indigo-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-indigo-50/70 transition"
+                                className="bg-white border border-[#A7B7C6]/30 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#5E7892] transition"
                             >
-                                <Users className="text-indigo-600 group-hover:scale-110 transition-transform" size={26} />
+                                <Users className="text-[#5E7892] group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Buscar Alumno</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Registra comportamiento, asistencia o notas para cualquier alumno.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Buscar Alumno</h4>
+                                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">Registra comportamiento, asistencia o notas para cualquier alumno.</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/teacher/create-task" 
-                                className="bg-emerald-50/20 border border-emerald-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-emerald-50/70 transition"
+                                className="bg-white border border-[#BDCFAA]/40 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#8E9E83] transition"
                             >
-                                <ClipboardList className="text-emerald-600 group-hover:scale-110 transition-transform" size={26} />
+                                <ClipboardList className="text-[#8E9E83] group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Crear Nueva Tarea</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Asigna tareas escolares directamente a cualquier curso (como el 1001).</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Crear Nueva Tarea</h4>
+                                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">Asigna tareas escolares directamente a cualquier curso (como el 1001).</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/teacher/sync-grades" 
-                                className="bg-violet-50/20 border border-violet-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-violet-50/70 transition"
+                                className="bg-white border border-[#A7B7C6]/30 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#5E7892] transition"
                             >
-                                <BookOpen className="text-violet-600 group-hover:scale-110 transition-transform" size={26} />
+                                <BookOpen className="text-[#5E7892] group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Sincronizar Notas</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Carga calificaciones directamente desde planillas de Google Sheets.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Sincronizar Notas</h4>
+                                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">Carga calificaciones directamente desde planillas de Google Sheets.</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/messages" 
-                                className="bg-amber-50/20 border border-amber-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-amber-50/70 transition"
+                                className="bg-white border border-[#D99458]/30 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#D99458] transition"
                             >
-                                <MessageSquare className="text-amber-500 group-hover:scale-110 transition-transform" size={26} />
+                                <MessageSquare className="text-[#D99458] group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Buzón de Mensajes</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Responde inquietudes e intercambia mensajes con acudientes.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Buzón de Mensajes</h4>
+                                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">Responde inquietudes e intercambia mensajes con acudientes.</p>
                                 </div>
                             </Link>
 
                             <Link 
                                 to="/admin/stats" 
-                                className="bg-blue-50/20 border border-blue-100/50 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-inner hover-elevate active-press hover:bg-blue-50/70 transition"
+                                className="bg-white border border-slate-200/70 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#5E7892] transition"
                             >
-                                <BarChart2 className="text-blue-600 group-hover:scale-110 transition-transform" size={26} />
+                                <BarChart2 className="text-[#5E7892] group-hover:scale-110 transition-transform" size={26} />
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-gray-800 leading-tight">Estadísticas</h4>
-                                    <p className="text-[10px] text-gray-500 mt-1 leading-tight">Analiza promedios, rendimientos y alertas académicas de cursos.</p>
+                                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Estadísticas</h4>
+                                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">Analiza promedios, rendimientos y alertas académicas de cursos.</p>
                                 </div>
                             </Link>
                         </div>
@@ -1387,34 +1459,34 @@ export default function Dashboard() {
                 <div className="space-y-6">
 
                     {/* Saludo y Métricas Rápidas */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50">
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl animate-bounce">👋</span>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/95 backdrop-blur-md p-5 rounded-3xl border border-[#A7B7C6]/40 shadow-md shadow-slate-900/5">
+                        <div className="flex items-center gap-3">
+                            <span className="text-3xl animate-bounce">👋</span>
                             <div className="text-left">
                                 <h3 className="text-base font-black text-slate-800 leading-tight">¡Buenos días, Administrador!</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">Aquí tienes un resumen de lo más importante hoy.</p>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">Aquí tienes un resumen de lo más importante hoy.</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 w-full lg:w-auto shrink-0">
                             {/* Card 1: Alumnos Totales */}
-                            <div className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                    <Users size={15} />
+                            <div className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-[#5E7892]/15 text-[#5E7892] flex items-center justify-center shrink-0">
+                                    <Users size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <p className="text-xs font-black text-slate-700">{totalStudentsCount}</p>
+                                    <p className="text-xs font-black text-slate-800">{totalStudentsCount}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Alumnos totales</p>
                                 </div>
                             </div>
 
                             {/* Card 2: Cuentas Registradas */}
-                            <div className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                                    <Users size={15} />
+                            <div className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-[#8E9E83]/20 text-[#8E9E83] flex items-center justify-center shrink-0">
+                                    <Users size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <p className="text-xs font-black text-slate-700">{totalUsersCount}</p>
+                                    <p className="text-xs font-black text-slate-800">{totalUsersCount}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Cuentas reg.</p>
                                 </div>
                             </div>
@@ -1422,14 +1494,14 @@ export default function Dashboard() {
                             {/* Card 3: Circulares Publicadas */}
                             <div 
                                 onClick={handleOpenCircularsModal}
-                                className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer hover:border-orange-300 transition active-press"
+                                className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-[#D99458] transition active-press flex items-center gap-2.5"
                                 title="Ver historial de circulares"
                             >
-                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
-                                    <Bell size={15} />
+                                <div className="w-8 h-8 rounded-xl bg-[#D99458]/20 text-[#D99458] flex items-center justify-center shrink-0">
+                                    <Bell size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <p className="text-xs font-black text-slate-700">{circulars.length}</p>
+                                    <p className="text-xs font-black text-slate-800">{circulars.length}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Circulares pub.</p>
                                 </div>
                             </div>
@@ -1437,25 +1509,25 @@ export default function Dashboard() {
                             {/* Card 4: Planillas Importadas */}
                             <div 
                                 onClick={() => navigate('/teacher/sync-grades')}
-                                className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer hover:border-purple-300 transition active-press"
+                                className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-[#5E7892] transition active-press flex items-center gap-2.5"
                                 title="Ir a Planilla Digital"
                             >
-                                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-650 flex items-center justify-center shrink-0">
-                                    <FileText size={15} />
+                                <div className="w-8 h-8 rounded-xl bg-[#5E7892]/15 text-[#5E7892] flex items-center justify-center shrink-0">
+                                    <FileText size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <p className="text-xs font-black text-slate-700">{importPlanillasCount}</p>
+                                    <p className="text-xs font-black text-slate-800">{importPlanillasCount}</p>
                                     <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Planillas imp.</p>
                                 </div>
                             </div>
 
                             {/* Card 5: Reloj / Fecha */}
-                            <div className="bg-white border border-slate-200/60 p-2.5 rounded-xl shadow-xs flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                                    <CalendarIcon size={15} />
+                            <div className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-[#F3EFDF] text-[#5E7892] flex items-center justify-center shrink-0">
+                                    <CalendarIcon size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <p className="text-[9px] text-slate-500 font-extrabold whitespace-nowrap leading-tight">
+                                    <p className="text-[9px] text-slate-700 font-black whitespace-nowrap leading-tight">
                                         {currentTime.split(' de ')[0] || 'Hoy'}
                                     </p>
                                     <p className="text-[9px] text-slate-400 font-bold mt-0.5">
@@ -1467,116 +1539,139 @@ export default function Dashboard() {
                     </div>
 
                     {/* Sección de 3 Columnas */}
+                    {/* Sección de 3 Columnas: Alto Contraste Ejecutivo (Stripe / Linear) */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
                         {/* Columna 1: Accesos Rápidos */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-                            <h3 className="text-base font-black text-slate-800 tracking-tight pb-1 border-b border-slate-100 flex items-center gap-2">
-                                <Sparkles size={18} className="text-indigo-600" /> Accesos rápidos
-                            </h3>
-                            <div className="flex flex-col gap-3 flex-1 justify-center">
+                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-white/80 flex flex-col gap-4.5">
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2.5">
+                                    <span className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+                                        <Sparkles size={15} />
+                                    </span>
+                                    Accesos rápidos
+                                </h3>
+                                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                    5 acciones
+                                </span>
+                            </div>
+
+                            <div className="flex flex-col gap-2.5 flex-1 justify-center">
                                 {/* Nueva Circular */}
                                 <Link 
                                     to="/admin/new-circular"
-                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-indigo-50/20 hover:bg-indigo-50/40 border border-indigo-150/45 transition active-press group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#5E7892]/60 border-l-4 border-l-[#5E7892] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 bg-indigo-650 text-white rounded-xl flex items-center justify-center shrink-0">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-[#1e293b] to-[#5E7892] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
                                             <Send size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-700">Nueva Circular</p>
-                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Redacta y publica una nueva circular</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#5E7892] transition-colors">Nueva Circular</p>
+                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">Redacta y publica una nueva circular</p>
                                         </div>
                                     </div>
-                                    <ArrowRight size={14} className="text-indigo-600 group-hover:translate-x-0.5 transition-transform" />
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#5E7892] group-hover:border-[#5E7892] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                        <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
                                 </Link>
 
                                 {/* Importar CSV */}
                                 <Link 
                                     to="/admin/import"
-                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50/20 hover:bg-emerald-50/40 border border-emerald-150/45 transition active-press group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#6E8063]/60 border-l-4 border-l-[#8E9E83] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 bg-emerald-650 text-white rounded-xl flex items-center justify-center shrink-0">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-[#3c4835] to-[#8E9E83] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
                                             <Upload size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-700">Importar CSV</p>
-                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Carga estudiantes desde un archivo</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#6E8063] transition-colors">Importar CSV</p>
+                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">Carga estudiantes desde un archivo</p>
                                         </div>
                                     </div>
-                                    <ArrowRight size={14} className="text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#8E9E83] group-hover:border-[#8E9E83] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                        <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
                                 </Link>
 
                                 {/* Planilla Digital de Notas */}
                                 <Link 
                                     to="/teacher/sync-grades"
-                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-purple-50/20 hover:bg-purple-50/40 border border-purple-150/45 transition active-press group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#4A6076]/60 border-l-4 border-l-[#4A6076] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 bg-purple-650 text-white rounded-xl flex items-center justify-center shrink-0">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-[#1a232c] to-[#4A6076] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
                                             <ClipboardList size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-700">Planilla Digital de Notas</p>
-                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Importa o gestiona las calificaciones</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#4A6076] transition-colors">Planilla Digital de Notas</p>
+                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">Importa o gestiona las calificaciones</p>
                                         </div>
                                     </div>
-                                    <ArrowRight size={14} className="text-purple-600 group-hover:translate-x-0.5 transition-transform" />
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#4A6076] group-hover:border-[#4A6076] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                        <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
                                 </Link>
 
                                 {/* Planilla de Control */}
                                 <Link 
                                     to="/planilla-print"
-                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-orange-50/20 hover:bg-orange-50/40 border border-orange-150/45 transition active-press group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#D99458]/60 border-l-4 border-l-[#D99458] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 bg-orange-500 text-white rounded-xl flex items-center justify-center shrink-0">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-[#944c16] to-[#D99458] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
                                             <Printer size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-700">Planilla de Control</p>
-                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Genera e imprime asistencias</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#D99458] transition-colors">Planilla de Control</p>
+                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">Genera e imprime asistencias</p>
                                         </div>
                                     </div>
-                                    <ArrowRight size={14} className="text-orange-550 group-hover:translate-x-0.5 transition-transform" />
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#D99458] group-hover:border-[#D99458] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                        <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
                                 </Link>
 
                                 {/* Estadísticas Académicas */}
                                 <Link 
                                     to="/admin/stats"
-                                    className="flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/20 hover:bg-blue-50/40 border border-blue-150/45 transition active-press group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#1E3A8A]/60 border-l-4 border-l-[#1E3A8A] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 bg-blue-600 text-white rounded-xl flex items-center justify-center shrink-0">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-[#0f172a] to-[#1E3A8A] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
                                             <BarChart2 size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-700">Estadísticas Académicas</p>
-                                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Analiza datos y rendimientos</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#1E3A8A] transition-colors">Estadísticas Académicas</p>
+                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">Métricas de rendimiento institucional</p>
                                         </div>
                                     </div>
-                                    <ArrowRight size={14} className="text-blue-600 group-hover:translate-x-0.5 transition-transform" />
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#1E3A8A] group-hover:border-[#1E3A8A] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                        <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
                                 </Link>
                             </div>
                         </div>
 
                         {/* Columna 2: Actividad Reciente */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-                            <div className="flex justify-between items-center pb-1 border-b border-slate-100">
-                                <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
-                                    <MessageSquare size={18} className="text-indigo-600" /> Actividad reciente
+                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-white/80 flex flex-col gap-4.5">
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2.5">
+                                    <span className="w-7 h-7 rounded-lg bg-[#5E7892]/15 text-[#5E7892] flex items-center justify-center">
+                                        <MessageSquare size={16} />
+                                    </span>
+                                    Actividad reciente
                                 </h3>
                                 <button 
                                     onClick={handleOpenCircularsModal}
-                                    className="text-[10px] font-black text-indigo-600 hover:underline hover:text-indigo-850"
+                                    className="text-[10px] font-black text-[#5E7892] hover:text-white px-2.5 py-1 rounded-full bg-[#5E7892]/10 hover:bg-[#5E7892] border border-[#5E7892]/20 transition"
                                 >
                                     Ver todo
                                 </button>
                             </div>
                             
-                            <div className="flex-1 flex flex-col gap-4 justify-start pr-1 overflow-y-auto max-h-[340px]">
+                            <div className="flex-1 flex flex-col gap-2.5 justify-start pr-1 overflow-y-auto max-h-[350px]">
                                 {recentActivitiesList.length === 0 ? (
                                     <p className="text-xs text-slate-400 font-semibold italic text-center py-8">
                                         Sin actividades recientes en el sistema.
@@ -1584,11 +1679,11 @@ export default function Dashboard() {
                                 ) : (
                                     recentActivitiesList.map((act) => {
                                         const colorClass = act.colorClass || (
-                                            act.iconType === 'send' || act.type === 'circular' ? 'bg-blue-50 border-blue-100 text-blue-600' :
-                                            act.iconType === 'upload' || act.type === 'import' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                                            act.iconType === 'user' || act.type === 'student' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                                            act.iconType === 'clipboard' || act.type === 'grade' ? 'bg-purple-50 border-purple-100 text-purple-600' :
-                                            'bg-orange-50 border-orange-100 text-orange-500'
+                                            act.iconType === 'send' || act.type === 'circular' ? 'bg-[#5E7892]/15 border-[#5E7892]/30 text-[#5E7892]' :
+                                            act.iconType === 'upload' || act.type === 'import' ? 'bg-[#8E9E83]/15 border-[#8E9E83]/30 text-[#6E8063]' :
+                                            act.iconType === 'user' || act.type === 'student' ? 'bg-[#8E9E83]/15 border-[#8E9E83]/30 text-[#6E8063]' :
+                                            act.iconType === 'clipboard' || act.type === 'grade' ? 'bg-[#5E7892]/15 border-[#5E7892]/30 text-[#5E7892]' :
+                                            'bg-[#D99458]/15 border-[#D99458]/40 text-[#D99458]'
                                         );
 
                                         const renderIcon = () => {
@@ -1600,17 +1695,17 @@ export default function Dashboard() {
                                         };
 
                                         return (
-                                            <div key={act.id} className="flex gap-3 text-left">
-                                                <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${colorClass}`}>
+                                            <div key={act.id} className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-slate-300 transition hover:shadow-xs text-left group">
+                                                <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${colorClass}`}>
                                                     {renderIcon()}
                                                 </div>
                                                 <div className="leading-tight min-w-0 flex-1">
-                                                    <h5 className="text-xs font-black text-slate-700 truncate">{act.title}</h5>
-                                                    <p className="text-[9px] text-slate-450 mt-0.5 truncate">{act.subtitle}</p>
-                                                    <span className="text-[8px] text-slate-400 font-bold mt-1 block">
-                                                        {formatRelativeTime(act.created_at)}
-                                                    </span>
+                                                    <h5 className="text-xs font-black text-slate-800 truncate group-hover:text-[#5E7892] transition-colors">{act.title}</h5>
+                                                    <p className="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">{act.subtitle}</p>
                                                 </div>
+                                                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-white border border-slate-200/80 text-slate-600 shrink-0 shadow-2xs">
+                                                    {formatRelativeTime(act.created_at)}
+                                                </span>
                                             </div>
                                         );
                                     })
@@ -1618,91 +1713,88 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Columna 3: Próximos eventos (Calendario) */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-                            <div className="flex justify-between items-center pb-1 border-b border-slate-100">
-                                <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
-                                    <CalendarIcon size={18} className="text-indigo-650" /> Próximos eventos
+                        {/* Columna 3: Próximos eventos (Widget Ejecutivo Dark Mode - Linear / Stripe) */}
+                        <div className="bg-gradient-to-b from-[#1a232c] via-[#1f2937] to-[#0f172a] rounded-3xl p-6 shadow-xl shadow-slate-900/15 border border-slate-700/60 flex flex-col gap-4.5 relative overflow-hidden text-white">
+                            {/* Resplandor ambiental de fondo */}
+                            <div className="absolute -top-16 -right-16 w-44 h-44 bg-[#5E7892]/25 rounded-full blur-3xl pointer-events-none"></div>
+
+                            <div className="flex justify-between items-center pb-3 border-b border-white/10 relative z-10">
+                                <h3 className="text-base font-black text-white tracking-tight flex items-center gap-2.5">
+                                    <span className="w-7 h-7 rounded-lg bg-white/10 text-white flex items-center justify-center border border-white/10 shadow-xs">
+                                        <CalendarIcon size={16} />
+                                    </span>
+                                    Próximos eventos
                                 </h3>
-                                <button className="text-[10px] font-black text-indigo-600 hover:underline hover:text-indigo-800">
+                                <button className="text-[10px] font-black text-slate-300 hover:text-white px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition">
                                     Ver calendario
                                 </button>
                             </div>
                             
-                            {/* Mini Calendario Estético Interactivo con Fondo Calendario.png */}
-                            <div className="flex-grow flex flex-col justify-between gap-3 text-slate-700">
-                                <div 
-                                    className="relative overflow-hidden p-3.5 rounded-2xl border border-slate-200/80 shadow-md bg-cover bg-center transition-all"
-                                    style={{ backgroundImage: "url('/Calendario.png')" }}
-                                >
-                                    {/* Capa Traslúcida Glassmorphism para legibilidad impecable */}
-                                    <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] rounded-2xl"></div>
-
-                                    <div className="relative z-10">
-                                        <div className="flex justify-between items-center mb-2 px-1">
-                                            <button 
-                                                onClick={handlePrevMonth}
-                                                className="text-xs font-black text-slate-700 hover:text-slate-950 p-1 px-2 rounded-lg hover:bg-white bg-white/70 border border-slate-200/60 shadow-xs transition active-press"
-                                                title="Mes anterior"
+                            {/* Mini Calendario Estético Dark */}
+                            <div className="flex-grow flex flex-col justify-between gap-3 relative z-10">
+                                <div className="p-3.5 rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md shadow-inner transition-all">
+                                    <div className="flex justify-between items-center mb-2.5 px-1">
+                                        <button 
+                                            onClick={handlePrevMonth}
+                                            className="text-xs font-black text-slate-300 hover:text-white p-1 px-2.5 rounded-lg hover:bg-white/20 bg-white/10 border border-white/10 shadow-xs transition active-press"
+                                            title="Mes anterior"
+                                        >
+                                            &lt;
+                                        </button>
+                                        <span className="text-xs font-black text-white capitalize bg-white/15 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/15 shadow-xs">
+                                            {formattedCalendarMonthTitle}
+                                        </span>
+                                        <button 
+                                            onClick={handleNextMonth}
+                                            className="text-xs font-black text-slate-300 hover:text-white p-1 px-2.5 rounded-lg hover:bg-white/20 bg-white/10 border border-white/10 shadow-xs transition active-press"
+                                            title="Mes siguiente"
+                                        >
+                                            &gt;
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-slate-400 mb-1.5 bg-white/5 rounded-lg py-1 border border-white/5">
+                                        <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
+                                        {calendarDaysList.map((item, idx) => (
+                                            <span 
+                                                key={idx}
+                                                className={`flex items-center justify-center w-6 h-6 mx-auto rounded-lg transition ${
+                                                    !item.isCurrentMonth
+                                                        ? 'text-slate-600'
+                                                        : item.isToday
+                                                        ? 'bg-[#5E7892] text-white font-black shadow-md shadow-[#5E7892]/40 ring-2 ring-[#A7B7C6]/40'
+                                                        : 'text-slate-200 font-bold hover:bg-white/15 hover:text-white'
+                                                }`}
                                             >
-                                                &lt;
-                                            </button>
-                                            <span className="text-xs font-black text-slate-900 capitalize bg-white/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200/60 shadow-xs">
-                                                {formattedCalendarMonthTitle}
+                                                {item.day}
                                             </span>
-                                            <button 
-                                                onClick={handleNextMonth}
-                                                className="text-xs font-black text-slate-700 hover:text-slate-950 p-1 px-2 rounded-lg hover:bg-white bg-white/70 border border-slate-200/60 shadow-xs transition active-press"
-                                                title="Mes siguiente"
-                                            >
-                                                &gt;
-                                            </button>
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-800 mb-1.5 bg-white/60 backdrop-blur-xs rounded-lg py-1 border border-slate-200/30">
-                                            <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
-                                            {calendarDaysList.map((item, idx) => (
-                                                <span 
-                                                    key={idx}
-                                                    className={`flex items-center justify-center w-5.5 h-5.5 mx-auto rounded-lg transition ${
-                                                        !item.isCurrentMonth
-                                                            ? 'text-slate-400/70'
-                                                            : item.isToday
-                                                            ? 'bg-indigo-600 text-white font-black shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/30'
-                                                            : 'text-slate-900 font-extrabold hover:bg-indigo-50/80 bg-white/60 border border-slate-200/40 backdrop-blur-xs'
-                                                    }`}
-                                                >
-                                                    {item.day}
-                                                </span>
-                                            ))}
-                                        </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                {/* Evento abajo */}
-                                <div className="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/20 border border-indigo-100/40 text-left">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex flex-col items-center justify-center shrink-0 font-black">
-                                            <span className="text-[11px] leading-none">21</span>
-                                            <span className="text-[7.5px] uppercase leading-none mt-0.5">JUL</span>
+                                {/* Tarjeta de Próximo Evento Destacado Dark Glass */}
+                                <div className="bg-white/10 backdrop-blur-md border border-white/15 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-md">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5E7892] to-[#4A6076] text-white flex flex-col items-center justify-center shrink-0 shadow-md border border-white/20">
+                                            <span className="text-xs font-black leading-none">21</span>
+                                            <span className="text-[8px] uppercase font-bold tracking-wider leading-none mt-0.5">JUL</span>
                                         </div>
-                                        <div className="leading-tight text-left">
-                                            <h6 className="text-xs font-black text-slate-800">Reunión de Consejo Académico</h6>
-                                            <p className="text-[9px] text-slate-450 mt-0.5">8:00 a.m. - Sala de Juntas</p>
+                                        <div className="text-left leading-tight min-w-0">
+                                            <h5 className="text-xs font-black text-white truncate">Reunión de Consejo Académico</h5>
+                                            <p className="text-[10px] text-slate-300 font-medium mt-0.5">8:00 a.m. • Sala de Juntas</p>
                                         </div>
                                     </div>
-                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                                        <Users size={14} />
-                                    </div>
+                                    <span className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-slate-200 shrink-0">
+                                        <Users size={13} />
+                                    </span>
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
                     {/* Panel de Control Académico General */}
-                    <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-6">
+                    <div className="bg-white/95 backdrop-blur-md border border-white/80 rounded-3xl p-6 shadow-md shadow-slate-900/5 space-y-6">
                         <div className="border-b pb-4">
                             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 <Table className="text-indigo-600" size={22} /> Control Académico General
@@ -1848,16 +1940,15 @@ export default function Dashboard() {
                                                 >
                                                     {/* Perfil del Estudiante */}
                                                     <div className="flex items-center gap-3 shrink-0">
-                                                        <div className={`w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center ${
-                                                            student.status === 'retirado' ? 'bg-rose-100 border-rose-200' : 'bg-indigo-50 border-indigo-100/50'
+                                                        <div className={`w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center shrink-0 ${
+                                                            student.status === 'retirado' ? 'bg-rose-100 border-rose-200' : 'bg-slate-50 border-slate-200'
                                                         }`}>
-                                                            {student.photo_url ? (
-                                                                <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <span className={`font-extrabold text-sm ${student.status === 'retirado' ? 'text-rose-600' : 'text-indigo-600'}`}>
-                                                                    {student.name.charAt(0)}
-                                                                </span>
-                                                            )}
+                                                            <img 
+                                                                src={getStudentPhoto(student.photo_url)} 
+                                                                alt={student.name} 
+                                                                className="w-full h-full object-cover" 
+                                                                onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                                            />
                                                         </div>
                                                         <div>
                                                             <div className="flex items-center gap-2">
@@ -1991,13 +2082,10 @@ export default function Dashboard() {
                             <div className="flex items-center gap-4 p-3 bg-indigo-50/40 border border-indigo-100 rounded-2xl">
                                 <div className="relative group shrink-0">
                                     <div className="w-16 h-20 rounded-xl bg-white border-2 border-indigo-200 overflow-hidden shadow-xs flex items-center justify-center">
-                                        {studentPhotoUrl ? (
+                                        {isValidStudentPhoto(studentPhotoUrl) ? (
                                             <img src={studentPhotoUrl} alt="Foto Estudiante" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="flex flex-col items-center justify-center text-indigo-300">
-                                                <User size={26} />
-                                                <span className="text-[8px] font-bold text-slate-400 mt-0.5">3 x 4 cm</span>
-                                            </div>
+                                            <img src={DEFAULT_STUDENT_PHOTO} alt="Foto Estudiante" className="w-full h-full object-cover" />
                                         )}
                                     </div>
                                     <button
@@ -2294,6 +2382,12 @@ export default function Dashboard() {
             <QuickObservationModal
                 isOpen={showQuickObsModal}
                 onClose={() => setShowQuickObsModal(false)}
+            />
+
+            {/* Modal de Confirmación Universal */}
+            <ConfirmModal
+                {...confirmModalConfig}
+                onCancel={() => setConfirmModalConfig(prev => ({ ...prev, isOpen: false }))}
             />
         </>
     );

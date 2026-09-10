@@ -9,6 +9,7 @@ import {
     Filter, Calendar, ShieldAlert, Target, GraduationCap, Flame, Star, ChevronRight,
     Medal, Crown, AlertCircle, FileText, Search, Trophy, Compass, Check
 } from 'lucide-react';
+import { getStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../../lib/avatarHelper';
 
 export default function AcademicStats() {
     const { currentUser } = useAuth();
@@ -102,7 +103,7 @@ export default function AcademicStats() {
                             lastName: lName.toUpperCase(),
                             grade: course,
                             id_code: `INAS-${1000 + i}`,
-                            photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${fName}${i}`
+                            photo_url: ""
                         });
 
                         subjects.forEach(subject => {
@@ -472,7 +473,7 @@ export default function AcademicStats() {
     const topThreeDiplomasPrint = (courseRankingsMap[targetCourseForPrint] || []).slice(0, 3);
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 pb-12">
+        <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-12">
             
             {/* Header de Navegación y Título */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
@@ -785,8 +786,13 @@ export default function AcademicStats() {
                                     {yellowZoneList.map(st => (
                                         <div key={st.id} className="bg-white p-3 rounded-2xl border border-amber-200/50 flex items-center justify-between text-xs shadow-xs">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-amber-100 shrink-0">
-                                                    <img src={st.photo_url} alt={st.name} className="w-full h-full object-cover" />
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-amber-50 border border-amber-200 shrink-0">
+                                                    <img 
+                                                        src={getStudentPhoto(st.photo_url)} 
+                                                        alt={st.name} 
+                                                        className="w-full h-full object-cover" 
+                                                        onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                                    />
                                                 </div>
                                                 <div>
                                                     <span className="font-extrabold text-slate-800 block">{st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}</span>
@@ -822,8 +828,13 @@ export default function AcademicStats() {
                                     {studentsAtRiskList.map(st => (
                                         <div key={st.id} className="bg-white p-3 rounded-2xl border border-rose-200/50 flex items-center justify-between text-xs shadow-xs">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-rose-100 shrink-0">
-                                                    <img src={st.photo_url} alt={st.name} className="w-full h-full object-cover" />
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-rose-50 border border-rose-200 shrink-0">
+                                                    <img 
+                                                        src={getStudentPhoto(st.photo_url)} 
+                                                        alt={st.name} 
+                                                        className="w-full h-full object-cover" 
+                                                        onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                                    />
                                                 </div>
                                                 <div>
                                                     <span className="font-extrabold text-slate-800 block">{st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}</span>
@@ -995,8 +1006,13 @@ export default function AcademicStats() {
                                         </td>
                                         <td className="p-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-50 shrink-0">
-                                                    <img src={st.photo_url} alt={st.name} className="w-full h-full object-cover" />
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-50 border border-slate-200 shrink-0">
+                                                    <img 
+                                                        src={getStudentPhoto(st.photo_url)} 
+                                                        alt={st.name} 
+                                                        className="w-full h-full object-cover" 
+                                                        onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                                    />
                                                 </div>
                                                 <span className="font-extrabold text-slate-800">
                                                     {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}

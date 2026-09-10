@@ -38,21 +38,21 @@ export const MOCK_STUDENTS = [
         id: 'st-1',
         name: 'Juanito Pérez',
         grade: '9A',
-        photo_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Juanito',
+        photo_url: '',
         parent_uids: ['parent-1']
     },
     {
         id: 'st-2',
         name: 'María García',
         grade: '10B',
-        photo_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
+        photo_url: '',
         parent_uids: ['parent-2']
     },
     {
         id: 'st-3',
         name: 'Carlos López',
         grade: '9A',
-        photo_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos',
+        photo_url: '',
         parent_uids: ['parent-1']
     }
 ];

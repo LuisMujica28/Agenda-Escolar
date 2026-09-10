@@ -6,10 +6,11 @@ import { useParams } from 'react-router-dom';
 import { Loader2, Award, BookOpen, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { getStudentForUser } from '../../lib/getStudentForUser';
+import { getStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../../lib/avatarHelper';
 
 export default function GradesCard() {
     const { studentId } = useParams();
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth();
     const [grades, setGrades] = useState([]);
     const [student, setStudent] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -25,15 +26,16 @@ export default function GradesCard() {
 
             try {
                 let studentData = null;
+                const canViewAnyStudent = userRole === 'admin' || userRole === 'teacher';
 
-                if (studentId) {
-                    // Cargar estudiante por ID directamente (para administrador / profesor)
+                if (studentId && canViewAnyStudent) {
+                    // Cargar estudiante por ID directamente (exclusivo para directivos / profesores)
                     const sDoc = await getDoc(doc(db, 'students', studentId));
                     if (sDoc.exists()) {
                         studentData = { id: sDoc.id, ...sDoc.data() };
                     }
                 } else {
-                    // 1. Obtener el estudiante correspondiente al usuario activo
+                    // Para padres y estudiantes: estrictamente su propio alumno vinculado (Protección de datos Ley 1581)
                     studentData = await getStudentForUser(db, currentUser);
                 }
 
@@ -93,7 +95,12 @@ export default function GradesCard() {
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full border-2 border-white overflow-hidden bg-white shrink-0">
-                        <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
+                        <img 
+                            src={getStudentPhoto(student.photo_url)} 
+                            alt="Student" 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                        />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold">

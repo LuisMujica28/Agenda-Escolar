@@ -137,7 +137,7 @@ async function runFullImport() {
                 lastName: lastName.toUpperCase(),
                 grade: grade,
                 id_code: idCode,
-                photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(firstName)}`,
+                photo_url: '',
                 parent_uids: [],
                 created_at: new Date()
             });

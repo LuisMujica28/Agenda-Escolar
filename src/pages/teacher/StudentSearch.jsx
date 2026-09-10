@@ -4,6 +4,8 @@ import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom';
 import { Search, GraduationCap, Users, UserX, UserCheck, UserMinus, Zap } from 'lucide-react';
 import QuickObservationModal from '../../components/QuickObservationModal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { getStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../../lib/avatarHelper';
 
 export default function StudentSearch() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +17,32 @@ export default function StudentSearch() {
     const [quickObsModalOpen, setQuickObsModalOpen] = useState(false);
     const [quickObsStudentId, setQuickObsStudentId] = useState(null);
     const navigate = useNavigate();
+
+    // Modal de Confirmación seguro
+    const [confirmModalConfig, setConfirmModalConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmText: 'Confirmar',
+        cancelText: 'Cancelar',
+        confirmVariant: 'danger',
+        onConfirm: null
+    });
+
+    const showConfirm = ({ title, message, confirmText = 'Confirmar', cancelText = 'Cancelar', confirmVariant = 'danger', onConfirm }) => {
+        setConfirmModalConfig({
+            isOpen: true,
+            title,
+            message,
+            confirmText,
+            cancelText,
+            confirmVariant,
+            onConfirm: async () => {
+                setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
+                if (onConfirm) await onConfirm();
+            }
+        });
+    };
 
     useEffect(() => {
         async function loadStudents() {
@@ -50,26 +78,34 @@ export default function StudentSearch() {
         loadStudents();
     }, []);
 
-    const handleToggleStatus = async (e, student) => {
+    const handleToggleStatus = (e, student) => {
         e.stopPropagation();
         const currentStatus = student.status === 'retirado' ? 'retirado' : 'activo';
         const newStatus = currentStatus === 'retirado' ? 'activo' : 'retirado';
         
         const displayName = student.lastName && student.firstName ? `${student.lastName} ${student.firstName}` : student.name;
-        const confirmMsg = newStatus === 'retirado' 
-            ? `¿Confirmas marcar a ${displayName} como RETIRADO?\n\nSus notas y boletines permanecerán 100% intactos para certificados, pero no aparecerá en estadísticas institucionales ni rankings.`
-            : `¿Confirmas REACTIVAR a ${displayName} como Alumno Activo?`;
 
-        if (window.confirm(confirmMsg)) {
-            try {
-                await updateDoc(doc(db, 'students', student.id), { status: newStatus });
-                setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: newStatus } : s));
-            } catch (err) {
-                console.error("Error al cambiar estado:", err);
-                alert("Error al actualizar el estado en Firestore.");
+        showConfirm({
+            title: newStatus === 'retirado' ? "¿Marcar como Retirado?" : "¿Reactivar Alumno?",
+            message: newStatus === 'retirado' 
+                ? `¿Confirmas marcar a ${displayName} como RETIRADO?\n\nSus notas y boletines permanecerán 100% intactos para certificados, pero no aparecerá en estadísticas institucionales ni rankings.`
+                : `¿Confirmas REACTIVAR a ${displayName} como Alumno Activo?`,
+            confirmText: newStatus === 'retirado' ? "Sí, Marcar Retirado" : "Sí, Reactivar",
+            confirmVariant: newStatus === 'retirado' ? "warning" : "success",
+            onConfirm: async () => {
+                try {
+                    await updateDoc(doc(db, 'students', student.id), { status: newStatus });
+                    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: newStatus } : s));
+                } catch (err) {
+                    console.error("Error al cambiar estado:", err);
+                    alert("Error al actualizar el estado en Firestore.");
+                }
             }
-        }
+        });
     };
+
+    // Contar estudiantes por curso
+    const getCourseStudentCount = (course) => students.filter(s => s.grade === course).length;
 
     // Filtrar por curso seleccionado y término de búsqueda
     const courseStudents = students.filter(s => s.grade === selectedCourse);
@@ -198,15 +234,14 @@ export default function StudentSearch() {
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className={`w-11 h-11 rounded-2xl overflow-hidden border flex items-center justify-center shrink-0 ${
-                                            isRetirado ? 'bg-rose-100 border-rose-200' : 'bg-indigo-50 border-indigo-100/50'
+                                            isRetirado ? 'bg-rose-100 border-rose-200' : 'bg-slate-50 border-slate-200'
                                         }`}>
-                                            {student.photo_url ? (
-                                                <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className={`font-extrabold text-sm ${isRetirado ? 'text-rose-600' : 'text-indigo-600'}`}>
-                                                    {student.name.charAt(0)}
-                                                </span>
-                                            )}
+                                            <img 
+                                                src={getStudentPhoto(student.photo_url)} 
+                                                alt={student.name} 
+                                                className="w-full h-full object-cover" 
+                                                onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                            />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -263,6 +298,12 @@ export default function StudentSearch() {
                     setQuickObsStudentId(null);
                 }}
                 initialStudentId={quickObsStudentId}
+            />
+
+            {/* Modal de Confirmación Seguro */}
+            <ConfirmModal
+                {...confirmModalConfig}
+                onCancel={() => setConfirmModalConfig(prev => ({ ...prev, isOpen: false }))}
             />
         </div>
     );

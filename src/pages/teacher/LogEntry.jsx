@@ -8,6 +8,7 @@ import {
     AlertTriangle, ShieldAlert, Star, BellRing, Clock, User, Check, Send
 } from 'lucide-react';
 import { CONVIVENCIA_CATEGORIES, CONVIVENCIA_PRESETS } from '../../lib/convivenciaCatalog';
+import { getStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../../lib/avatarHelper';
 
 export default function LogEntry() {
     const { studentId } = useParams();
@@ -283,8 +284,13 @@ export default function LogEntry() {
                         <p className="text-[11px] sm:text-xs text-gray-500 truncate">Curso: <strong className="text-gray-700">{student.grade}</strong> | {student.id_code || 'Ficha del Alumno'}</p>
                     </div>
                 </div>
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
-                    <img src={student.photo_url} alt="student" className="w-full h-full object-cover" />
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl overflow-hidden bg-slate-50 border border-gray-200 shrink-0">
+                    <img 
+                        src={getStudentPhoto(student.photo_url)} 
+                        alt={student.name} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                    />
                 </div>
             </div>
 

@@ -22,8 +22,9 @@ import PrintConsolidado from './pages/admin/PrintConsolidado';
 import PrintFormularioInscripcion from './pages/admin/PrintFormularioInscripcion';
 import AcademicStats from './pages/admin/AcademicStats';
 import DailyAttendance from './pages/teacher/DailyAttendance';
+import DunasBackground from './components/DunasBackground';
+import ProtectedRoute from './components/ProtectedRoute';
 import { PlusCircle, Home as HomeIcon, User, Search, BookOpen, Calendar as CalendarIcon, ClipboardList, MessageSquare, FileText, Table, Menu, X, LogOut, Bell, Sparkles, Printer, BarChart2, Layers, Award, UserCheck } from 'lucide-react';
-import IaChatBot from './components/IaChatBot';
 
 function Layout({ children }) {
   const { currentUser, userRole, logout } = useAuth();
@@ -308,9 +309,12 @@ function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/20 flex">
-      {/* Sidebar Desktop */}
-      <aside className="w-64 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white hidden md:flex flex-col border-r border-slate-800/40 shrink-0 sticky top-0 h-screen z-30">
+    <div className="min-h-screen flex relative">
+      {/* Fondo de Dunas generado con código puro (SVG + Mesh en Blanco y Azul) */}
+      <DunasBackground />
+
+      {/* Sidebar Desktop (Fijo en pantalla) */}
+      <aside className="w-64 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white hidden md:flex flex-col border-r border-slate-800/40 shrink-0 fixed top-0 bottom-0 left-0 h-screen z-30">
         {/* Sidebar Header: Escudo con fondo blanco de alto contraste y Nombre Institucional */}
         <div className="p-4 border-b border-slate-800/40 flex items-center gap-3 bg-slate-950/40">
           <div className="w-11 h-11 rounded-2xl bg-white p-1.5 flex items-center justify-center shrink-0 shadow-lg shadow-white/5 border border-white/40 ring-2 ring-indigo-500/30">
@@ -416,10 +420,10 @@ function Layout({ children }) {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header Bar */}
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
+      {/* Main Content Area (con padding izquierdo correspondiente a la barra lateral fija) */}
+      <div className="flex-1 flex flex-col min-w-0 md:pl-64">
+        {/* Top Header Bar con Glassmorphism */}
+        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-xs transition-all">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsSidebarOpen(true)}
@@ -451,15 +455,12 @@ function Layout({ children }) {
           </div>
         </header>
 
-        {/* Dynamic Children Panel Responsivo */}
-        <main className="flex-1 p-3 sm:p-6 md:p-8 bg-slate-50/20 overflow-y-auto min-w-0">
-          <div className="max-w-6xl w-full mx-auto min-w-0">
+        {/* Dynamic Children Panel Responsivo con margen cómodo */}
+        <main className="flex-1 p-4 sm:p-6 md:p-8 lg:px-10 lg:py-8 overflow-y-auto min-w-0 relative z-10">
+          <div className="w-full max-w-[1440px] mx-auto min-w-0">
             {children}
           </div>
         </main>
-
-        {/* Asistente Hermes IA */}
-        <IaChatBot />
       </div>
     </div>
   );
@@ -471,37 +472,185 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/seed" element={<SeedPage />} />
+          <Route 
+            path="/seed" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <SeedPage />
+              </ProtectedRoute>
+            } 
+          />
 
-          <Route path="/" element={<Layout><Dashboard /></Layout>} />
+          {/* Tablero Principal y Mensajería Compartida */}
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent']}>
+                <Layout><Dashboard /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/messages" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent']}>
+                <Layout><MessagingPage /></Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-           {/* Admin Routes */}
-          <Route path="/admin/stats" element={<Layout><AcademicStats /></Layout>} />
-          <Route path="/admin/new-circular" element={<Layout><CreateCircular /></Layout>} />
-          <Route path="/admin/import" element={<Layout><ImportData /></Layout>} />
-          <Route path="/admin/boletin/:studentId" element={<Layout><GradesCard /></Layout>} />
-          <Route path="/admin/boletin-print/:studentId?" element={<PrintBoletin />} />
-          <Route path="/admin/consolidado-print" element={<PrintConsolidado />} />
-          <Route path="/admin/formulario-inscripcion/:studentId?" element={<PrintFormularioInscripcion />} />
-          <Route path="/planilla-print" element={<PrintPlanilla />} />
+          {/* Rutas Administrativas */}
+          <Route 
+            path="/admin/stats" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <Layout><AcademicStats /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/new-circular" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><CreateCircular /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/import" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout><ImportData /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/boletin/:studentId" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <Layout><GradesCard /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/boletin-print/:studentId?" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <PrintBoletin />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/consolidado-print" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <PrintConsolidado />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/formulario-inscripcion/:studentId?" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <PrintFormularioInscripcion />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/planilla-print" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <PrintPlanilla />
+              </ProtectedRoute>
+            } 
+          />
 
-          {/* Teacher Routes */}
-          <Route path="/teacher/daily-attendance" element={<Layout><DailyAttendance /></Layout>} />
-          <Route path="/teacher/search" element={<Layout><StudentSearch /></Layout>} />
-          <Route path="/teacher/log/:studentId" element={<Layout><LogEntry /></Layout>} />
-          <Route path="/teacher/create-task" element={<Layout><CreateTask /></Layout>} />
-          <Route path="/teacher/sync-grades" element={<Layout><SyncGrades /></Layout>} />
+          {/* Rutas para Docentes */}
+          <Route 
+            path="/teacher/daily-attendance" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <Layout><DailyAttendance /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/search" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <Layout><StudentSearch /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/log/:studentId" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <Layout><LogEntry /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/create-task" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <Layout><CreateTask /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/sync-grades" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <Layout><SyncGrades /></Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-          {/* Parent Routes */}
-          <Route path="/parent/observer" element={<Layout><StudentObserver /></Layout>} />
-          <Route path="/parent/id" element={<Layout><DigitalID /></Layout>} />
-          <Route path="/parent/grades" element={<Layout><GradesCard /></Layout>} />
-          <Route path="/parent/attendance" element={<Layout><AttendanceTracker /></Layout>} />
-          <Route path="/parent/tasks" element={<Layout><HomeworkCalendar /></Layout>} />
-          
-          {/* Shared Routes */}
-          <Route path="/messages" element={<Layout><MessagingPage /></Layout>} />
+          {/* Rutas para Acudientes / Estudiantes */}
+          <Route 
+            path="/parent/observer" 
+            element={
+              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                <Layout><StudentObserver /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/parent/id" 
+            element={
+              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                <Layout><DigitalID /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/parent/grades" 
+            element={
+              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                <Layout><GradesCard /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/parent/attendance" 
+            element={
+              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                <Layout><AttendanceTracker /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/parent/tasks" 
+            element={
+              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                <Layout><HomeworkCalendar /></Layout>
+              </ProtectedRoute>
+            } 
+          />
 
+          {/* Redirección por defecto */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </Router>

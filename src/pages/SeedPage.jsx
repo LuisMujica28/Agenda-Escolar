@@ -188,7 +188,7 @@ export default function SeedPage() {
                     firstName: 'Juanito',
                     lastName: 'Pérez',
                     grade: '901',
-                    photo_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Juanito',
+                    photo_url: '',
                     parent_uids: [parentUid],
                     id_code: 'ST-2026-001'
                 });
@@ -198,7 +198,7 @@ export default function SeedPage() {
                     firstName: 'María',
                     lastName: 'García',
                     grade: '1001',
-                    photo_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
+                    photo_url: '',
                     parent_uids: [], 
                     id_code: 'ST-2026-002'
                 });
@@ -242,7 +242,7 @@ export default function SeedPage() {
                                 firstName: item.firstName,
                                 lastName: item.lastName,
                                 grade: gradeGroup.gradeName,
-                                photo_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
+                                photo_url: '',
                                 parent_uids: [parentId],
                                 id_code: item.id_code,
                                 email: item.email,

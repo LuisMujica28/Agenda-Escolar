@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { getStudentForUser } from '../../lib/getStudentForUser';
+import { getStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../../lib/avatarHelper';
 
 export default function DigitalID() {
     const { currentUser } = useAuth();
@@ -20,7 +21,7 @@ export default function DigitalID() {
                     name: "Juanito Pérez",
                     grade: "9A",
                     id_code: "ST-2023-001",
-                    photo_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Juanito"
+                    photo_url: ""
                 });
                 setLoading(false);
                 return;
@@ -36,7 +37,7 @@ export default function DigitalID() {
                         lastName: activeStudent.lastName || '',
                         grade: activeStudent.grade,
                         id_code: activeStudent.id_code || activeStudent.code || 'ST-N/A',
-                        photo_url: activeStudent.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${activeStudent.name || 'Student'}`
+                        photo_url: activeStudent.photo_url || ""
                     });
                 } else {
                     // Fallback
@@ -44,7 +45,7 @@ export default function DigitalID() {
                         name: "Alumno no asignado",
                         grade: "N/A",
                         id_code: "ST-N/A",
-                        photo_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=NoAssigned"
+                        photo_url: ""
                     });
                 }
             } catch (error) {
@@ -66,7 +67,12 @@ export default function DigitalID() {
             <div className="bg-primary h-24 absolute w-full top-0"></div>
             <div className="px-6 pb-6 pt-16 relative text-center">
                 <div className="w-24 h-24 mx-auto rounded-full border-4 border-white shadow-md bg-white overflow-hidden mb-4">
-                    <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
+                    <img 
+                        src={getStudentPhoto(student.photo_url)} 
+                        alt="Student" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                    />
                 </div>
 
                 <h2 className="text-xl font-bold text-gray-800">

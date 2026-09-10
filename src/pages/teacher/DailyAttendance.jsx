@@ -458,7 +458,7 @@ export default function DailyAttendance() {
     }
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-16">
+        <div className="space-y-6 w-full max-w-[1440px] mx-auto pb-16">
             
             {/* ENCABEZADO PRINCIPAL */}
             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">

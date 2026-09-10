@@ -581,7 +581,7 @@ export default function SyncGrades() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="w-full max-w-[1440px] mx-auto space-y-6">
             {/* Encabezado */}
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">

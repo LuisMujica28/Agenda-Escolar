@@ -130,7 +130,7 @@ export default function StudentObserver() {
     }
 
     return (
-        <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-12">
+        <div className="space-y-8 animate-fade-in w-full max-w-[1440px] mx-auto pb-12">
             
             {/* Header del Observador con Ilustración */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-indigo-100/50 relative overflow-hidden">
