@@ -106,7 +106,7 @@ export default function IaChatBot() {
                 {isOpen ? <X size={24} /> : <Bot size={26} className="animate-pulse" />}
                 
                 {showBadge && !isOpen && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#C06C62] rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white animate-bounce">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white animate-bounce">
                         1
                     </span>
                 )}
@@ -125,13 +125,13 @@ export default function IaChatBot() {
                     {/* Header */}
                     <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800 shrink-0">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-[#5E7892] flex items-center justify-center shadow-md border border-[#A7B7C6]/30">
+                            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md border border-indigo-400/30">
                                 <Sparkles size={18} className="text-white animate-pulse" />
                             </div>
                             <div>
                                 <h3 className="text-xs font-black uppercase tracking-wider leading-none">Hermes IA</h3>
-                                <span className="text-[9px] text-[#BDCFAA] font-extrabold flex items-center gap-1 mt-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#8E9E83] animate-ping"></span>
+                                <span className="text-[9px] text-emerald-400 font-extrabold flex items-center gap-1 mt-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                                     En línea y listo
                                 </span>
                             </div>

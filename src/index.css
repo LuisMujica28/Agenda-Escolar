@@ -1,243 +1,192 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Great+Vibes&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --color-primary: #0f172a; /* Sleek slate-900 */
-  --color-secondary: #3b82f6; /* Modern Blue */
+  --font-sans: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   
-  /* Override border-radius from bubbly 24px+ to professional 12px/8px limits */
-  --radius-3xl: 14px;
-  --radius-2xl: 11px;
-  --radius-xl: 9px;
-  --radius-lg: 7px;
-  --radius-md: 5px;
-  --radius-sm: 3px;
+  /* Brand Core Tokens */
+  --color-primary: #1e1b4b; /* Midnight Navy */
+  --color-secondary: #4f46e5; /* Royal Indigo */
+  --color-accent: #0ea5e9; /* Vivid Sky */
   
-  /* --- PALETA SOLICITADA POR EL USUARIO --- */
-  /* 1. Slate / Steel Blue: #5E7892 */
-  --color-brand-steel: #5e7892;
-  --color-steel-50: #f4f6f8;
-  --color-steel-100: #e4eaef;
-  --color-steel-200: #c9d5e0;
-  --color-steel-300: #a7b7c6;
-  --color-steel-400: #7e97ad;
-  --color-steel-500: #5e7892;
-  --color-steel-600: #4a6076;
-  --color-steel-700: #394b5c;
-  --color-steel-800: #293643;
-  --color-steel-900: #1a232c;
+  /* Modern Ergonomic Border Radius System (Balanced, not over-rounded) */
+  --radius-3xl: 20px;
+  --radius-2xl: 16px;
+  --radius-xl: 12px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
 
-  /* 2. Soft Mist Blue: #A7B7C6 */
-  --color-brand-mist: #a7b7c6;
-  --color-mist-50: #f7f9fb;
-  --color-mist-100: #edf2f6;
-  --color-mist-200: #dce4eb;
-  --color-mist-300: #c3d2de;
-  --color-mist-400: #a7b7c6;
-  --color-mist-500: #889bad;
-  --color-mist-600: #6c7f91;
+  /* ==========================================================================
+     NUEVA PALETA DE DISEÑO PROFESIONAL & ELEGANTE
+     "Royal Academic & Modern Slate" - Limpia, vibrante, con alto contraste
+     ========================================================================== */
 
-  /* 3. Warm Linen / Ivory Cream: #F3EFDF */
-  --color-brand-cream: #f3efdf;
-  --color-cream-50: #fbf9f4;
-  --color-cream-100: #f8f5eb;
-  --color-cream-200: #f3efdf;
-  --color-cream-300: #e7e0cb;
-  --color-cream-400: #d8ceb3;
-  --color-cream-500: #c2b595;
-  --color-cream-600: #a39572;
+  /* 1. Brand Royal Indigo & Sapphire Scale (Identidad Principal) */
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #1e1b4b;
+  --color-indigo-950: #0f172a;
 
-  /* 4. Soft Sage / Pistachio Green: #BDCFAA */
-  --color-brand-sage: #bdcfaa;
-  --color-sage-50: #f7f9f4;
-  --color-sage-100: #edf3e7;
-  --color-sage-200: #dce6d3;
-  --color-sage-300: #bdcfaa;
-  --color-sage-400: #a4b98f;
-  --color-sage-500: #8ba275;
-  --color-sage-600: #6f845a;
+  /* 2. Modern Blue / Azure Scale */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a8a;
+  --color-blue-950: #172554;
 
-  /* 5. Olive / Eucalyptus Green: #8E9E83 */
-  --color-brand-olive: #8e9e83;
-  --color-olive-50: #f5f7f4;
-  --color-olive-100: #e8ece6;
-  --color-olive-200: #d2dcd0;
-  --color-olive-300: #b1c1ad;
-  --color-olive-400: #8e9e83;
-  --color-olive-500: #75866a;
-  --color-olive-600: #5c6c52;
-  --color-olive-700: #46533e;
-  --color-olive-800: #333d2c;
-  --color-olive-900: #21281d;
+  /* 3. Fresh Emerald & Mint (Éxito, Aprobación, Desempeño Superior/Alto) */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
 
-  /* --- TONOS ARMONIZADOS DEL MISMO ESTILO: ROJO Y NARANJA --- */
-  /* Rojo Terracota / Ladrillo Pastel Elegante: #C06C62 */
-  --color-brand-terra: #c06c62;
-  --color-terra-50: #faf2f1;
-  --color-terra-100: #f5e4e2;
-  --color-terra-200: #eac8c4;
-  --color-terra-300: #dba6a0;
-  --color-terra-400: #c06c62;
-  --color-terra-500: #b0574d;
-  --color-terra-600: #99443a;
-  --color-terra-700: #7e342c;
-  --color-terra-800: #63261f;
-  --color-terra-900: #491a14;
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-green-900: #14532d;
 
-  /* Naranja Ocre Cálido / Arcilla Suave: #D99458 */
-  --color-brand-ochre: #d99458;
-  --color-ochre-50: #faf4ec;
-  --color-ochre-100: #f6e8d6;
-  --color-ochre-200: #edcfb3;
-  --color-ochre-300: #e1b28b;
-  --color-ochre-400: #d99458;
-  --color-ochre-500: #c57e3f;
-  --color-ochre-600: #a9662c;
-  --color-ochre-700: #874e1d;
-  --color-ochre-800: #663913;
-  --color-ochre-900: #47260a;
+  /* 4. Vivid Crimson & Rose (Peligro, Año Perdido, Déficit, Zona Roja) */
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-rose-900: #881337;
+  --color-rose-950: #4c0519;
 
-  /* --- REMAPEO SISTÉMICO PARA COMPATIBILIDAD CON TODA LA APP --- */
-  /* Verdes (Emerald / Green) -> Sage (#BDCFAA) y Olive (#8E9E83) */
-  --color-emerald-50: #f5f8f3;
-  --color-emerald-100: #e7efe3;
-  --color-emerald-200: #d4e3cc;
-  --color-emerald-300: #bdcfaa;
-  --color-emerald-400: #a2b78e;
-  --color-emerald-500: #8e9e83;
-  --color-emerald-600: #6e8063;
-  --color-emerald-650: #5f7055;
-  --color-emerald-700: #516048;
-  --color-emerald-800: #3c4835;
-  --color-emerald-900: #293223;
-  --color-emerald-950: #171d14;
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
 
-  --color-green-50: #f5f8f3;
-  --color-green-100: #e7efe3;
-  --color-green-200: #d4e3cc;
-  --color-green-300: #bdcfaa;
-  --color-green-400: #a2b78e;
-  --color-green-500: #8e9e83;
-  --color-green-600: #6e8063;
-  --color-green-700: #516048;
-  --color-green-800: #3c4835;
-  --color-green-900: #293223;
+  /* 5. Honey Gold & Amber (Alerta Preventiva, Riesgo Crítico, Top 3 Diplomas) */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
 
-  /* Rojos (Rose / Red) -> Terracotta (#C06C62) */
-  --color-rose-50: #faf2f1;
-  --color-rose-100: #f5e4e2;
-  --color-rose-200: #eac8c4;
-  --color-rose-300: #dba6a0;
-  --color-rose-400: #c06c62;
-  --color-rose-500: #b0574d;
-  --color-rose-600: #99443a;
-  --color-rose-700: #7e342c;
-  --color-rose-800: #63261f;
-  --color-rose-900: #491a14;
-  --color-rose-950: #2a0e0a;
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
 
-  --color-red-50: #faf2f1;
-  --color-red-100: #f5e4e2;
-  --color-red-200: #eac8c4;
-  --color-red-300: #dba6a0;
-  --color-red-400: #c06c62;
-  --color-red-500: #b0574d;
-  --color-red-600: #99443a;
-  --color-red-650: #893a31;
-  --color-red-700: #7e342c;
-  --color-red-800: #63261f;
-  --color-red-900: #491a14;
+  /* 6. Royal Purple & Violet (Especialidades, Docentes, Cuadro de Honor) */
+  --color-violet-50: #f5f3ff;
+  --color-violet-100: #ede9fe;
+  --color-violet-200: #ddd6fe;
+  --color-violet-300: #c4b5fd;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #7c3aed;
+  --color-violet-700: #6d28d9;
+  --color-violet-800: #5b21b6;
+  --color-violet-900: #4c1d95;
 
-  /* Naranjas y Amarillos (Amber / Orange / Yellow) -> Warm Ochre (#D99458) */
-  --color-amber-50: #faf4ec;
-  --color-amber-100: #f6e8d6;
-  --color-amber-200: #edcfb3;
-  --color-amber-300: #e1b28b;
-  --color-amber-400: #d99458;
-  --color-amber-500: #c57e3f;
-  --color-amber-600: #a9662c;
-  --color-amber-700: #874e1d;
-  --color-amber-800: #663913;
-  --color-amber-900: #47260a;
+  --color-purple-50: #faf5ff;
+  --color-purple-100: #f3e8ff;
+  --color-purple-200: #e9d5ff;
+  --color-purple-300: #d8b4fe;
+  --color-purple-400: #c084fc;
+  --color-purple-500: #a855f7;
+  --color-purple-600: #9333ea;
+  --color-purple-700: #7e22ce;
+  --color-purple-800: #6b21a8;
+  --color-purple-900: #581c87;
 
-  --color-orange-50: #faf4ec;
-  --color-orange-100: #f6e8d6;
-  --color-orange-200: #edcfb3;
-  --color-orange-300: #e1b28b;
-  --color-orange-400: #d99458;
-  --color-orange-500: #c57e3f;
-  --color-orange-550: #b56f33;
-  --color-orange-600: #a9662c;
-  --color-orange-700: #874e1d;
-  --color-orange-800: #663913;
-
-  /* Morados (Purple / Violet) -> Steel Blue (#5E7892) & Mist (#A7B7C6) */
-  --color-violet-50: #f4f6f8;
-  --color-violet-100: #e4eaef;
-  --color-violet-200: #c9d5e0;
-  --color-violet-300: #a7b7c6;
-  --color-violet-400: #7e97ad;
-  --color-violet-500: #5e7892;
-  --color-violet-600: #4a6076;
-  --color-violet-700: #394b5c;
-
-  --color-purple-50: #f4f6f8;
-  --color-purple-100: #e4eaef;
-  --color-purple-200: #c9d5e0;
-  --color-purple-300: #a7b7c6;
-  --color-purple-400: #7e97ad;
-  --color-purple-500: #5e7892;
-  --color-purple-600: #4a6076;
-  --color-purple-650: #425569;
-  --color-purple-700: #394b5c;
-
-  /* Indigo scale: Preserved for existing dark banners & high fidelity blue accent */
-  --color-indigo-50: #f0f4f8;
-  --color-indigo-100: #dde5ee;
-  --color-indigo-200: #c2d1df;
-  --color-indigo-300: #9cb4cb;
-  --color-indigo-400: #6d90b1;
-  --color-indigo-500: #4e749a;
-  --color-indigo-600: #2563eb;
-  --color-indigo-650: #1e52c8;
-  --color-indigo-700: #1d4ed8;
-  --color-indigo-750: #1841b8;
-  --color-indigo-850: #0f172a;
-  --color-indigo-900: #0f172a;
-  --color-indigo-950: #090e17;
+  /* 7. Crisp Slate Neutrals (Fondos, Bordes y Tipografía Nítida) */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
   
-  /* Refine shadows to Stripe/Linear soft style */
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.03), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 10px 24px -4px rgba(15, 23, 42, 0.02), 0 4px 12px -4px rgba(15, 23, 42, 0.02);
-  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.02), 0 8px 10px -6px rgba(15, 23, 42, 0.02);
-  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.025);
+  /* Layered Ambient Shadows (Stripe / Apple Glassmorphic Depth) */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 10px 25px -4px rgba(15, 23, 42, 0.06), 0 4px 12px -4px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 30px -6px rgba(15, 23, 42, 0.07), 0 8px 16px -6px rgba(15, 23, 42, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
 
-  /* Animation custom easing */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* expo ease-out */
+  /* Animation Easing Curves */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @layer base {
   body {
     background-color: #f8fafc;
-    color: #1e293b;
+    color: #0f172a;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Improve layout headings default */
   h1, h2, h3, h4, h5, h6 {
     color: #0f172a;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
+    font-weight: 800;
     text-wrap: balance;
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar Clean & Modern */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -247,13 +196,13 @@
 }
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 10px;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Custom Easing Animations */
+/* Micro-animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -268,7 +217,7 @@
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
@@ -276,51 +225,56 @@
   }
 }
 
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .animate-fade-in {
-  animation: fadeIn 0.3s var(--ease-out) forwards;
+  animation: fadeIn 0.25s var(--ease-out) forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.25s var(--ease-out) forwards;
-}
-
-.animate-slide-up {
-  animation: slideInUp 0.35s var(--ease-out) forwards;
+  animation: scaleIn 0.22s var(--ease-out) forwards;
 }
 
 /* Tactile Active Press Feedback */
 .active-press {
-  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  transition: transform 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
 }
 .active-press:active {
-  transform: scale(0.97);
+  transform: scale(0.975);
 }
 
-/* Premium Card hover effects restricted to pointer devices */
+/* Premium Card Hover Effects */
 @media (hover: hover) and (pointer: fine) {
   .hover-elevate {
-    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out), background-color 200ms var(--ease-out);
+    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
   }
   .hover-elevate:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.05), 0 8px 16px -8px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 10px 22px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
   }
 }
 
-/* Soft Inner Shadow */
-.shadow-inner-soft {
-  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03);
+/* Glassmorphism Classes */
+.glass-header {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+.font-playfair {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+.font-script {
+  font-family: 'Great Vibes', cursive;
 }
 
 @media print {
@@ -340,11 +294,11 @@
     padding: 0 !important;
   }
   .printable-diploma-page {
-    border: 2px solid #b45309 !important;
+    border: none !important;
     box-shadow: none !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 1.2cm !important;
+    padding: 0.8cm !important;
     page-break-after: always !important;
   }
 }

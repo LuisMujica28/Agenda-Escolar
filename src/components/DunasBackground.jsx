@@ -43,23 +43,23 @@ export default function DunasBackground() {
         <defs>
           {/* Gradiente Duna Posterior Profunda */}
           <linearGradient id="duna-deep-blue" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.10" />
-            <stop offset="50%" stopColor="#2563eb" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.03" />
+            <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.05" />
+            <stop offset="50%" stopColor="#2563eb" stopOpacity="0.04" />
+            <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.015" />
           </linearGradient>
 
           {/* Gradiente Duna Media Azul Real */}
           <linearGradient id="duna-royal-blue" x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.16" />
-            <stop offset="45%" stopColor="#60a5fa" stopOpacity="0.10" />
-            <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.04" />
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.08" />
+            <stop offset="45%" stopColor="#60a5fa" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.02" />
           </linearGradient>
 
           {/* Gradiente Duna Suave Hielo */}
           <linearGradient id="duna-ice-blue" x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#dbeafe" stopOpacity="0.60" />
-            <stop offset="50%" stopColor="#eff6ff" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#bfdbfe" stopOpacity="0.45" />
+            <stop offset="0%" stopColor="#dbeafe" stopOpacity="0.35" />
+            <stop offset="50%" stopColor="#eff6ff" stopOpacity="0.60" />
+            <stop offset="100%" stopColor="#bfdbfe" stopOpacity="0.25" />
           </linearGradient>
 
           {/* Gradiente Cinta de Luz Blanca */}
@@ -71,11 +71,11 @@ export default function DunasBackground() {
 
           {/* Filtro de sombra suave para relieve de duna */}
           <filter id="duna-soft-shadow" x="-5%" y="-5%" width="110%" height="120%">
-            <feDropShadow dx="0" dy="12" stdDeviation="16" floodColor="#1e3a8a" floodOpacity="0.06" />
+            <feDropShadow dx="0" dy="12" stdDeviation="16" floodColor="#1e3a8a" floodOpacity="0.03" />
           </filter>
 
           <filter id="duna-crest-shadow" x="-5%" y="-5%" width="110%" height="120%">
-            <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#2563eb" floodOpacity="0.08" />
+            <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#2563eb" floodOpacity="0.04" />
           </filter>
         </defs>
 

@@ -196,8 +196,8 @@ export default function ImportData() {
                 });
             });
 
-            // Buscar LUISMT2.DBF o cualquier *MT*.DBF de consolidado
-            let masterKey = Object.keys(parsedDBFs).find(k => k.includes('mt2') || k.includes('mt'));
+            // Buscar alumplan.dbf, LUISMT2.DBF o cualquier consolidado
+            let masterKey = Object.keys(parsedDBFs).find(k => k.includes('alumplan') || k.includes('mt2') || k.includes('mt'));
             if (!masterKey && Object.keys(parsedDBFs).length > 0) {
                 masterKey = Object.keys(parsedDBFs)[0];
             }
@@ -205,9 +205,24 @@ export default function ImportData() {
             const masterRecords = parsedDBFs[masterKey] || [];
             const subjectMap = {
                 'MAT': 'Matemáticas',
+                'GEO': 'Geometría',
                 'FIS': 'C. Naturales (Física)',
                 'FIC': 'C. Naturales (Física)',
-                'GEO': 'Geometría',
+                'BIO': 'C. Naturales (Biología)',
+                'CIE': 'C. Naturales (Biología)',
+                'YUD': 'C. Naturales (Biología)',
+                'QUI': 'C Naturales (Química)',
+                'ESP': 'Español y Literatura',
+                'ING': 'Inglés',
+                'ART': 'Artes plásticas',
+                'EAR': 'Artes plásticas',
+                'EFI': 'Ed Física',
+                'ETI': 'Ed Ética y Valores',
+                'REL': 'Ed Religiosa y Moral',
+                'SOC': 'C Sociales Filosofía',
+                'FIL': 'C Sociales Filosofía',
+                'POL': 'C Políticas Económicas',
+                'TEC': 'Tecnología e Informática',
                 'XCS': 'Ed Ética y Valores'
             };
 
@@ -244,35 +259,41 @@ export default function ImportData() {
             } else {
                 const groupedMap = new Map();
 
-                function getOrCreateGroup(studentName, course, matCode) {
+                function getOrCreateGroup(studentName, course, matCode, period) {
                     const subject = subjectMap[matCode] || matCode;
-                    const key1 = `${course}_${matCode}_1_${studentName.toUpperCase()}`;
-                    const key2 = `${course}_${matCode}_2_${studentName.toUpperCase()}`;
-                    if (!groupedMap.has(key1)) {
-                        groupedMap.set(key1, { studentName, course, matCode, subject, period: 1, p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, total: 0, evalLevel: '' });
+                    const pNum = Number(period) || 1;
+                    const key = `${course}_${matCode}_${pNum}_${studentName.toUpperCase()}`;
+                    if (!groupedMap.has(key)) {
+                        groupedMap.set(key, { 
+                            studentName, 
+                            course, 
+                            matCode, 
+                            subject, 
+                            period: pNum, 
+                            p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, 
+                            total: 0, 
+                            evalLevel: '' 
+                        });
                     }
-                    if (!groupedMap.has(key2)) {
-                        groupedMap.set(key2, { studentName, course, matCode, subject, period: 2, p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, total: 0, evalLevel: '' });
-                    }
-                    return { p1Rec: groupedMap.get(key1), p2Rec: groupedMap.get(key2) };
+                    return groupedMap.get(key);
                 }
 
-                // 1. Cargar datos de pareval (Parciales P2)
+                // 1. Cargar datos de pareval (Parciales P1, P2, P3, P4)
                 parevalMap.forEach((par, key) => {
                     const parts = key.split('_');
                     if (parts.length >= 4) {
                         const [grade, matCode, pNum, ...nameParts] = parts;
                         const studentName = nameParts.join('_');
-                        const { p2Rec } = getOrCreateGroup(studentName, grade, matCode);
-                        p2Rec.p1 = par.prueba1;
-                        p2Rec.p2 = par.prueba2;
-                        p2Rec.p3 = par.guia;
-                        p2Rec.p4 = par.ejercitacion;
-                        p2Rec.p5 = par.actitudinal;
+                        const rec = getOrCreateGroup(studentName, grade, matCode, pNum);
+                        rec.p1 = par.prueba1;
+                        rec.p2 = par.prueba2;
+                        rec.p3 = par.guia;
+                        rec.p4 = par.ejercitacion;
+                        rec.p5 = par.actitudinal;
                     }
                 });
 
-                // 2. Cargar datos de LUISMT2
+                // 2. Cargar datos de alumplan / LUISMT2
                 masterRecords.forEach((r) => {
                     const name = (r.ALUNOM || r.NOMALU || r.NOMBRE || '').trim();
                     const rawGrade = (r.ALUGRA || '') + (r.ALUPAR || '');
@@ -280,25 +301,21 @@ export default function ImportData() {
 
                     const grade = String(parseInt(rawGrade, 10));
                     const matCode = (r.ALUMAT || r.MATERIA || 'MAT').trim();
-                    const indicator = (r.ALUCO1 || '').trim().toLowerCase();
-                    const pt1 = Number(r.ALUPT1 || r.P1) || 0;
-                    const pt2 = Number(r.ALUPT2 || r.P2) || 0;
-                    const evalLevel = r.ALUCO1 || '';
 
-                    const { p1Rec, p2Rec } = getOrCreateGroup(name, grade, matCode);
+                    const periods = [
+                        { per: 1, pt: Number(r.ALUPT1 || r.P1) || 0, co: r.ALUCO1 || '' },
+                        { per: 2, pt: Number(r.ALUPT2 || r.P2) || 0, co: r.ALUCO2 || '' },
+                        { per: 3, pt: Number(r.ALUPT3 || r.P3) || 0, co: r.ALUCO3 || '' },
+                        { per: 4, pt: Number(r.ALUPT4 || r.P4) || 0, co: r.ALUCO4 || '' }
+                    ];
 
-                    if (indicator === 'pa1' && p2Rec.p1 === 0) p2Rec.p1 = pt1;
-                    else if (indicator === 'pa2' && p2Rec.p2 === 0) p2Rec.p2 = pt1;
-                    else if (indicator === 'pa3' && p2Rec.p3 === 0) p2Rec.p3 = pt1;
-                    else if (indicator === 'pa4' && p2Rec.p4 === 0) p2Rec.p4 = pt1;
-                    else if (indicator === 'pa5' && p2Rec.p5 === 0) p2Rec.p5 = pt1;
-
-                    if (pt2 > 0) p2Rec.total = pt2;
-
-                    if (pt1 > 0 && !indicator.startsWith('pa')) {
-                        p1Rec.total = pt1;
-                        if (evalLevel) p1Rec.evalLevel = evalLevel;
-                    }
+                    periods.forEach(({ per, pt, co }) => {
+                        if (pt > 0) {
+                            const rec = getOrCreateGroup(name, grade, matCode, per);
+                            rec.total = pt;
+                            if (co) rec.evalLevel = co;
+                        }
+                    });
                 });
 
                 // 3. Generar filas mapeadas finales
@@ -327,7 +344,7 @@ export default function ImportData() {
                             guia: p3,
                             ejercitacion: p4,
                             actitudinal: p5,
-                            comentario: ''
+                            comentario: rec.evalLevel ? `Desempeño: ${rec.evalLevel}` : ''
                         });
                     }
                 });

@@ -1383,7 +1383,7 @@ export default function Dashboard() {
 
                             <button 
                                 onClick={() => setShowQuickObsModal(true)} 
-                                className="bg-[#D99458] hover:bg-[#C57E3F] text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-[#D99458]/25 hover-elevate active-press transition"
+                                className="bg-amber-600 hover:bg-amber-700 text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-amber-600/25 hover-elevate active-press transition"
                             >
                                 <div className="flex items-center justify-between w-full">
                                     <Zap className="text-white group-hover:scale-110 transition-transform" size={26} />
@@ -1391,15 +1391,15 @@ export default function Dashboard() {
                                 </div>
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-black text-white leading-tight">⚡ Anotación Rápida</h4>
-                                    <p className="text-[10px] text-[#FAF4EC] mt-1 leading-tight font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
+                                    <p className="text-[10px] text-indigo-100 mt-1 leading-tight font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
                                 </div>
                             </button>
 
                             <Link 
                                 to="/teacher/search" 
-                                className="bg-white border border-[#A7B7C6]/30 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#5E7892] transition"
+                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-indigo-500 transition"
                             >
-                                <Users className="text-[#5E7892] group-hover:scale-110 transition-transform" size={26} />
+                                <Users className="text-indigo-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Buscar Alumno</h4>
                                     <p className="text-[10px] text-slate-500 mt-1 leading-tight">Registra comportamiento, asistencia o notas para cualquier alumno.</p>
@@ -1408,9 +1408,9 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/teacher/create-task" 
-                                className="bg-white border border-[#BDCFAA]/40 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#8E9E83] transition"
+                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-emerald-500 transition"
                             >
-                                <ClipboardList className="text-[#8E9E83] group-hover:scale-110 transition-transform" size={26} />
+                                <ClipboardList className="text-emerald-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Crear Nueva Tarea</h4>
                                     <p className="text-[10px] text-slate-500 mt-1 leading-tight">Asigna tareas escolares directamente a cualquier curso (como el 1001).</p>
@@ -1419,9 +1419,9 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/teacher/sync-grades" 
-                                className="bg-white border border-[#A7B7C6]/30 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#5E7892] transition"
+                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-blue-500 transition"
                             >
-                                <BookOpen className="text-[#5E7892] group-hover:scale-110 transition-transform" size={26} />
+                                <BookOpen className="text-blue-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Sincronizar Notas</h4>
                                     <p className="text-[10px] text-slate-500 mt-1 leading-tight">Carga calificaciones directamente desde planillas de Google Sheets.</p>
@@ -1430,9 +1430,9 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/messages" 
-                                className="bg-white border border-[#D99458]/30 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#D99458] transition"
+                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-amber-500 transition"
                             >
-                                <MessageSquare className="text-[#D99458] group-hover:scale-110 transition-transform" size={26} />
+                                <MessageSquare className="text-amber-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Buzón de Mensajes</h4>
                                     <p className="text-[10px] text-slate-500 mt-1 leading-tight">Responde inquietudes e intercambia mensajes con acudientes.</p>
@@ -1441,9 +1441,9 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/admin/stats" 
-                                className="bg-white border border-slate-200/70 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-[#5E7892] transition"
+                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-indigo-500 transition"
                             >
-                                <BarChart2 className="text-[#5E7892] group-hover:scale-110 transition-transform" size={26} />
+                                <BarChart2 className="text-indigo-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">Estadísticas</h4>
                                     <p className="text-[10px] text-slate-500 mt-1 leading-tight">Analiza promedios, rendimientos y alertas académicas de cursos.</p>
@@ -1459,7 +1459,7 @@ export default function Dashboard() {
                 <div className="space-y-6">
 
                     {/* Saludo y Métricas Rápidas */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/95 backdrop-blur-md p-5 rounded-3xl border border-[#A7B7C6]/40 shadow-md shadow-slate-900/5">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/95 backdrop-blur-md p-5 rounded-3xl border border-slate-100 shadow-md shadow-slate-900/5">
                         <div className="flex items-center gap-3">
                             <span className="text-3xl animate-bounce">👋</span>
                             <div className="text-left">
@@ -1470,8 +1470,8 @@ export default function Dashboard() {
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 w-full lg:w-auto shrink-0">
                             {/* Card 1: Alumnos Totales */}
-                            <div className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-[#5E7892]/15 text-[#5E7892] flex items-center justify-center shrink-0">
+                            <div className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200/60 text-indigo-600 flex items-center justify-center shrink-0">
                                     <Users size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
@@ -1481,8 +1481,8 @@ export default function Dashboard() {
                             </div>
 
                             {/* Card 2: Cuentas Registradas */}
-                            <div className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-[#8E9E83]/20 text-[#8E9E83] flex items-center justify-center shrink-0">
+                            <div className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center shrink-0">
                                     <Users size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
@@ -1494,10 +1494,10 @@ export default function Dashboard() {
                             {/* Card 3: Circulares Publicadas */}
                             <div 
                                 onClick={handleOpenCircularsModal}
-                                className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-[#D99458] transition active-press flex items-center gap-2.5"
+                                className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-amber-500 transition active-press flex items-center gap-2.5"
                                 title="Ver historial de circulares"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-[#D99458]/20 text-[#D99458] flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/60 text-amber-600 flex items-center justify-center shrink-0">
                                     <Bell size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
@@ -1509,10 +1509,10 @@ export default function Dashboard() {
                             {/* Card 4: Planillas Importadas */}
                             <div 
                                 onClick={() => navigate('/teacher/sync-grades')}
-                                className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-[#5E7892] transition active-press flex items-center gap-2.5"
+                                className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-indigo-500 transition active-press flex items-center gap-2.5"
                                 title="Ir a Planilla Digital"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-[#5E7892]/15 text-[#5E7892] flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200/60 text-indigo-600 flex items-center justify-center shrink-0">
                                     <FileText size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
@@ -1522,8 +1522,8 @@ export default function Dashboard() {
                             </div>
 
                             {/* Card 5: Reloj / Fecha */}
-                            <div className="bg-[#FAF8F4] hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-[#F3EFDF] text-[#5E7892] flex items-center justify-center shrink-0">
+                            <div className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0">
                                     <CalendarIcon size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
@@ -1539,14 +1539,13 @@ export default function Dashboard() {
                     </div>
 
                     {/* Sección de 3 Columnas */}
-                    {/* Sección de 3 Columnas: Alto Contraste Ejecutivo (Stripe / Linear) */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
                         {/* Columna 1: Accesos Rápidos */}
-                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-white/80 flex flex-col gap-4.5">
+                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-slate-100 flex flex-col gap-4.5">
                             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                                 <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2.5">
-                                    <span className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+                                    <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
                                         <Sparkles size={15} />
                                     </span>
                                     Accesos rápidos
@@ -1560,18 +1559,18 @@ export default function Dashboard() {
                                 {/* Nueva Circular */}
                                 <Link 
                                     to="/admin/new-circular"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#5E7892]/60 border-l-4 border-l-[#5E7892] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-indigo-300 border-l-4 border-l-indigo-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-[#1e293b] to-[#5E7892] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-indigo-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-indigo-600/20 group-hover:scale-105 transition-transform">
                                             <Send size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#5E7892] transition-colors">Nueva Circular</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition-colors">Nueva Circular</p>
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Redacta y publica una nueva circular</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#5E7892] group-hover:border-[#5E7892] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1579,18 +1578,18 @@ export default function Dashboard() {
                                 {/* Importar CSV */}
                                 <Link 
                                     to="/admin/import"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#6E8063]/60 border-l-4 border-l-[#8E9E83] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-emerald-300 border-l-4 border-l-emerald-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-[#3c4835] to-[#8E9E83] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-emerald-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-emerald-600/20 group-hover:scale-105 transition-transform">
                                             <Upload size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#6E8063] transition-colors">Importar CSV</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-emerald-600 transition-colors">Importar CSV</p>
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Carga estudiantes desde un archivo</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#8E9E83] group-hover:border-[#8E9E83] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-emerald-600 group-hover:border-emerald-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1598,18 +1597,18 @@ export default function Dashboard() {
                                 {/* Planilla Digital de Notas */}
                                 <Link 
                                     to="/teacher/sync-grades"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#4A6076]/60 border-l-4 border-l-[#4A6076] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-blue-300 border-l-4 border-l-blue-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-[#1a232c] to-[#4A6076] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-blue-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-blue-600/20 group-hover:scale-105 transition-transform">
                                             <ClipboardList size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#4A6076] transition-colors">Planilla Digital de Notas</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-blue-600 transition-colors">Planilla Digital de Notas</p>
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Importa o gestiona las calificaciones</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#4A6076] group-hover:border-[#4A6076] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1617,18 +1616,18 @@ export default function Dashboard() {
                                 {/* Planilla de Control */}
                                 <Link 
                                     to="/planilla-print"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#D99458]/60 border-l-4 border-l-[#D99458] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-amber-300 border-l-4 border-l-amber-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-[#944c16] to-[#D99458] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-amber-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-amber-600/20 group-hover:scale-105 transition-transform">
                                             <Printer size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#D99458] transition-colors">Planilla de Control</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-amber-600 transition-colors">Planilla de Control</p>
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Genera e imprime asistencias</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#D99458] group-hover:border-[#D99458] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-amber-600 group-hover:border-amber-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1636,18 +1635,18 @@ export default function Dashboard() {
                                 {/* Estadísticas Académicas */}
                                 <Link 
                                     to="/admin/stats"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#1E3A8A]/60 border-l-4 border-l-[#1E3A8A] shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-indigo-300 border-l-4 border-l-indigo-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-[#0f172a] to-[#1E3A8A] text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-slate-950 to-indigo-700 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-indigo-700/20 group-hover:scale-105 transition-transform">
                                             <BarChart2 size={16} />
                                         </div>
                                         <div className="text-left leading-tight">
-                                            <p className="text-xs font-black text-slate-900 group-hover:text-[#1E3A8A] transition-colors">Estadísticas Académicas</p>
+                                            <p className="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition-colors">Estadísticas Académicas</p>
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Métricas de rendimiento institucional</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-[#1E3A8A] group-hover:border-[#1E3A8A] group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1655,17 +1654,17 @@ export default function Dashboard() {
                         </div>
 
                         {/* Columna 2: Actividad Reciente */}
-                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-white/80 flex flex-col gap-4.5">
+                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-slate-100 flex flex-col gap-4.5">
                             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                                 <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2.5">
-                                    <span className="w-7 h-7 rounded-lg bg-[#5E7892]/15 text-[#5E7892] flex items-center justify-center">
+                                    <span className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-200/60 text-indigo-600 flex items-center justify-center">
                                         <MessageSquare size={16} />
                                     </span>
                                     Actividad reciente
                                 </h3>
                                 <button 
                                     onClick={handleOpenCircularsModal}
-                                    className="text-[10px] font-black text-[#5E7892] hover:text-white px-2.5 py-1 rounded-full bg-[#5E7892]/10 hover:bg-[#5E7892] border border-[#5E7892]/20 transition"
+                                    className="text-[10px] font-black text-indigo-600 hover:text-white px-2.5 py-1 rounded-full bg-indigo-50 hover:bg-indigo-600 border border-indigo-200/60 transition"
                                 >
                                     Ver todo
                                 </button>
@@ -1679,11 +1678,11 @@ export default function Dashboard() {
                                 ) : (
                                     recentActivitiesList.map((act) => {
                                         const colorClass = act.colorClass || (
-                                            act.iconType === 'send' || act.type === 'circular' ? 'bg-[#5E7892]/15 border-[#5E7892]/30 text-[#5E7892]' :
-                                            act.iconType === 'upload' || act.type === 'import' ? 'bg-[#8E9E83]/15 border-[#8E9E83]/30 text-[#6E8063]' :
-                                            act.iconType === 'user' || act.type === 'student' ? 'bg-[#8E9E83]/15 border-[#8E9E83]/30 text-[#6E8063]' :
-                                            act.iconType === 'clipboard' || act.type === 'grade' ? 'bg-[#5E7892]/15 border-[#5E7892]/30 text-[#5E7892]' :
-                                            'bg-[#D99458]/15 border-[#D99458]/40 text-[#D99458]'
+                                            act.iconType === 'send' || act.type === 'circular' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' :
+                                            act.iconType === 'upload' || act.type === 'import' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' :
+                                            act.iconType === 'user' || act.type === 'student' ? 'bg-blue-50 border-blue-200 text-blue-600' :
+                                            act.iconType === 'clipboard' || act.type === 'grade' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' :
+                                            'bg-amber-50 border-amber-200 text-amber-600'
                                         );
 
                                         const renderIcon = () => {
@@ -1700,7 +1699,7 @@ export default function Dashboard() {
                                                     {renderIcon()}
                                                 </div>
                                                 <div className="leading-tight min-w-0 flex-1">
-                                                    <h5 className="text-xs font-black text-slate-800 truncate group-hover:text-[#5E7892] transition-colors">{act.title}</h5>
+                                                    <h5 className="text-xs font-black text-slate-800 truncate group-hover:text-indigo-600 transition-colors">{act.title}</h5>
                                                     <p className="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">{act.subtitle}</p>
                                                 </div>
                                                 <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-white border border-slate-200/80 text-slate-600 shrink-0 shadow-2xs">
@@ -1713,10 +1712,10 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Columna 3: Próximos eventos (Widget Ejecutivo Dark Mode - Linear / Stripe) */}
-                        <div className="bg-gradient-to-b from-[#1a232c] via-[#1f2937] to-[#0f172a] rounded-3xl p-6 shadow-xl shadow-slate-900/15 border border-slate-700/60 flex flex-col gap-4.5 relative overflow-hidden text-white">
+                        {/* Columna 3: Próximos eventos (Widget Ejecutivo Dark Mode) */}
+                        <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 rounded-3xl p-6 shadow-xl shadow-slate-900/15 border border-slate-800 flex flex-col gap-4.5 relative overflow-hidden text-white">
                             {/* Resplandor ambiental de fondo */}
-                            <div className="absolute -top-16 -right-16 w-44 h-44 bg-[#5E7892]/25 rounded-full blur-3xl pointer-events-none"></div>
+                            <div className="absolute -top-16 -right-16 w-44 h-44 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
                             <div className="flex justify-between items-center pb-3 border-b border-white/10 relative z-10">
                                 <h3 className="text-base font-black text-white tracking-tight flex items-center gap-2.5">
@@ -1732,7 +1731,7 @@ export default function Dashboard() {
                             
                             {/* Mini Calendario Estético Dark */}
                             <div className="flex-grow flex flex-col justify-between gap-3 relative z-10">
-                                <div className="p-3.5 rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md shadow-inner transition-all">
+                                <div className="p-3.5 rounded-2xl border border-white/10 bg-slate-950/40 backdrop-blur-md shadow-inner transition-all">
                                     <div className="flex justify-between items-center mb-2.5 px-1">
                                         <button 
                                             onClick={handlePrevMonth}
@@ -1763,7 +1762,7 @@ export default function Dashboard() {
                                                     !item.isCurrentMonth
                                                         ? 'text-slate-600'
                                                         : item.isToday
-                                                        ? 'bg-[#5E7892] text-white font-black shadow-md shadow-[#5E7892]/40 ring-2 ring-[#A7B7C6]/40'
+                                                        ? 'bg-indigo-600 text-white font-black shadow-md shadow-indigo-600/40 ring-2 ring-indigo-400/40'
                                                         : 'text-slate-200 font-bold hover:bg-white/15 hover:text-white'
                                                 }`}
                                             >
@@ -1776,7 +1775,7 @@ export default function Dashboard() {
                                 {/* Tarjeta de Próximo Evento Destacado Dark Glass */}
                                 <div className="bg-white/10 backdrop-blur-md border border-white/15 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-md">
                                     <div className="flex items-center gap-2.5">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5E7892] to-[#4A6076] text-white flex flex-col items-center justify-center shrink-0 shadow-md border border-white/20">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white flex flex-col items-center justify-center shrink-0 shadow-md border border-white/20">
                                             <span className="text-xs font-black leading-none">21</span>
                                             <span className="text-[8px] uppercase font-bold tracking-wider leading-none mt-0.5">JUL</span>
                                         </div>

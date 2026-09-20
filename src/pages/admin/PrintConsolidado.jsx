@@ -236,7 +236,7 @@ export default function PrintConsolidado() {
                         height: 21.6cm !important;
                         max-height: 21.6cm !important;
                         margin: 0 auto !important;
-                        padding: 0.45cm 0.5cm 0.4cm 1.45cm !important;
+                        padding: 0.45cm 0.6cm 0.4cm 0.6cm !important;
                         box-sizing: border-box !important;
                         border: none !important;
                         box-shadow: none !important;
@@ -258,8 +258,8 @@ export default function PrintConsolidado() {
                     .page-border {
                         top: 0.25cm !important;
                         bottom: 0.25cm !important;
-                        left: 0.45cm !important;
-                        right: 0.35cm !important;
+                        left: 0.25cm !important;
+                        right: 0.25cm !important;
                         border: 2px double #334155 !important;
                     }
                 }
@@ -269,13 +269,12 @@ export default function PrintConsolidado() {
                     height: 21.6cm;
                     margin: 0 auto;
                     background-color: white;
-                    padding: 0.45cm 0.5cm 0.4cm 1.45cm;
+                    padding: 0.45cm 0.6cm 0.4cm 0.6cm;
                     border: 1px solid #cbd5e1;
                     box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
                     position: relative;
                     display: flex;
                     flex-direction: column;
-                    justify-content: space-between;
                     overflow: hidden;
                     flex-shrink: 0;
                     box-sizing: border-box;
@@ -372,11 +371,11 @@ export default function PrintConsolidado() {
                     }
 
                     return studentPages.map((pageStudents, pageIndex) => (
-                        <div key={pageIndex} className="printable-consolidado bg-white border border-slate-350 shadow-2xl relative flex flex-col justify-between overflow-hidden shrink-0">
+                        <div key={pageIndex} className="printable-consolidado bg-white border border-slate-350 shadow-2xl relative flex flex-col overflow-hidden shrink-0">
                             {/* Borde Oficial Doble */}
                             <div className="absolute inset-[0.25cm] border-[3px] border-slate-700 border-double rounded-lg pointer-events-none page-border"></div>
 
-                            <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div className="relative z-10 flex flex-col h-full">
                                 {/* Header Institucional */}
                                 <div>
                                     <div className="flex items-center justify-between border-b pb-2 border-slate-300">
@@ -532,34 +531,6 @@ export default function PrintConsolidado() {
                                                 )}
                                             </tbody>
                                         </table>
-                                    </div>
-                                </div>
-
-                                {/* Pie de Página y Firmas */}
-                                <div className="mt-2.5 border-t pt-2 border-slate-300 grid grid-cols-3 gap-6 text-[8.5px] font-semibold text-slate-600">
-                                    <div>
-                                        <p className="font-extrabold text-slate-800 text-[9.5px] uppercase">Convenciones e Indicadores:</p>
-                                        <p className="text-[8px] text-slate-500">
-                                            • Arriba en casilla: Calificación digitada de cada periodo (P1, P2...).
-                                        </p>
-                                        <p className="text-[8px] text-slate-500">
-                                            • Abajo en casilla: Promedio acumulado de la asignatura.
-                                        </p>
-                                        <p className="text-[8px] text-slate-500">
-                                            • Mat. Per. = Número de asignaturas con promedio acumulado inferior a 75 pts.
-                                        </p>
-                                    </div>
-
-                                    <div className="flex flex-col items-center justify-end text-center">
-                                        <div className="border-t border-slate-400 w-[5.5cm] mb-1"></div>
-                                        <span className="uppercase text-slate-900 font-extrabold text-[9.5px]">COORDINACIÓN ACADÉMICA</span>
-                                        <span className="text-[8px] text-slate-400">Verificación Oficial INAS</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center justify-end text-center">
-                                        <div className="border-t border-slate-400 w-[5.5cm] mb-1"></div>
-                                        <span className="uppercase text-slate-900 font-extrabold text-[9.5px]">RECTORÍA GENERAL</span>
-                                        <span className="text-[8px] text-slate-400">Firma y Sello del Plantel</span>
                                     </div>
                                 </div>
                             </div>
