@@ -1161,22 +1161,23 @@ export default function AcademicStats() {
                         </div>
                     </div>
 
-                    {/* Banner Ejecutivo de Proyección de Fin de Año (Regla de 300 Pts) */}
-                    <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-amber-950 text-white rounded-3xl p-6 border border-rose-900/50 shadow-xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-80 h-80 bg-rose-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                    {/* Banner Ejecutivo de Proyección de Fin de Año (Fondo Esmerilado / Glassmorphism) */}
+                    <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-xl shadow-slate-900/5 rounded-3xl p-6 relative overflow-hidden ring-1 ring-slate-200/60">
+                        <div className="absolute -top-16 -right-16 w-72 h-72 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="absolute -bottom-16 -left-16 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
                             <div className="space-y-2 max-w-2xl">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                        <ShieldAlert size={12} /> Diagnóstico Predictivo Fin de Año
+                                    <span className="bg-rose-50 text-rose-700 border border-rose-200/80 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs">
+                                        <ShieldAlert size={12} className="text-rose-600" /> Diagnóstico Predictivo Fin de Año
                                     </span>
-                                    <span className="text-slate-400 text-xs font-semibold">• Regla Institucional de 300 Puntos</span>
+                                    <span className="text-slate-500 text-xs font-bold">• Regla Institucional de 300 Puntos</span>
                                 </div>
-                                <h2 className="text-xl font-black text-white tracking-tight">
+                                <h2 className="text-xl font-black text-slate-900 tracking-tight">
                                     Proyección de Aprobación & Pérdida de Año 2026
                                 </h2>
-                                <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                                    Con base en las notas de los <strong className="text-white">Periodos 1, 2 y 3</strong>, restan máximo <strong className="text-white">100 puntos en el Periodo 4</strong>. Quienes acumulen menos de 200 puntos pierden la asignatura por imposibilidad matemática. Pierden el año quienes reprueben 2 o más asignaturas (&lt;300 pts).
+                                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                    Con base en las notas de los <strong className="text-slate-900 font-bold">Periodos 1, 2 y 3</strong>, restan máximo <strong className="text-slate-900 font-bold">100 puntos en el Periodo 4</strong>. Quienes acumulen menos de 200 puntos pierden la asignatura por imposibilidad matemática. Pierden el año quienes reprueben 2 o más asignaturas (&lt;300 pts).
                                 </p>
                             </div>
 
@@ -1186,7 +1187,7 @@ export default function AcademicStats() {
                                         setActiveTab('year_projection');
                                         setYearProjectionSubTab('lost');
                                     }}
-                                    className="px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-600/30 flex items-center gap-2.5 transition active-press"
+                                    className="px-4 py-3 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-600/30 flex items-center gap-2.5 transition active-press cursor-pointer border border-rose-500/20"
                                 >
                                     <span className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center text-xs font-black">
                                         {yearLostStudents.length}
@@ -1200,7 +1201,7 @@ export default function AcademicStats() {
                                         setActiveTab('year_projection');
                                         setYearProjectionSubTab('risk');
                                     }}
-                                    className="px-4 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-2xl font-black text-xs shadow-lg shadow-amber-500/30 flex items-center gap-2.5 transition active-press"
+                                    className="px-4 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-2xl font-black text-xs shadow-lg shadow-amber-500/30 flex items-center gap-2.5 transition active-press cursor-pointer border border-amber-300/40"
                                 >
                                     <span className="w-6 h-6 rounded-full bg-slate-950/15 flex items-center justify-center text-xs font-black">
                                         {yearRiskStudents.length}
