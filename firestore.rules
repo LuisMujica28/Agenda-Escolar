@@ -15,7 +15,8 @@ service cloud.firestore {
     function isInstitutionalDomain() {
       return isAuthenticated() && 
         (request.auth.token.email.matches('.*@inas[.]edu[.]co$') || 
-         request.auth.token.email == 'admin@colegio.com');
+         request.auth.token.email == 'admin@colegio.com' ||
+         request.auth.token.email == 'digaluju@gmail.com');
     }
 
     // Obtener los datos del usuario en la colección 'users'
@@ -26,7 +27,7 @@ service cloud.firestore {
     // Verificar rol de Administrador
     function isAdmin() {
       return isInstitutionalDomain() && 
-        (getUserData().role == 'admin' || request.auth.token.email == 'admin@colegio.com');
+        (getUserData().role == 'admin' || request.auth.token.email == 'admin@colegio.com' || request.auth.token.email == 'digaluju@gmail.com');
     }
 
     // Verificar rol de Docente

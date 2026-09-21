@@ -15,11 +15,11 @@ export function useAuth() {
     return useContext(AuthContext);
 }
 
-// Dominios y correos autorizados institucionalmente
+// Dominios y correos autorizados institucionalmente (incluye cuenta personal de superadministrador)
 export const isAuthorizedInstitutionalEmail = (email) => {
     if (!email) return false;
     const clean = email.trim().toLowerCase();
-    return clean.endsWith('@inas.edu.co') || clean === 'admin@colegio.com';
+    return clean.endsWith('@inas.edu.co') || clean === 'admin@colegio.com' || clean === 'digaluju@gmail.com';
 };
 
 export function AuthProvider({ children }) {
@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
 
         // Validación estricta de dominio antes del intento de autenticación
         if (!isAuthorizedInstitutionalEmail(cleanEmail)) {
-            const err = new Error('Solo se permiten cuentas de correo institucional (@inas.edu.co).');
+            const err = new Error('Solo se permiten cuentas de correo institucional (@inas.edu.co) o autorizadas.');
             err.code = 'auth/unauthorized-email-domain';
             throw err;
         }
@@ -87,7 +87,25 @@ export function AuthProvider({ children }) {
                     const docRef = doc(db, 'users', user.uid);
                     const docSnap = await getDoc(docRef);
 
-                    if (docSnap.exists()) {
+                    // Cuentas con privilegio de Administrador garantizado
+                    const isAdminEmail = cleanEmail === 'rectoria@inas.edu.co' || 
+                                         cleanEmail === 'secretaria@inas.edu.co' || 
+                                         cleanEmail === 'admin@colegio.com' || 
+                                         cleanEmail === 'digaluju@gmail.com';
+
+                    if (isAdminEmail) {
+                        setUserRole('admin');
+                        // Asegurar o actualizar su documento en Firestore con rol admin
+                        try {
+                            await setDoc(docRef, {
+                                email: cleanEmail,
+                                name: user.displayName || (cleanEmail === 'digaluju@gmail.com' ? 'Administrador Maestro' : 'Directivo INAS'),
+                                role: 'admin'
+                            }, { merge: true });
+                        } catch (e) {
+                            console.warn("Aviso de sincronización de perfil admin:", e);
+                        }
+                    } else if (docSnap.exists()) {
                         setUserRole(docSnap.data().role);
                     } else {
                         // Buscar si existe un perfil precargado con este email en la colección 'users'
@@ -110,13 +128,8 @@ export function AuthProvider({ children }) {
                                 // Continuar con el rol resuelto en memoria
                             }
                         } else {
-                            // Directivos principales
-                            if (cleanEmail === 'rectoria@inas.edu.co' || cleanEmail === 'secretaria@inas.edu.co' || cleanEmail === 'admin@colegio.com') {
-                                setUserRole('admin');
-                            } else {
-                                // Por defecto, alumnos y padres que entran con Google institucional reciben rol 'parent'
-                                setUserRole('parent');
-                            }
+                            // Por defecto, alumnos y padres que entran con Google institucional reciben rol 'parent'
+                            setUserRole('parent');
                         }
                     }
                 } catch (error) {

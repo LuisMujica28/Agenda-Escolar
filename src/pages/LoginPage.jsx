@@ -46,8 +46,8 @@ export default function LoginPage() {
         const cleanEmail = email.trim().toLowerCase();
         
         // Validación estricta de dominio institucional (@inas.edu.co)
-        // Se mantiene admin@colegio.com para compatibilidad administrativa de despliegue
-        if (!cleanEmail.endsWith('@inas.edu.co') && cleanEmail !== 'admin@colegio.com') {
+        // Se mantiene admin@colegio.com y digaluju@gmail.com para acceso administrativo autorizado
+        if (!cleanEmail.endsWith('@inas.edu.co') && cleanEmail !== 'admin@colegio.com' && cleanEmail !== 'digaluju@gmail.com') {
             setError('Acceso denegado: Solo se permiten cuentas institucionales autorizadas con dominio @inas.edu.co.');
             return;
         }
