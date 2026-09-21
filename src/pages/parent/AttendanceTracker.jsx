@@ -115,11 +115,11 @@ export default function AttendanceTracker() {
     };
 
     return (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
             {/* Header del estudiante */}
-            <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-50 border border-slate-200">
+            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 shrink-0 shadow-2xs">
                         <img 
                             src={getStudentPhoto(student.photo_url)} 
                             alt="Student" 
@@ -127,97 +127,97 @@ export default function AttendanceTracker() {
                             onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
                         />
                     </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-800">
+                    <div className="min-w-0 flex-1 text-left">
+                        <h2 className="text-base sm:text-lg font-black text-gray-800 truncate leading-tight">
                             {student.lastName && student.firstName 
                                 ? `${student.lastName} ${student.firstName}` 
                                 : student.name}
                         </h2>
-                        <p className="text-sm text-gray-500">Curso: {student.grade} | Control de Asistencia</p>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">Curso: <strong className="text-gray-700">{student.grade}</strong> | Control de Asistencia</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="text-right">
-                        <span className="text-xs text-gray-400 font-semibold uppercase">Tasa de Asistencia</span>
-                        <p className="text-2xl font-extrabold text-primary">{attendanceRate}%</p>
-                    </div>
+                <div className="w-full sm:w-auto flex sm:flex-col items-center justify-between sm:text-right bg-slate-50 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none border border-slate-100 sm:border-0 shrink-0">
+                    <span className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wider">Tasa de Asistencia</span>
+                    <p className="text-xl sm:text-2xl font-black text-indigo-600 leading-tight">{attendanceRate}%</p>
                 </div>
             </div>
 
             {/* Cuadrículas de Estadísticas */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
-                    <p className="text-xs text-gray-400 font-bold uppercase mb-1">Presentes</p>
-                    <p className="text-xl font-extrabold text-green-600">{presents}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs text-center">
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase mb-0.5">Presentes</p>
+                    <p className="text-xl sm:text-2xl font-black text-emerald-600">{presents}</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
-                    <p className="text-xs text-gray-400 font-bold uppercase mb-1">Tardes</p>
-                    <p className="text-xl font-extrabold text-yellow-600">{lates}</p>
+                <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs text-center">
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase mb-0.5">Tardes</p>
+                    <p className="text-xl sm:text-2xl font-black text-amber-600">{lates}</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
-                    <p className="text-xs text-gray-400 font-bold uppercase mb-1">Faltas</p>
-                    <p className="text-xl font-extrabold text-red-600">{absences}</p>
+                <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs text-center">
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase mb-0.5">Faltas</p>
+                    <p className="text-xl sm:text-2xl font-black text-rose-600">{absences}</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
-                    <p className="text-xs text-gray-400 font-bold uppercase mb-1">Justificadas</p>
-                    <p className="text-xl font-extrabold text-blue-600">{excused}</p>
+                <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs text-center">
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase mb-0.5">Justificadas</p>
+                    <p className="text-xl sm:text-2xl font-black text-blue-600">{excused}</p>
                 </div>
             </div>
 
             {/* Listado de Historial */}
-            <h3 className="text-lg font-bold text-gray-800 mb-4 px-1 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                    <Calendar size={20} className="text-primary" /> Historial de Novedades
-                </span>
-                <span className="text-xs font-semibold text-gray-400">
-                    {absences + lates + excused} novedad(es) registrada(s)
-                </span>
-            </h3>
+            <div className="space-y-3">
+                <h3 className="text-base sm:text-lg font-black text-gray-800 px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-left">
+                    <span className="flex items-center gap-2">
+                        <Calendar size={18} className="text-indigo-600 shrink-0" /> Historial de Novedades
+                    </span>
+                    <span className="text-[11px] sm:text-xs font-bold text-gray-400">
+                        {absences + lates + excused} novedad(es) registrada(s)
+                    </span>
+                </h3>
 
-            {attendance.filter(r => r.status !== 'PRESENT').length === 0 ? (
-                <div className="text-center py-10 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <CheckCircle2 className="mx-auto text-emerald-500 mb-2" size={36} />
-                    <h4 className="font-bold text-gray-800">¡Sin novedades de inasistencia!</h4>
-                    <p className="text-xs text-gray-500 mt-1">El estudiante se encuentra al día y no presenta reportes de faltas o retardos.</p>
-                </div>
-            ) : (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
-                    {attendance
-                        .filter(r => r.status !== 'PRESENT')
-                        .map((record) => {
-                            const config = statusConfig[record.status] || { label: record.status, bg: 'bg-gray-100 text-gray-800 border-gray-200', icon: null };
-                            
-                            return (
-                                <div key={record.id} className="p-4 sm:px-6 hover:bg-gray-50/50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                    <div className="space-y-1">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className="font-semibold text-gray-800">
-                                                {formatRecordDate(record)}
-                                            </span>
-                                            {record.time_str && (
-                                                <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
-                                                    <Clock size={12} />
-                                                    {record.time_str}
+                {attendance.filter(r => r.status !== 'PRESENT').length === 0 ? (
+                    <div className="text-center py-10 sm:py-12 bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <CheckCircle2 className="mx-auto text-emerald-500 mb-2" size={32} />
+                        <h4 className="font-bold text-gray-800 text-sm sm:text-base">¡Sin novedades de inasistencia!</h4>
+                        <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">El estudiante se encuentra al día y no presenta reportes de faltas o retardos.</p>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
+                        {attendance
+                            .filter(r => r.status !== 'PRESENT')
+                            .map((record) => {
+                                const config = statusConfig[record.status] || { label: record.status, bg: 'bg-gray-100 text-gray-800 border-gray-200', icon: null };
+                                
+                                return (
+                                    <div key={record.id} className="p-3 sm:p-4 hover:bg-gray-50/50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 sm:gap-3 text-left">
+                                        <div className="space-y-1 min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="font-bold text-gray-800 text-xs sm:text-sm">
+                                                    {formatRecordDate(record)}
                                                 </span>
+                                                {record.time_str && (
+                                                    <span className="text-[11px] text-gray-400 font-semibold flex items-center gap-1">
+                                                        <Clock size={12} />
+                                                        {record.time_str}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {record.excuse_note && (
+                                                <p className="text-xs text-gray-600 italic bg-gray-50 p-2 rounded-xl border border-dashed border-gray-200 mt-1">
+                                                    Motivo: &ldquo;{record.excuse_note}&rdquo;
+                                                </p>
                                             )}
                                         </div>
-                                        {record.excuse_note && (
-                                            <p className="text-xs text-gray-500 italic bg-gray-50 p-2 rounded border border-dashed border-gray-200 mt-1">
-                                                Motivo: &ldquo;{record.excuse_note}&rdquo;
-                                            </p>
-                                        )}
-                                    </div>
 
-                                    <div className={`px-3 py-1 rounded-full border text-xs font-semibold flex items-center gap-1.5 ${config.bg}`}>
-                                        {config.icon}
-                                        {config.label}
+                                        <div className={`px-2.5 py-1 rounded-xl border text-[11px] sm:text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto shrink-0 shadow-2xs ${config.bg}`}>
+                                            {config.icon}
+                                            {config.label}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                </div>
-            )}
+                                );
+                            })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

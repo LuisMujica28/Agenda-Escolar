@@ -154,51 +154,47 @@ export default function StudentObserver() {
                 </div>
             </div>
 
-            {/* Banner de Métricas Rápidas Superior (3 Cards) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+            {/* Banner de Métricas Rápidas Superior (3 Cards en cuadrícula adaptativa) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
                 {/* Card 1: Observaciones registradas */}
-                <div className="bg-white border border-slate-150 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3 text-left">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Eye size={20} />
-                        </div>
-                        <div>
-                            <p className="text-[9.5px] font-bold text-slate-400 uppercase">Observaciones</p>
-                            <p className="text-lg sm:text-xl font-black text-slate-800 leading-tight">{logs.length}</p>
-                            <span className="text-[9px] text-slate-400 font-semibold">Este año escolar</span>
-                        </div>
+                <div className="bg-white border border-slate-150 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-2xs flex items-center gap-2.5 sm:gap-3 text-left">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Eye size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[8.5px] sm:text-[9.5px] font-bold text-slate-400 uppercase truncate">Observaciones</p>
+                        <p className="text-base sm:text-xl font-black text-slate-800 leading-tight">{logs.length}</p>
+                        <span className="text-[8px] sm:text-[9px] text-slate-400 font-semibold truncate block">Año 2026</span>
                     </div>
                 </div>
 
                 {/* Card 2: Última actualización */}
-                <div className="bg-white border border-slate-150 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3 text-left">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <CheckCircle2 size={20} />
-                        </div>
-                        <div>
-                            <p className="text-[9.5px] font-bold text-slate-400 uppercase">Última actualización</p>
-                            <p className="text-xs sm:text-sm font-black text-slate-800 leading-tight">20 de julio de 2026</p>
-                            <span className="text-[9px] text-slate-400 font-semibold">10:45 a. m.</span>
-                        </div>
+                <div className="bg-white border border-slate-150 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-2xs flex items-center gap-2.5 sm:gap-3 text-left">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <CheckCircle2 size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[8.5px] sm:text-[9.5px] font-bold text-slate-400 uppercase truncate">Actualización</p>
+                        <p className="text-xs sm:text-sm font-black text-slate-800 leading-tight truncate">Al día</p>
+                        <span className="text-[8px] sm:text-[9px] text-slate-400 font-semibold truncate block">Sincronizado</span>
                     </div>
                 </div>
 
                 {/* Card 3: Manual de Convivencia */}
-                <div className="bg-white border border-slate-150 rounded-2xl p-3.5 sm:p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left sm:col-span-2 md:col-span-1">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                            <Shield size={20} />
+                <div className="bg-white border border-slate-150 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-2xs flex items-center justify-between gap-2.5 text-left col-span-2 md:col-span-1">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                            <Shield size={18} />
                         </div>
-                        <div>
-                            <p className="text-[9.5px] font-bold text-slate-400 uppercase">Manual Convivencia</p>
-                            <p className="text-xs sm:text-sm font-black text-slate-800 leading-tight">Disponible 2026</p>
-                            <span className="text-[9px] text-slate-400 font-semibold">Reglamento Oficial</span>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[8.5px] sm:text-[9.5px] font-bold text-slate-400 uppercase truncate">Manual Convivencia</p>
+                            <p className="text-xs sm:text-sm font-black text-slate-800 leading-tight truncate">Oficial 2026</p>
+                            <span className="text-[8px] sm:text-[9px] text-slate-400 font-semibold truncate block">Reglamento</span>
                         </div>
                     </div>
                     <button 
                         onClick={() => setShowManualModal(true)}
-                        className="border border-indigo-200 text-indigo-600 font-extrabold text-[10.5px] px-3 py-1.5 rounded-xl hover:bg-indigo-50 transition shrink-0 flex items-center justify-center gap-1 shadow-2xs w-full sm:w-auto"
+                        className="border border-indigo-200 text-indigo-600 font-extrabold text-[10.5px] px-3 py-1.5 rounded-xl hover:bg-indigo-50 transition shrink-0 flex items-center justify-center gap-1 shadow-2xs touch-target"
                     >
                         <BookOpen size={12} /> Ver Manual
                     </button>
@@ -433,10 +429,10 @@ export default function StudentObserver() {
             {/* Modal para ver el Manual de Convivencia en Línea */}
             {showManualModal && (
                 <div 
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
                     onClick={(e) => { if (e.target === e.currentTarget) setShowManualModal(false); }}
                 >
-                    <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col gap-4 animate-scale-in max-h-[85vh] text-left">
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col gap-3 sm:gap-4 animate-scale-in max-h-[90dvh] text-left">
                         <div className="flex justify-between items-center border-b pb-3 shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
