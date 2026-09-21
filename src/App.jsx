@@ -373,34 +373,38 @@ function Layout({ children }) {
       )}
 
       {/* Sidebar Mobile Navigation */}
-      <aside className={`fixed top-0 bottom-0 left-0 w-64 bg-slate-900 text-white z-50 transform transition-transform duration-300 ease-out md:hidden flex flex-col ${
+      <aside className={`fixed top-0 bottom-0 left-0 w-72 max-w-[80vw] h-[100dvh] bg-slate-900 text-white z-50 transform transition-transform duration-300 ease-out md:hidden flex flex-col shadow-2xl ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-          <div className="flex items-center gap-2.5">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40 pt-safe">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md border border-white/40 ring-1 ring-indigo-500/30">
               <img src="/Escudo1.png" alt="Escudo Institucional" className="w-full h-full object-contain" />
             </div>
-            <span className="text-[9px] text-slate-100 font-black tracking-wide uppercase text-left leading-tight">
+            <span className="text-[9px] text-slate-100 font-black tracking-wide uppercase text-left leading-tight truncate">
               INSTITUTO NUEVA AMÉRICA DE SUBA
             </span>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-slate-400 hover:text-white">
+          <button 
+            onClick={() => setIsSidebarOpen(false)} 
+            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition min-w-[40px] min-h-[40px] flex items-center justify-center"
+            aria-label="Cerrar menú"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 px-3.5 py-4 space-y-1.5 overflow-y-auto">
           {renderNavLinks()}
         </nav>
 
         {/* Imagen transparente sin fondo INAS.png Mobile */}
-        <div className="py-0 px-2 text-center flex items-center justify-center -mt-2 -mb-2">
-          <img src="/INAS.png" alt="INAS" className="w-52 h-auto max-h-20 object-contain drop-shadow-md" />
+        <div className="py-1 px-3 text-center flex items-center justify-center">
+          <img src="/INAS.png" alt="INAS" className="w-44 h-auto max-h-16 object-contain drop-shadow-md" />
         </div>
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950/60 space-y-3">
-          <div className="flex items-center gap-2.5 px-2 text-left">
+        <div className="p-4 border-t border-slate-800 bg-slate-950/60 space-y-3 pb-safe">
+          <div className="flex items-center gap-2.5 px-1 text-left">
             <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
               <User size={16} className="text-slate-300" />
             </div>
@@ -413,7 +417,7 @@ function Layout({ children }) {
           </div>
           <button 
             onClick={logout} 
-            className="w-full flex items-center justify-center gap-2 bg-slate-850 hover:bg-red-950/40 hover:text-red-400 px-3 py-2.5 rounded-xl text-xs font-semibold transition text-slate-300 border border-slate-800"
+            className="w-full flex items-center justify-center gap-2 bg-slate-850 hover:bg-red-950/40 hover:text-red-400 px-3 py-2.5 rounded-xl text-xs font-semibold transition text-slate-300 border border-slate-800 min-h-[42px]"
           >
             <LogOut size={14} /> Cerrar Sesión
           </button>
@@ -423,40 +427,40 @@ function Layout({ children }) {
       {/* Main Content Area (con padding izquierdo correspondiente a la barra lateral fija) */}
       <div className="flex-1 flex flex-col min-w-0 md:pl-64">
         {/* Top Header Bar con Glassmorphism */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-xs transition-all">
-          <div className="flex items-center gap-3">
+        <header className="h-14 sm:h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-3 sm:px-6 sticky top-0 z-20 shadow-xs transition-all pt-safe">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-xl text-gray-600 md:hidden transition active:scale-95"
+              className="p-2 hover:bg-gray-100 rounded-xl text-gray-600 md:hidden transition active:scale-95 min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0"
               aria-label="Abrir menú de navegación"
             >
               <Menu size={22} />
             </button>
-            <h2 className="text-xs sm:text-sm font-bold text-gray-700 truncate">
+            <h2 className="text-xs sm:text-sm font-bold text-gray-700 truncate max-w-[150px] xs:max-w-[220px] sm:max-w-none">
               {location.pathname === '/' ? 'Tablero General' : 'Panel de Control'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition relative">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <button className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition relative min-w-[40px] min-h-[40px] flex items-center justify-center">
               <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full border-2 border-white"></span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-600 rounded-full border-2 border-white"></span>
             </button>
-            <div className="h-8 w-px bg-gray-100 hidden sm:block"></div>
+            <div className="h-7 w-px bg-gray-100 hidden sm:block"></div>
             <div className="flex items-center gap-2 sm:gap-2.5">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-bold text-gray-800 leading-none">{currentUser.displayName || currentUser.email}</p>
                 <span className="text-[9px] text-gray-400 font-bold tracking-wide mt-0.5 inline-block">{getRoleLabel()}</span>
               </div>
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold text-xs shadow-inner">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold text-xs shadow-inner shrink-0">
                 {(currentUser.displayName || currentUser.email).charAt(0).toUpperCase()}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Dynamic Children Panel Responsivo con margen cómodo */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 lg:px-10 lg:py-8 overflow-y-auto min-w-0 relative z-10">
+        {/* Dynamic Children Panel Responsivo con margen cómodo en Mobile (360px-430px) */}
+        <main className="flex-1 px-3 py-3.5 sm:p-6 md:p-8 lg:px-10 lg:py-8 overflow-y-auto min-w-0 relative z-10 pb-safe">
           <div className="w-full max-w-[1440px] mx-auto min-w-0">
             {children}
           </div>

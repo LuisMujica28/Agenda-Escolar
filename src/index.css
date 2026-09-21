@@ -349,6 +349,28 @@ button.apple-glass-blue:hover,
   font-family: 'Great Vibes', cursive;
 }
 
+/* Mobile-First Touch & Ergonomics (360px - 430px) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media print {
   body {
     background: white !important;
