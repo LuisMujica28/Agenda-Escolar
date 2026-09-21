@@ -46,7 +46,7 @@ function Layout({ children }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (!currentUser) return <Navigate to="/login" />;
+  if (!currentUser) return <Navigate to="/login" replace />;
 
   // Helper para verificar ruta activa
   const isActive = (path) => location.pathname === path;
@@ -132,6 +132,8 @@ function Layout({ children }) {
           </>
         );
       case 'parent':
+      case 'student':
+      case 'estudiante':
         return (
           <>
             <Link 
@@ -196,6 +198,15 @@ function Layout({ children }) {
               }`}
             >
               <User size={18} /> Carnet Estudiantil
+            </Link>
+            <Link 
+              to="/admin/stats" 
+              onClick={() => setIsSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
+                isActive('/admin/stats') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+              }`}
+            >
+              <BarChart2 size={18} /> Estadísticas Académicas
             </Link>
           </>
         );
@@ -304,6 +315,8 @@ function Layout({ children }) {
       case 'admin': return 'Administrador';
       case 'teacher': return 'Docente';
       case 'parent': return 'Acudiente';
+      case 'student':
+      case 'estudiante': return 'Estudiante';
       default: return 'Invitado';
     }
   };
@@ -489,7 +502,7 @@ function App() {
           <Route 
             path="/" 
             element={
-              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent']}>
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent', 'student', 'estudiante']}>
                 <Layout><Dashboard /></Layout>
               </ProtectedRoute>
             } 
@@ -497,17 +510,17 @@ function App() {
           <Route 
             path="/messages" 
             element={
-              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent']}>
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent', 'student', 'estudiante']}>
                 <Layout><MessagingPage /></Layout>
               </ProtectedRoute>
             } 
           />
 
-          {/* Rutas Administrativas */}
+          {/* Rutas Administrativas y Académicas Compartidas */}
           <Route 
             path="/admin/stats" 
             element={
-              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent', 'student', 'estudiante']}>
                 <Layout><AcademicStats /></Layout>
               </ProtectedRoute>
             } 
@@ -531,7 +544,7 @@ function App() {
           <Route 
             path="/admin/boletin/:studentId" 
             element={
-              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent', 'student', 'estudiante']}>
                 <Layout><GradesCard /></Layout>
               </ProtectedRoute>
             } 
@@ -539,7 +552,7 @@ function App() {
           <Route 
             path="/admin/boletin-print/:studentId?" 
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent', 'student', 'estudiante']}>
                 <PrintBoletin />
               </ProtectedRoute>
             } 
@@ -615,7 +628,7 @@ function App() {
           <Route 
             path="/parent/observer" 
             element={
-              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+              <ProtectedRoute allowedRoles={['parent', 'student', 'estudiante', 'admin']}>
                 <Layout><StudentObserver /></Layout>
               </ProtectedRoute>
             } 
@@ -623,7 +636,7 @@ function App() {
           <Route 
             path="/parent/id" 
             element={
-              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+              <ProtectedRoute allowedRoles={['parent', 'student', 'estudiante', 'admin']}>
                 <Layout><DigitalID /></Layout>
               </ProtectedRoute>
             } 
@@ -631,7 +644,7 @@ function App() {
           <Route 
             path="/parent/grades" 
             element={
-              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+              <ProtectedRoute allowedRoles={['parent', 'student', 'estudiante', 'admin']}>
                 <Layout><GradesCard /></Layout>
               </ProtectedRoute>
             } 
@@ -639,7 +652,7 @@ function App() {
           <Route 
             path="/parent/attendance" 
             element={
-              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+              <ProtectedRoute allowedRoles={['parent', 'student', 'estudiante', 'admin']}>
                 <Layout><AttendanceTracker /></Layout>
               </ProtectedRoute>
             } 
@@ -647,13 +660,14 @@ function App() {
           <Route 
             path="/parent/tasks" 
             element={
-              <ProtectedRoute allowedRoles={['parent', 'admin']}>
+              <ProtectedRoute allowedRoles={['parent', 'student', 'estudiante', 'admin']}>
                 <Layout><HomeworkCalendar /></Layout>
               </ProtectedRoute>
             } 
           />
 
-          {/* Redirección por defecto */}
+          {/* Alias para /dashboard y Redirección por defecto */}
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

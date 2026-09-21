@@ -895,7 +895,7 @@ export default function AcademicStats() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-3 sm:gap-4">
                     <button 
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/')}
                         className="p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition border border-slate-200/60 active-press shrink-0 min-w-[42px] min-h-[42px] flex items-center justify-center"
                         title="Volver al Tablero Principal"
                     >

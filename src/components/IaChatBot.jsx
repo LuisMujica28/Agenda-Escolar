@@ -19,7 +19,7 @@ export default function IaChatBot() {
 
     // Sugerencias personalizadas según el rol
     const getSuggestions = () => {
-        if (userRole === 'parent') {
+        if (userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') {
             return [
                 '¿Cuál es el horario escolar?',
                 '¿Cómo son los uniformes oficiales?',

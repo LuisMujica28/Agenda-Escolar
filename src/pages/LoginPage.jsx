@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { Sparkles, Loader2, ShieldAlert, KeyRound, Mail } from 'lucide-react';
 
 export default function LoginPage() {
@@ -9,15 +9,20 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const { login, loginWithGoogle } = useAuth();
+    const { currentUser, login, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
+
+    // Si el usuario ya está autenticado, redirigir al panel principal y no ensuciar el historial
+    if (currentUser) {
+        return <Navigate to="/" replace />;
+    }
 
     async function handleGoogleLogin() {
         try {
             setError('');
             setGoogleLoading(true);
             await loginWithGoogle();
-            navigate('/');
+            navigate('/', { replace: true });
         } catch (err) {
             console.error("Error en Google Sign-In:", err);
             if (err.code === 'auth/popup-closed-by-user') {
@@ -56,7 +61,7 @@ export default function LoginPage() {
             setError('');
             setLoading(true);
             await login(cleanEmail, password);
-            navigate('/'); // Redirigir al panel principal
+            navigate('/', { replace: true }); // Redirigir al panel principal
         } catch (err) {
             console.error("Error en autenticación:", err);
             if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {

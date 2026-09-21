@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, query, where } from 'firebase/firestore';
 import { MOCK_STUDENTS } from './mockData.js';
 
 /**
@@ -83,6 +83,36 @@ export async function getStudentForUser(db, currentUser) {
     if (!currentUser) return null;
 
     try {
+        const cleanEmail = (currentUser.email || '').toLowerCase().trim();
+
+        // 0. Búsqueda directa por correo del alumno o acudiente (rápida y exacta)
+        if (cleanEmail) {
+            try {
+                const qStudent = query(collection(db, 'students'), where('email', '==', cleanEmail));
+                const sSnap = await getDocs(qStudent);
+                if (!sSnap.empty) {
+                    const docMatch = sSnap.docs[0];
+                    return { id: docMatch.id, ...docMatch.data() };
+                }
+
+                const qParent = query(collection(db, 'students'), where('email_padre', '==', cleanEmail));
+                const pSnap = await getDocs(qParent);
+                if (!pSnap.empty) {
+                    const docMatch = pSnap.docs[0];
+                    return { id: docMatch.id, ...docMatch.data() };
+                }
+
+                const qParentEmail = query(collection(db, 'students'), where('parent_email', '==', cleanEmail));
+                const peSnap = await getDocs(qParentEmail);
+                if (!peSnap.empty) {
+                    const docMatch = peSnap.docs[0];
+                    return { id: docMatch.id, ...docMatch.data() };
+                }
+            } catch (queryErr) {
+                console.warn("Aviso en búsqueda directa por correo:", queryErr);
+            }
+        }
+
         const allStudentsSnap = await getDocs(collection(db, 'students'));
         if (allStudentsSnap.empty) {
             return MOCK_STUDENTS[0];

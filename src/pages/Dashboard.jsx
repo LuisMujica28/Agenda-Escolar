@@ -704,7 +704,7 @@ export default function Dashboard() {
                 loadedCircs = mergeDemoReads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
             }
 
-            if (userRole === 'parent') {
+            if (userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') {
                 let activeStudent = student;
                 if (!activeStudent) {
                     activeStudent = await getStudentForUser(db, currentUser);
@@ -773,7 +773,7 @@ export default function Dashboard() {
                     loadedCircs = mergeDemoReads(circSnap.docs.map(d => ({ id: d.id, ...d.data() })));
                 }
 
-                if (userRole === 'parent') {
+                if (userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') {
                     const activeStudent = await getStudentForUser(db, currentUser);
                     loadedCircs = loadedCircs.filter(c => {
                         if (!c.target_type) return true;
@@ -787,7 +787,7 @@ export default function Dashboard() {
                 setCirculars(loadedCircs.slice(0, 3));
 
                 // 2. Cargar datos específicos por Rol
-                if (userRole === 'parent') {
+                if (userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') {
                     if (currentUser.uid.startsWith('fake-')) {
                         // Mock Parent Data
                         setStudent(MOCK_STUDENTS[0]);
@@ -1069,18 +1069,22 @@ export default function Dashboard() {
                             <Sparkles size={12} /> Portal Oficial INAS
                         </span>
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight">
-                            {userRole === 'parent' ? `¡Hola, ${currentUser.displayName || 'Acudiente'}!` : `Bienvenido al Panel de Control`}
+                            {(userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') 
+                                ? `¡Hola, ${currentUser.displayName || (userRole === 'parent' ? 'Acudiente' : 'Estudiante')}!` 
+                                : `Bienvenido al Panel de Control`}
                         </h1>
                         <p className="text-indigo-100/90 text-xs sm:text-sm mt-1 sm:mt-1.5 max-w-xl font-medium leading-relaxed">
-                            {userRole === 'parent' && student 
-                                ? `Aquí tienes el resumen del rendimiento, asistencia y tareas de tu hijo(a) ${student.name}.`
+                            {(userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') && student 
+                                ? (userRole === 'student' || userRole === 'estudiante'
+                                    ? `Aquí tienes el resumen de tu rendimiento escolar, notas, asistencia y tareas.`
+                                    : `Aquí tienes el resumen del rendimiento, asistencia y tareas de tu hijo(a) ${student.name}.`)
                                 : userRole === 'teacher'
                                 ? `Accede rápidamente al buscador de alumnos, crea nuevas tareas y anota observaciones.`
                                 : `Gestiona comunicados e importa listas oficiales del plantel de forma masiva.`}
                         </p>
                     </div>
 
-                    {userRole === 'parent' && student && (
+                    {(userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') && student && (
                         <div className="w-full sm:w-auto flex items-center gap-3 bg-white/10 backdrop-blur-md p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-white/15 shadow-sm">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-white/95 border-2 border-indigo-400 shrink-0 shadow-inner">
                                 <img 
@@ -1103,7 +1107,7 @@ export default function Dashboard() {
             </div>
 
             {/* Renderizar según Rol */}
-            {userRole === 'parent' && (
+            {(userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
                     {/* Columna Principal (Anuncios y Tareas) */}
                     <div className="lg:col-span-2 space-y-4 sm:space-y-6">
@@ -1113,9 +1117,13 @@ export default function Dashboard() {
                                 <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
                                     <Bell className="text-indigo-600 shrink-0" size={18} /> Tablón de Anuncios
                                 </h2>
-                                <Link to="/" className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-0.5 touch-target">
+                                <button 
+                                    type="button"
+                                    onClick={handleOpenCircularsModal} 
+                                    className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-0.5 touch-target"
+                                >
                                     Ver todos <ChevronRight size={14} />
-                                </Link>
+                                </button>
                             </div>
 
                             <div className="divide-y divide-white/60">

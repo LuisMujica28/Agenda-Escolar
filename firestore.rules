@@ -35,9 +35,14 @@ service cloud.firestore {
       return isInstitutionalDomain() && (getUserData().role == 'teacher' || isAdmin());
     }
 
-    // Verificar rol de Padre / Acudiente
+    // Verificar rol de Padre / Acudiente / Estudiante
     function isParent() {
-      return isInstitutionalDomain() && (getUserData().role == 'parent' || isAdmin());
+      return isInstitutionalDomain() && (
+        getUserData().role == 'parent' || 
+        getUserData().role == 'student' || 
+        getUserData().role == 'estudiante' || 
+        isAdmin()
+      );
     }
 
     // =====================================================================
@@ -52,14 +57,9 @@ service cloud.firestore {
     }
 
     // 2. ESTUDIANTES (students)
-    // Docentes y Admin pueden ver todos. Padres solo el estudiante asociado a su correo.
+    // Lectura autorizada a la comunidad institucional autenticada (Estadísticas, Directorio, Cuadro de honor y Vinculación)
     match /students/{studentId} {
-      allow read: if isInstitutionalDomain() && (
-        isAdmin() || 
-        isTeacher() || 
-        resource.data.email == request.auth.token.email || 
-        resource.data.parent_email == request.auth.token.email
-      );
+      allow read: if isInstitutionalDomain();
       allow write: if isAdmin();
     }
 

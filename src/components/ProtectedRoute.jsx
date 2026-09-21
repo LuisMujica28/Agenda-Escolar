@@ -24,8 +24,15 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // 3. Si hay roles permitidos especificados, verificar que el rol del usuario coincida
-    if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    // 3. Normalizar roles equivalentes (estudiante, student y parent comparten el portal de familia/alumnos)
+    const normalizedUserRole = (userRole === 'student' || userRole === 'estudiante') ? 'parent' : userRole;
+    const isDirectlyAllowed = allowedRoles.includes(userRole) || 
+                              allowedRoles.includes(normalizedUserRole) || 
+                              (allowedRoles.includes('parent') && (userRole === 'student' || userRole === 'estudiante')) ||
+                              (allowedRoles.includes('student') && userRole === 'parent');
+    const isAdminAllowed = userRole === 'admin';
+
+    if (allowedRoles.length > 0 && !isDirectlyAllowed && !isAdminAllowed) {
         return (
             <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
                 <div className="bg-slate-850 border border-red-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4">
