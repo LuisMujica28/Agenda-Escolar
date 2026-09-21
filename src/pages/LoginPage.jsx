@@ -23,10 +23,15 @@ export default function LoginPage() {
             if (err.code === 'auth/popup-closed-by-user') {
                 // Usuario cerró el popup intencionalmente
                 setError('');
+            } else if (err.code === 'auth/unauthorized-email-domain') {
+                setError(err.message || 'Acceso denegado: Debes iniciar sesión con tu cuenta de correo institucional @inas.edu.co.');
             } else if (err.code === 'auth/unauthorized-domain') {
-                setError('Acceso denegado: Debes iniciar sesión con tu cuenta de correo institucional @inas.edu.co.');
+                const currentHost = window.location.hostname || 'este dominio';
+                setError(`Dominio web no autorizado (${currentHost}): Para probar localmente ingresa mediante http://localhost:${window.location.port || '5173'} o añade "${currentHost}" en Firebase Console > Authentication > Configuración > Dominios autorizados.`);
             } else if (err.code === 'auth/configuration-not-found' || err.code === 'auth/operation-not-allowed') {
                 setError('El proveedor de Google aún no está activo en Firebase Console. Por favor actívalo en Authentication > Sign-in method.');
+            } else if (err.code === 'auth/popup-blocked') {
+                setError('La ventana emergente fue bloqueada por el navegador. Permite las ventanas emergentes (popups) para este sitio.');
             } else {
                 setError(err.message || 'No fue posible iniciar sesión con Google Institucional. Inténtalo de nuevo.');
             }

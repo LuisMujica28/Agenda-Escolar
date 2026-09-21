@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
         // Validación estricta de dominio antes del intento de autenticación
         if (!isAuthorizedInstitutionalEmail(cleanEmail)) {
             const err = new Error('Solo se permiten cuentas de correo institucional (@inas.edu.co).');
-            err.code = 'auth/unauthorized-domain';
+            err.code = 'auth/unauthorized-email-domain';
             throw err;
         }
 
@@ -44,9 +44,8 @@ export function AuthProvider({ children }) {
     async function loginWithGoogle() {
         const provider = new GoogleAuthProvider();
         
-        // Solicitar a Google que filtre prioritariamente las cuentas del dominio escolar
+        // Solicitar a Google que abra el selector limpio de cuentas
         provider.setCustomParameters({
-            hd: 'inas.edu.co',
             prompt: 'select_account'
         });
 
@@ -57,8 +56,8 @@ export function AuthProvider({ children }) {
         // Si el usuario intentó seleccionar una cuenta no institucional (@gmail.com u otra)
         if (!isAuthorizedInstitutionalEmail(cleanEmail)) {
             await signOut(auth);
-            const err = new Error('Acceso denegado: Solo se permiten cuentas institucionales con dominio @inas.edu.co.');
-            err.code = 'auth/unauthorized-domain';
+            const err = new Error(`Acceso denegado: La cuenta (${cleanEmail}) no es institucional. Debes seleccionar tu correo @inas.edu.co.`);
+            err.code = 'auth/unauthorized-email-domain';
             throw err;
         }
 
