@@ -972,7 +972,7 @@ export default function AcademicStats() {
 
             {/* Filtros Generales Supremos */}
             {activeTab !== 'honor_roll_print' && activeTab !== 'diplomas_print' && (
-                <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                <div className="bg-gradient-to-br from-white/90 via-sky-50/40 to-blue-50/50 backdrop-blur-xl p-5 rounded-3xl border border-sky-200/70 shadow-md shadow-sky-950/5 space-y-4">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <Filter size={16} className="text-indigo-600" />
@@ -1017,9 +1017,9 @@ export default function AcademicStats() {
                             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
                                 <button
                                     onClick={() => setSelectedCourse("")}
-                                    className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
+                                    className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition cursor-pointer ${
                                         selectedCourse === ""
-                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                                            ? "apple-glass-blue text-white shadow-md scale-[1.02]"
                                             : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
                                     }`}
                                 >
@@ -1029,9 +1029,9 @@ export default function AcademicStats() {
                                     <button
                                         key={c}
                                         onClick={() => setSelectedCourse(c)}
-                                        className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
+                                        className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition cursor-pointer ${
                                             selectedCourse === c
-                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                                                ? "apple-glass-blue text-white shadow-md scale-[1.02]"
                                                 : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
                                         }`}
                                     >
@@ -1069,37 +1069,37 @@ export default function AcademicStats() {
                         </div>
 
                         {/* 2. Tasa de Aprobación */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                        <div className="apple-glass rounded-3xl p-5 flex flex-col justify-between">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">APROBACIÓN GENERAL</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">APROBACIÓN GENERAL</p>
                                     <h3 className="text-3xl font-black text-slate-800 mt-1.5 tracking-tight">
                                         {stats.passingRate}%
                                     </h3>
                                 </div>
-                                <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-2xs">
                                     <CheckCircle2 size={18} />
                                 </div>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+                            <div className="w-full bg-slate-200/60 rounded-full h-1.5 mt-3 overflow-hidden">
                                 <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${stats.passingRate}%` }}></div>
                             </div>
                         </div>
 
                         {/* 3. Nivel Excelente */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                        <div className="apple-glass rounded-3xl p-5 flex flex-col justify-between">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">EXCELENCIA (≥95)</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">EXCELENCIA (≥95)</p>
                                     <h3 className="text-3xl font-black text-slate-800 mt-1.5 tracking-tight">
                                         {stats.excellentRate}%
                                     </h3>
                                 </div>
-                                <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                                <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shadow-2xs">
                                     <Star size={18} />
                                 </div>
                             </div>
-                            <p className="text-[10.5px] text-slate-400 font-semibold mt-3">
+                            <p className="text-[10.5px] text-slate-500 font-semibold mt-3">
                                 {performanceDistribution.superior} alumnos en Superior
                             </p>
                         </div>
@@ -1161,22 +1161,20 @@ export default function AcademicStats() {
                         </div>
                     </div>
 
-                    {/* Banner Ejecutivo de Proyección de Fin de Año (Fondo Esmerilado / Glassmorphism) */}
-                    <div className="bg-white/80 backdrop-blur-2xl border border-white/90 shadow-xl shadow-slate-900/5 rounded-3xl p-6 relative overflow-hidden ring-1 ring-slate-200/60">
-                        <div className="absolute -top-16 -right-16 w-72 h-72 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                        <div className="absolute -bottom-16 -left-16 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    {/* Banner Ejecutivo de Proyección de Fin de Año (Estilo Armónico Zona Roja & Zona Amarilla) */}
+                    <div className="bg-gradient-to-r from-rose-50/80 via-amber-50/40 to-amber-50/80 border border-rose-200/80 rounded-3xl p-6 shadow-sm relative overflow-hidden">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
                             <div className="space-y-2 max-w-2xl">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="bg-rose-50 text-rose-700 border border-rose-200/80 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs">
+                                    <span className="bg-rose-100/90 text-rose-800 border border-rose-200 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-2xs">
                                         <ShieldAlert size={12} className="text-rose-600" /> Diagnóstico Predictivo Fin de Año
                                     </span>
-                                    <span className="text-slate-500 text-xs font-bold">• Regla Institucional de 300 Puntos</span>
+                                    <span className="text-amber-900/80 text-xs font-bold">• Regla Institucional de 300 Puntos</span>
                                 </div>
                                 <h2 className="text-xl font-black text-slate-900 tracking-tight">
                                     Proyección de Aprobación & Pérdida de Año 2026
                                 </h2>
-                                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                <p className="text-xs text-slate-700 leading-relaxed font-medium">
                                     Con base en las notas de los <strong className="text-slate-900 font-bold">Periodos 1, 2 y 3</strong>, restan máximo <strong className="text-slate-900 font-bold">100 puntos en el Periodo 4</strong>. Quienes acumulen menos de 200 puntos pierden la asignatura por imposibilidad matemática. Pierden el año quienes reprueben 2 o más asignaturas (&lt;300 pts).
                                 </p>
                             </div>
@@ -1187,7 +1185,7 @@ export default function AcademicStats() {
                                         setActiveTab('year_projection');
                                         setYearProjectionSubTab('lost');
                                     }}
-                                    className="px-4 py-3 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-600/30 flex items-center gap-2.5 transition active-press cursor-pointer border border-rose-500/20"
+                                    className="px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl font-black text-xs shadow-md shadow-rose-600/25 flex items-center gap-2.5 transition active-press cursor-pointer border border-rose-600"
                                 >
                                     <span className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center text-xs font-black">
                                         {yearLostStudents.length}
@@ -1201,7 +1199,7 @@ export default function AcademicStats() {
                                         setActiveTab('year_projection');
                                         setYearProjectionSubTab('risk');
                                     }}
-                                    className="px-4 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-2xl font-black text-xs shadow-lg shadow-amber-500/30 flex items-center gap-2.5 transition active-press cursor-pointer border border-amber-300/40"
+                                    className="px-4 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-2xl font-black text-xs shadow-md shadow-amber-500/25 flex items-center gap-2.5 transition active-press cursor-pointer border border-amber-500"
                                 >
                                     <span className="w-6 h-6 rounded-full bg-slate-950/15 flex items-center justify-center text-xs font-black">
                                         {yearRiskStudents.length}
@@ -1216,69 +1214,89 @@ export default function AcademicStats() {
                     {/* Semáforo de Alerta Temprana & Diagnóstico de Materias */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Escala de Desempeño Ley 1290 */}
-                        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
-                            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2 border-b pb-3">
+                        <div className="apple-glass rounded-3xl p-6 space-y-4">
+                            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2 border-b border-white/50 pb-3">
                                 <Target size={18} className="text-indigo-600" /> Escala de Desempeño Escolar
                             </h3>
 
                             <div className="space-y-3 text-xs">
-                                <div className="flex justify-between items-center bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100">
+                                <div className="flex justify-between items-center bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100">
                                     <span className="font-bold text-emerald-800">Superior (95 - 100 pts)</span>
-                                    <span className="font-black text-emerald-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.superior} alumnos</span>
+                                    <span className="font-black text-emerald-700 bg-white/90 px-2.5 py-0.5 rounded-full shadow-2xs">{performanceDistribution.superior} alumnos</span>
                                 </div>
 
-                                <div className="flex justify-between items-center bg-blue-50/60 p-3 rounded-2xl border border-blue-100">
+                                <div className="flex justify-between items-center bg-blue-50/70 p-3 rounded-2xl border border-blue-100">
                                     <span className="font-bold text-blue-800">Alto (80 - 94 pts)</span>
-                                    <span className="font-black text-blue-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.alto} alumnos</span>
+                                    <span className="font-black text-blue-700 bg-white/90 px-2.5 py-0.5 rounded-full shadow-2xs">{performanceDistribution.alto} alumnos</span>
                                 </div>
 
-                                <div className="flex justify-between items-center bg-amber-50/60 p-3 rounded-2xl border border-amber-100">
+                                <div className="flex justify-between items-center bg-amber-50/70 p-3 rounded-2xl border border-amber-100">
                                     <span className="font-bold text-amber-800">Básico (75 - 79 pts)</span>
-                                    <span className="font-black text-amber-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.basico} alumnos</span>
+                                    <span className="font-black text-amber-700 bg-white/90 px-2.5 py-0.5 rounded-full shadow-2xs">{performanceDistribution.basico} alumnos</span>
                                 </div>
 
-                                <div className="flex justify-between items-center bg-rose-50/60 p-3 rounded-2xl border border-rose-100">
+                                <div className="flex justify-between items-center bg-rose-50/70 p-3 rounded-2xl border border-rose-100">
                                     <span className="font-bold text-rose-800">Bajo (&lt; 75 pts)</span>
-                                    <span className="font-black text-rose-700 bg-white px-2.5 py-0.5 rounded-full shadow-xs">{performanceDistribution.bajo} alumnos</span>
+                                    <span className="font-black text-rose-700 bg-white/90 px-2.5 py-0.5 rounded-full shadow-2xs">{performanceDistribution.bajo} alumnos</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Asignatura Estrella vs Asignatura Crítica */}
-                        <div className="lg:col-span-2 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
-                            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2 border-b pb-3">
+                        <div className="lg:col-span-2 apple-glass rounded-3xl p-6 space-y-4">
+                            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2 border-b border-white/50 pb-3">
                                 <Compass size={18} className="text-indigo-600" /> Diagnóstico de Asignaturas (Estrella vs Crítica)
                             </h3>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Materia Estrella */}
                                 {topSubjectObj ? (
-                                    <div className="bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-5 rounded-2xl shadow-md space-y-2">
+                                    <div className="bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white/60 backdrop-blur-md border border-emerald-200/80 p-5 rounded-2xl shadow-xs hover:shadow-md transition space-y-2.5 text-left">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">MATERIA ESTRELLA</span>
-                                            <Star size={18} className="text-amber-300 fill-amber-300" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-100/90 text-emerald-800 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+                                                <Sparkles size={11} className="text-emerald-600" /> MATERIA ESTRELLA
+                                            </span>
+                                            <div className="w-8 h-8 rounded-xl bg-amber-100/90 text-amber-600 flex items-center justify-center shadow-2xs">
+                                                <Star size={16} className="fill-amber-400 text-amber-500" />
+                                            </div>
                                         </div>
-                                        <h4 className="text-lg font-black">{topSubjectObj.subject}</h4>
-                                        <p className="text-2xl font-black tracking-tight">{topSubjectObj.average} <span className="text-xs font-normal">/100 pts</span></p>
-                                        <p className="text-[10px] text-emerald-100 font-medium">Mayor promedio general acumulado</p>
+                                        <div>
+                                            <h4 className="text-lg font-black text-slate-900 tracking-tight">{topSubjectObj.subject}</h4>
+                                            <p className="text-2xl font-black text-emerald-700 tracking-tight mt-1">
+                                                {topSubjectObj.average} <span className="text-xs font-bold text-slate-400">/100 pts</span>
+                                            </p>
+                                        </div>
+                                        <p className="text-[11px] text-emerald-800/80 font-medium flex items-center gap-1">
+                                            <span>✨</span> Mayor promedio general acumulado
+                                        </p>
                                     </div>
                                 ) : (
-                                    <div className="p-4 bg-slate-50 text-slate-400 rounded-2xl text-xs font-bold">Cargando materia...</div>
+                                    <div className="p-5 bg-white/40 border border-slate-200/60 text-slate-400 rounded-2xl text-xs font-bold">Cargando materia...</div>
                                 )}
 
                                 {/* Materia Crítica */}
                                 {lowestSubjectObj ? (
-                                    <div className="bg-gradient-to-br from-rose-600 to-pink-800 text-white p-5 rounded-2xl shadow-md space-y-2">
+                                    <div className="bg-gradient-to-br from-rose-50/80 via-red-50/40 to-white/60 backdrop-blur-md border border-rose-200/80 p-5 rounded-2xl shadow-xs hover:shadow-md transition space-y-2.5 text-left">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">MATERIA CRÍTICA</span>
-                                            <AlertTriangle size={18} className="text-amber-300" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-rose-100/90 text-rose-800 border border-rose-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+                                                <AlertTriangle size={11} className="text-rose-600" /> MATERIA CRÍTICA
+                                            </span>
+                                            <div className="w-8 h-8 rounded-xl bg-rose-100/90 text-rose-600 flex items-center justify-center shadow-2xs">
+                                                <AlertCircle size={16} className="text-rose-600" />
+                                            </div>
                                         </div>
-                                        <h4 className="text-lg font-black">{lowestSubjectObj.subject}</h4>
-                                        <p className="text-2xl font-black tracking-tight">{lowestSubjectObj.average} <span className="text-xs font-normal">/100 pts</span></p>
-                                        <p className="text-[10px] text-rose-100 font-medium">Requiere refuerzo pedagógico prioritario</p>
+                                        <div>
+                                            <h4 className="text-lg font-black text-slate-900 tracking-tight">{lowestSubjectObj.subject}</h4>
+                                            <p className="text-2xl font-black text-rose-700 tracking-tight mt-1">
+                                                {lowestSubjectObj.average} <span className="text-xs font-bold text-slate-400">/100 pts</span>
+                                            </p>
+                                        </div>
+                                        <p className="text-[11px] text-rose-800/80 font-medium flex items-center gap-1">
+                                            <span>⚠️</span> Requiere refuerzo pedagógico prioritario
+                                        </p>
                                     </div>
                                 ) : (
-                                    <div className="p-4 bg-slate-50 text-slate-400 rounded-2xl text-xs font-bold">Cargando materia...</div>
+                                    <div className="p-5 bg-white/40 border border-slate-200/60 text-slate-400 rounded-2xl text-xs font-bold">Cargando materia...</div>
                                 )}
                             </div>
                         </div>

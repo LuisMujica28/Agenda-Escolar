@@ -164,7 +164,7 @@ export default function StudentSearch() {
                                 onClick={() => setSelectedCourse(course)}
                                 className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
                                     isSelected 
-                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                                        ? 'apple-glass-blue text-white shadow-md scale-[1.02]' 
                                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-100'
                                 }`}
                             >

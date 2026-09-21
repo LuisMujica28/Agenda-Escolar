@@ -1108,8 +1108,8 @@ export default function Dashboard() {
                     {/* Columna Principal (Anuncios y Tareas) */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Tablón de Anuncios */}
-                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
-                            <div className="flex justify-between items-center pb-2">
+                        <div className="apple-glass rounded-3xl p-6 space-y-4">
+                            <div className="flex justify-between items-center pb-2 border-b border-white/60">
                                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                     <Bell className="text-indigo-600" size={20} /> Tablón de Anuncios
                                 </h2>
@@ -1118,7 +1118,7 @@ export default function Dashboard() {
                                 </Link>
                             </div>
 
-                            <div className="divide-y divide-gray-100">
+                            <div className="divide-y divide-white/60">
                                 {circulars.length === 0 ? (
                                     <p className="text-sm text-gray-500 py-4 text-center">No hay comunicados recientes.</p>
                                 ) : (
@@ -1128,7 +1128,7 @@ export default function Dashboard() {
                                             <div 
                                                 key={c.id} 
                                                 onClick={() => setSelectedCircular(c)}
-                                                className={`py-4 px-2 first:pt-0 last:pb-0 border-b last:border-b-0 cursor-pointer hover:bg-slate-50/50 rounded-2xl transition-all ${
+                                                className={`py-4 px-3 first:pt-0 last:pb-0 border-b border-white/40 last:border-b-0 cursor-pointer hover:bg-white/40 rounded-2xl transition-all ${
                                                     isRead ? 'opacity-55' : 'opacity-100'
                                                 }`}
                                             >
@@ -1182,8 +1182,8 @@ export default function Dashboard() {
                         </div>
 
                         {/* Tareas Pendientes */}
-                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
-                            <div className="flex justify-between items-center pb-2">
+                        <div className="apple-glass rounded-3xl p-6 space-y-4">
+                            <div className="flex justify-between items-center pb-2 border-b border-white/60">
                                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                     <ClipboardList className="text-indigo-600" size={20} /> Agenda de Tareas Pendientes
                                 </h2>
@@ -1201,19 +1201,19 @@ export default function Dashboard() {
                                     </div>
                                 ) : (
                                     pendingTasks.map(t => (
-                                        <div key={t.id} className="border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/5 p-4 rounded-2xl flex items-center justify-between gap-4 transition shadow-inner">
+                                        <div key={t.id} className="apple-glass-interactive p-4 rounded-2xl flex items-center justify-between gap-4 transition">
                                             <div className="space-y-1">
-                                                <span className="text-[10px] font-extrabold uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">
+                                                <span className="text-[10px] font-extrabold uppercase bg-indigo-500/15 text-indigo-800 px-2 py-0.5 rounded-lg border border-indigo-200/50">
                                                     {t.subject}
                                                 </span>
                                                 <h4 className="text-sm font-bold text-gray-800">{t.title}</h4>
-                                                <p className="text-[10px] text-gray-400 font-semibold">
+                                                <p className="text-[10px] text-gray-500 font-semibold">
                                                     Fecha límite: {new Date(t.due_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                                                 </p>
                                             </div>
                                             <Link 
                                                 to="/parent/tasks"
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl transition shadow-md shrink-0"
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-xl transition shadow-md shrink-0"
                                             >
                                                 <ChevronRight size={16} />
                                             </Link>
@@ -1227,16 +1227,16 @@ export default function Dashboard() {
                     {/* Columna Lateral (Estadísticas y Resumen) */}
                     <div className="space-y-6">
                         {/* Resumen Académico Rápido */}
-                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 pb-1">
+                        <div className="apple-glass rounded-3xl p-6 space-y-4">
+                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 pb-2 border-b border-white/60">
                                 <TrendingUp className="text-indigo-600" size={20} /> Resumen Académico
                             </h2>
 
                             <div className="grid grid-cols-2 gap-4">
                                 {/* Calificaciones */}
-                                <div className="bg-indigo-50/30 border border-indigo-100/50 p-4 rounded-2xl text-center flex flex-col justify-between h-32 relative overflow-hidden group">
+                                <div className="apple-glass-interactive bg-indigo-500/10 border border-indigo-200/50 p-4 rounded-2xl text-center flex flex-col justify-between h-32 relative overflow-hidden group">
                                     <div>
-                                        <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Promedio Notas</p>
+                                        <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Promedio Notas</p>
                                         <p className="text-3xl font-extrabold text-indigo-700 mt-2">{gradesAverage || 'N/A'}</p>
                                     </div>
                                     <Link to="/parent/grades" className="text-[10px] font-bold text-indigo-600 hover:underline mt-2 flex items-center justify-center gap-0.5">
@@ -1245,9 +1245,9 @@ export default function Dashboard() {
                                 </div>
 
                                 {/* Asistencia */}
-                                <div className="bg-emerald-50/30 border border-emerald-100/50 p-4 rounded-2xl text-center flex flex-col justify-between h-32 relative overflow-hidden group">
+                                <div className="apple-glass-interactive bg-emerald-500/10 border border-emerald-200/50 p-4 rounded-2xl text-center flex flex-col justify-between h-32 relative overflow-hidden group">
                                     <div>
-                                        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Asistencia</p>
+                                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Asistencia</p>
                                         <p className="text-3xl font-extrabold text-emerald-700 mt-2">{attendanceRate ? `${attendanceRate}%` : 'N/A'}</p>
                                     </div>
                                     <Link to="/parent/attendance" className="text-[10px] font-bold text-emerald-600 hover:underline mt-2 flex items-center justify-center gap-0.5">
@@ -1258,8 +1258,8 @@ export default function Dashboard() {
                         </div>
 
                         {/* Observador Escolar Rápido */}
-                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
-                            <div className="flex justify-between items-center pb-1">
+                        <div className="apple-glass rounded-3xl p-6 space-y-4">
+                            <div className="flex justify-between items-center pb-2 border-b border-white/60">
                                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                     <FileText className="text-indigo-600" size={20} /> Novedades Observador
                                 </h2>
@@ -1274,14 +1274,14 @@ export default function Dashboard() {
                                 ) : (
                                     latestLogs.map(log => {
                                         const typeColors = {
-                                            'NOTE': 'bg-gray-100 text-gray-700 border-gray-200',
-                                            'ALERT': 'bg-red-50 text-red-700 border-red-100',
-                                            'CONGRATS': 'bg-green-50 text-green-700 border-green-100'
+                                            'NOTE': 'bg-white/40 text-gray-700 border-white/60 backdrop-blur-sm',
+                                            'ALERT': 'bg-rose-50/70 text-rose-800 border-rose-200/60 backdrop-blur-sm',
+                                            'CONGRATS': 'bg-emerald-50/70 text-emerald-800 border-emerald-200/60 backdrop-blur-sm'
                                         };
                                         return (
-                                            <div key={log.id || Math.random()} className={`p-3 rounded-2xl border text-xs leading-relaxed ${typeColors[log.type]}`}>
-                                                <p className="font-semibold line-clamp-2">{log.content}</p>
-                                                <p className="text-[10px] text-gray-400 mt-1 font-semibold">
+                                            <div key={log.id || Math.random()} className={`p-3.5 rounded-2xl border text-xs leading-relaxed shadow-xs ${typeColors[log.type]}`}>
+                                                <p className="font-bold text-gray-800 line-clamp-2">{log.content}</p>
+                                                <p className="text-[10px] text-gray-500 mt-1 font-medium">
                                                     {log.created_at?.seconds 
                                                         ? new Date(log.created_at.seconds * 1000).toLocaleDateString()
                                                         : 'Reciente'}
@@ -1294,10 +1294,10 @@ export default function Dashboard() {
                         </div>
 
                         {/* Carnet Digital Mini */}
-                        <div className="bg-gradient-to-br from-indigo-900 to-indigo-850 rounded-3xl p-5 text-white shadow-lg space-y-4 relative overflow-hidden">
+                        <div className="bg-gradient-to-br from-indigo-900 to-indigo-950 rounded-3xl p-5 text-white shadow-xl space-y-4 relative overflow-hidden border-t border-white/25">
                             <div className="absolute right-0 top-0 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/15">
                                     <User size={18} />
                                 </div>
                                 <div>
@@ -1325,51 +1325,67 @@ export default function Dashboard() {
             {/* Panel de Control para Profesores */}
             {userRole === 'teacher' && (
                 <div className="space-y-6">
-                    {/* Tarjetas de Estadísticas */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                        <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
-                                <Users size={24} />
-                            </div>
+                    {/* Saludo y Métricas Rápidas del Docente (Estilo Apple Glass Azul Oscuro unificado con Administrador) */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 apple-glass-blue p-5 rounded-3xl">
+                        <div className="flex items-center gap-3">
+                            <span className="text-3xl animate-bounce">👋</span>
                             <div className="text-left">
-                                <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Estudiantes del Plantel</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-0.5">{totalStudentsCount}</p>
+                                <h3 className="text-base font-black text-white leading-tight drop-shadow-xs">
+                                    ¡Buenos días, {currentUser?.displayName || 'Docente'}!
+                                </h3>
+                                <p className="text-xs text-blue-100 font-medium mt-0.5">Bienvenido a tu panel de control académico.</p>
                             </div>
                         </div>
 
-                        <div className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
-                                <ClipboardList size={24} />
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full lg:w-auto shrink-0">
+                            {/* Card 1: Estudiantes del Plantel */}
+                            <div className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl flex items-center gap-2.5 hover-elevate transition">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <Users size={16} />
+                                </div>
+                                <div className="leading-tight text-left min-w-0">
+                                    <p className="text-xs font-black text-slate-800">{totalStudentsCount}</p>
+                                    <p className="text-[9px] text-slate-500 font-bold leading-none mt-0.5 truncate">Estudiantes</p>
+                                </div>
                             </div>
-                            <div className="text-left">
-                                <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Mis Tareas Publicadas</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-0.5">{myTasksCount}</p>
-                            </div>
-                        </div>
 
-                        <div 
-                            onClick={handleOpenCircularsModal}
-                            className="bg-white border border-gray-100 rounded-3xl p-5 sm:p-6 flex items-center gap-4 cursor-pointer hover-elevate active-press hover:bg-slate-50/50 shadow-sm"
-                        >
-                            <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
-                                <Bell size={24} />
+                            {/* Card 2: Mis Tareas */}
+                            <div className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl flex items-center gap-2.5 hover-elevate transition">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <ClipboardList size={16} />
+                                </div>
+                                <div className="leading-tight text-left min-w-0">
+                                    <p className="text-xs font-black text-slate-800">{myTasksCount}</p>
+                                    <p className="text-[9px] text-slate-500 font-bold leading-none mt-0.5 truncate">Tareas pub.</p>
+                                </div>
                             </div>
-                            <div className="text-left">
-                                <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Anuncios en el Tablón</p>
-                                <p className="text-2xl font-extrabold text-gray-800 mt-0.5">{circulars.length}</p>
+
+                            {/* Card 3: Anuncios */}
+                            <div 
+                                onClick={handleOpenCircularsModal}
+                                className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl cursor-pointer active-press hover-elevate flex items-center gap-2.5 hover:border-amber-400 transition"
+                                title="Ver anuncios en el tablón"
+                            >
+                                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <Bell size={16} />
+                                </div>
+                                <div className="leading-tight text-left min-w-0">
+                                    <p className="text-xs font-black text-slate-800">{circulars.length}</p>
+                                    <p className="text-[9px] text-slate-500 font-bold leading-none mt-0.5 truncate">Anuncios</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Acciones Rápidas del Profesor */}
-                    <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                        <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <div className="apple-glass rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4">
+                        <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2 pb-2 border-b border-white/60">
                             <Sparkles className="text-indigo-600" size={20} /> Acciones Rápidas del Docente
                         </h2>
                         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
                             <Link 
                                 to="/teacher/daily-attendance" 
-                                className="bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-indigo-600/25 hover-elevate active-press transition"
+                                className="apple-glass-blue text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-lg hover-elevate active-press transition"
                             >
                                 <div className="flex items-center justify-between w-full">
                                     <UserCheck className="text-white group-hover:scale-110 transition-transform" size={26} />
@@ -1377,13 +1393,13 @@ export default function Dashboard() {
                                 </div>
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-black text-white leading-tight">📋 Pase de Lista</h4>
-                                    <p className="text-[10px] text-indigo-100 mt-1 leading-tight font-medium">Llama lista salón por salón y notifica inasistencias por correo.</p>
+                                    <p className="text-[10px] text-blue-100 mt-1 leading-tight font-medium">Llama lista salón por salón y notifica inasistencias por correo.</p>
                                 </div>
                             </Link>
 
                             <button 
                                 onClick={() => setShowQuickObsModal(true)} 
-                                className="bg-amber-600 hover:bg-amber-700 text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-amber-600/25 hover-elevate active-press transition"
+                                className="bg-amber-600 hover:bg-amber-700 text-white p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-md shadow-amber-600/25 hover-elevate active-press transition border-t border-white/20"
                             >
                                 <div className="flex items-center justify-between w-full">
                                     <Zap className="text-white group-hover:scale-110 transition-transform" size={26} />
@@ -1391,13 +1407,13 @@ export default function Dashboard() {
                                 </div>
                                 <div>
                                     <h4 className="text-xs sm:text-sm font-black text-white leading-tight">⚡ Anotación Rápida</h4>
-                                    <p className="text-[10px] text-indigo-100 mt-1 leading-tight font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
+                                    <p className="text-[10px] text-amber-100 mt-1 leading-tight font-medium">Registra retardos, faltas del manual o méritos y notifica a padres.</p>
                                 </div>
                             </button>
 
                             <Link 
                                 to="/teacher/search" 
-                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-indigo-500 transition"
+                                className="apple-glass-interactive p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group transition"
                             >
                                 <Users className="text-indigo-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
@@ -1408,7 +1424,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/teacher/create-task" 
-                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-emerald-500 transition"
+                                className="apple-glass-interactive p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group transition"
                             >
                                 <ClipboardList className="text-emerald-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
@@ -1419,7 +1435,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/teacher/sync-grades" 
-                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-blue-500 transition"
+                                className="apple-glass-interactive p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group transition"
                             >
                                 <BookOpen className="text-blue-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
@@ -1430,7 +1446,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/messages" 
-                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-amber-500 transition"
+                                className="apple-glass-interactive p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group transition"
                             >
                                 <MessageSquare className="text-amber-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
@@ -1441,7 +1457,7 @@ export default function Dashboard() {
 
                             <Link 
                                 to="/admin/stats" 
-                                className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group shadow-xs hover-elevate active-press hover:border-indigo-500 transition"
+                                className="apple-glass-interactive p-4 sm:p-5 rounded-2xl text-left flex flex-col justify-between min-h-[140px] sm:h-36 group transition"
                             >
                                 <BarChart2 className="text-indigo-600 group-hover:scale-110 transition-transform" size={26} />
                                 <div>
@@ -1459,78 +1475,78 @@ export default function Dashboard() {
                 <div className="space-y-6">
 
                     {/* Saludo y Métricas Rápidas */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/95 backdrop-blur-md p-5 rounded-3xl border border-slate-100 shadow-md shadow-slate-900/5">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 apple-glass-blue p-5 rounded-3xl">
                         <div className="flex items-center gap-3">
                             <span className="text-3xl animate-bounce">👋</span>
                             <div className="text-left">
-                                <h3 className="text-base font-black text-slate-800 leading-tight">¡Buenos días, Administrador!</h3>
-                                <p className="text-xs text-slate-500 font-medium mt-0.5">Aquí tienes un resumen de lo más importante hoy.</p>
+                                <h3 className="text-base font-black text-white leading-tight drop-shadow-xs">¡Buenos días, Administrador!</h3>
+                                <p className="text-xs text-blue-100 font-medium mt-0.5">Aquí tienes un resumen de lo más importante hoy.</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 w-full lg:w-auto shrink-0">
                             {/* Card 1: Alumnos Totales */}
-                            <div className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200/60 text-indigo-600 flex items-center justify-center shrink-0">
+                            <div className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl flex items-center gap-2.5 hover-elevate transition">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
                                     <Users size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
                                     <p className="text-xs font-black text-slate-800">{totalStudentsCount}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Alumnos totales</p>
+                                    <p className="text-[9px] text-slate-500 font-bold leading-none mt-0.5 truncate">Alumnos totales</p>
                                 </div>
                             </div>
 
                             {/* Card 2: Cuentas Registradas */}
-                            <div className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center shrink-0">
+                            <div className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl flex items-center gap-2.5 hover-elevate transition">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
                                     <Users size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
                                     <p className="text-xs font-black text-slate-800">{totalUsersCount}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Cuentas reg.</p>
+                                    <p className="text-[9px] text-slate-500 font-bold leading-none mt-0.5 truncate">Cuentas reg.</p>
                                 </div>
                             </div>
 
                             {/* Card 3: Circulares Publicadas */}
                             <div 
                                 onClick={handleOpenCircularsModal}
-                                className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-amber-500 transition active-press flex items-center gap-2.5"
+                                className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl cursor-pointer active-press hover-elevate flex items-center gap-2.5 hover:border-amber-400 transition"
                                 title="Ver historial de circulares"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/60 text-amber-600 flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
                                     <Bell size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
                                     <p className="text-xs font-black text-slate-800">{circulars.length}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Circulares pub.</p>
+                                    <p className="text-[9px] text-slate-500 font-bold leading-none mt-0.5 truncate">Circulares pub.</p>
                                 </div>
                             </div>
 
                             {/* Card 4: Planillas Importadas */}
                             <div 
                                 onClick={() => navigate('/teacher/sync-grades')}
-                                className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs cursor-pointer hover:border-indigo-500 transition active-press flex items-center gap-2.5"
+                                className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl cursor-pointer active-press hover-elevate flex items-center gap-2.5 hover:border-indigo-400 transition"
                                 title="Ir a Planilla Digital"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200/60 text-indigo-600 flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
                                     <FileText size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
                                     <p className="text-xs font-black text-slate-800">{importPlanillasCount}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 truncate">Planillas imp.</p>
+                                    <p className="text-[9px] text-slate-500 font-bold leading-none mt-0.5 truncate">Planillas imp.</p>
                                 </div>
                             </div>
 
                             {/* Card 5: Reloj / Fecha */}
-                            <div className="bg-slate-50/80 hover:bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs transition flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0">
+                            <div className="bg-white border border-white/90 shadow-sm p-2.5 rounded-2xl flex items-center gap-2.5 hover-elevate transition">
+                                <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
                                     <CalendarIcon size={16} />
                                 </div>
                                 <div className="leading-tight text-left min-w-0">
-                                    <p className="text-[9px] text-slate-700 font-black whitespace-nowrap leading-tight">
+                                    <p className="text-[9px] text-slate-800 font-black whitespace-nowrap leading-tight">
                                         {currentTime.split(' de ')[0] || 'Hoy'}
                                     </p>
-                                    <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+                                    <p className="text-[9px] text-slate-500 font-bold mt-0.5">
                                         {currentTime.split(' a la')[1] || currentTime.split(' ').slice(-2).join(' ') || ''}
                                     </p>
                                 </div>
@@ -1542,15 +1558,15 @@ export default function Dashboard() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
                         {/* Columna 1: Accesos Rápidos */}
-                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-slate-100 flex flex-col gap-4.5">
-                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                        <div className="apple-glass rounded-3xl p-6 flex flex-col gap-4.5">
+                            <div className="flex justify-between items-center pb-3 border-b border-white/50">
                                 <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2.5">
                                     <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
                                         <Sparkles size={15} />
                                     </span>
                                     Accesos rápidos
                                 </h3>
-                                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-white/40 text-slate-700 border border-white/60 shadow-2xs">
                                     5 acciones
                                 </span>
                             </div>
@@ -1559,7 +1575,7 @@ export default function Dashboard() {
                                 {/* Nueva Circular */}
                                 <Link 
                                     to="/admin/new-circular"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-indigo-300 border-l-4 border-l-indigo-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl apple-glass-interactive !border-l-4 !border-l-indigo-600 hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-indigo-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-indigo-600/20 group-hover:scale-105 transition-transform">
@@ -1570,7 +1586,7 @@ export default function Dashboard() {
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Redacta y publica una nueva circular</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white/50 border border-white/60 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white flex items-center justify-center transition-all text-slate-500">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1578,7 +1594,7 @@ export default function Dashboard() {
                                 {/* Importar CSV */}
                                 <Link 
                                     to="/admin/import"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-emerald-300 border-l-4 border-l-emerald-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl apple-glass-interactive !border-l-4 !border-l-emerald-600 hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-emerald-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-emerald-600/20 group-hover:scale-105 transition-transform">
@@ -1589,7 +1605,7 @@ export default function Dashboard() {
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Carga estudiantes desde un archivo</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-emerald-600 group-hover:border-emerald-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white/50 border border-white/60 group-hover:bg-emerald-600 group-hover:border-emerald-600 group-hover:text-white flex items-center justify-center transition-all text-slate-500">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1597,7 +1613,7 @@ export default function Dashboard() {
                                 {/* Planilla Digital de Notas */}
                                 <Link 
                                     to="/teacher/sync-grades"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-blue-300 border-l-4 border-l-blue-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl apple-glass-interactive !border-l-4 !border-l-blue-600 hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-blue-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-blue-600/20 group-hover:scale-105 transition-transform">
@@ -1608,7 +1624,7 @@ export default function Dashboard() {
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Importa o gestiona las calificaciones</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white/50 border border-white/60 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:text-white flex items-center justify-center transition-all text-slate-500">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1616,7 +1632,7 @@ export default function Dashboard() {
                                 {/* Planilla de Control */}
                                 <Link 
                                     to="/planilla-print"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-amber-300 border-l-4 border-l-amber-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl apple-glass-interactive !border-l-4 !border-l-amber-600 hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-amber-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-amber-600/20 group-hover:scale-105 transition-transform">
@@ -1627,7 +1643,7 @@ export default function Dashboard() {
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Genera e imprime asistencias</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-amber-600 group-hover:border-amber-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white/50 border border-white/60 group-hover:bg-amber-600 group-hover:border-amber-600 group-hover:text-white flex items-center justify-center transition-all text-slate-500">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1635,7 +1651,7 @@ export default function Dashboard() {
                                 {/* Estadísticas Académicas */}
                                 <Link 
                                     to="/admin/stats"
-                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-indigo-300 border-l-4 border-l-indigo-600 shadow-2xs hover:shadow-sm hover-elevate active-press transition group"
+                                    className="flex items-center justify-between p-3 rounded-2xl apple-glass-interactive !border-l-4 !border-l-indigo-600 hover-elevate active-press transition group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-gradient-to-br from-slate-950 to-indigo-700 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-indigo-700/20 group-hover:scale-105 transition-transform">
@@ -1646,7 +1662,7 @@ export default function Dashboard() {
                                             <p className="text-[10px] text-slate-500 font-medium mt-0.5">Métricas de rendimiento institucional</p>
                                         </div>
                                     </div>
-                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/60 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white flex items-center justify-center transition-all text-slate-400">
+                                    <div className="w-7 h-7 rounded-lg bg-white/50 border border-white/60 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white flex items-center justify-center transition-all text-slate-500">
                                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </div>
                                 </Link>
@@ -1654,8 +1670,8 @@ export default function Dashboard() {
                         </div>
 
                         {/* Columna 2: Actividad Reciente */}
-                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-md hover:shadow-lg transition-all border border-slate-100 flex flex-col gap-4.5">
-                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                        <div className="apple-glass rounded-3xl p-6 flex flex-col gap-4.5">
+                            <div className="flex justify-between items-center pb-3 border-b border-white/50">
                                 <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2.5">
                                     <span className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-200/60 text-indigo-600 flex items-center justify-center">
                                         <MessageSquare size={16} />
@@ -1664,7 +1680,7 @@ export default function Dashboard() {
                                 </h3>
                                 <button 
                                     onClick={handleOpenCircularsModal}
-                                    className="text-[10px] font-black text-indigo-600 hover:text-white px-2.5 py-1 rounded-full bg-indigo-50 hover:bg-indigo-600 border border-indigo-200/60 transition"
+                                    className="text-[10px] font-black text-indigo-600 hover:text-white px-2.5 py-1 rounded-full bg-white/40 hover:bg-indigo-600 border border-white/60 transition shadow-2xs"
                                 >
                                     Ver todo
                                 </button>
@@ -1672,7 +1688,7 @@ export default function Dashboard() {
                             
                             <div className="flex-1 flex flex-col gap-2.5 justify-start pr-1 overflow-y-auto max-h-[350px]">
                                 {recentActivitiesList.length === 0 ? (
-                                    <p className="text-xs text-slate-400 font-semibold italic text-center py-8">
+                                    <p className="text-xs text-slate-500 font-semibold italic text-center py-8">
                                         Sin actividades recientes en el sistema.
                                     </p>
                                 ) : (
@@ -1694,7 +1710,7 @@ export default function Dashboard() {
                                         };
 
                                         return (
-                                            <div key={act.id} className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-slate-300 transition hover:shadow-xs text-left group">
+                                            <div key={act.id} className="flex items-center gap-3 p-2.5 rounded-2xl apple-glass-interactive text-left group">
                                                 <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${colorClass}`}>
                                                     {renderIcon()}
                                                 </div>
@@ -1702,7 +1718,7 @@ export default function Dashboard() {
                                                     <h5 className="text-xs font-black text-slate-800 truncate group-hover:text-indigo-600 transition-colors">{act.title}</h5>
                                                     <p className="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">{act.subtitle}</p>
                                                 </div>
-                                                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-white border border-slate-200/80 text-slate-600 shrink-0 shadow-2xs">
+                                                <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-white/60 border border-white/60 text-slate-600 shrink-0 shadow-2xs">
                                                     {formatRelativeTime(act.created_at)}
                                                 </span>
                                             </div>
@@ -1793,8 +1809,8 @@ export default function Dashboard() {
                     </div>
 
                     {/* Panel de Control Académico General */}
-                    <div className="bg-white/95 backdrop-blur-md border border-white/80 rounded-3xl p-6 shadow-md shadow-slate-900/5 space-y-6">
-                        <div className="border-b pb-4">
+                    <div className="apple-glass rounded-3xl p-6 space-y-6">
+                        <div className="border-b border-white/50 pb-4">
                             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 <Table className="text-indigo-600" size={22} /> Control Académico General
                             </h2>

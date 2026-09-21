@@ -461,53 +461,52 @@ export default function DailyAttendance() {
         <div className="space-y-6 w-full max-w-[1440px] mx-auto pb-16">
             
             {/* ENCABEZADO PRINCIPAL */}
-            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute right-0 top-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-                <div className="absolute left-1/3 bottom-0 w-60 h-60 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
-
+            <div className="apple-glass-blue rounded-3xl p-5 sm:p-7 shadow-xl relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
                     <div>
-                        <div className="flex items-center gap-2.5 mb-2">
-                            <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-bold tracking-wide uppercase flex items-center gap-1.5">
-                                <Sparkles size={13} className="text-indigo-400" />
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                            <span className="px-3 py-1 bg-white/20 text-white border border-white/30 backdrop-blur-md rounded-full text-xs font-black tracking-wide uppercase flex items-center gap-1.5 shadow-2xs">
+                                <Sparkles size={13} className="text-white" />
                                 INAS • Control Escolar
                             </span>
-                            <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[11px] font-bold">
+                            <span className="px-2.5 py-1 bg-emerald-400/25 text-emerald-100 border border-emerald-300/40 rounded-full text-[11px] font-black shadow-2xs">
                                 Alertas en Tiempo Real
                             </span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-xs">
                             Pase de Lista Diario
                         </h1>
-                        <p className="text-slate-300 text-sm mt-1 max-w-2xl">
+                        <p className="text-blue-100 text-sm mt-1 max-w-2xl font-medium leading-relaxed">
                             Marca las inasistencias y retardos salón por salón. El sistema despacha automáticamente correos institucionales y mensajes a los acudientes.
                         </p>
                     </div>
 
                     {/* Selector de Fecha */}
-                    <div className="flex items-center gap-3 bg-slate-800/80 backdrop-blur border border-slate-700/80 p-2.5 rounded-2xl self-start md:self-auto">
-                        <Calendar size={18} className="text-indigo-400 shrink-0 ml-1" />
+                    <div className="flex items-center gap-3 bg-white border border-white/95 shadow-md p-3 rounded-2xl self-start md:self-auto hover-elevate transition">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-2xs">
+                            <Calendar size={18} />
+                        </div>
                         <div className="flex flex-col">
                             <label className="text-[10px] uppercase font-bold text-slate-400 leading-none">Fecha de Control</label>
                             <input 
                                 type="date"
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
-                                className="bg-transparent text-white font-bold text-sm focus:outline-none cursor-pointer mt-0.5"
+                                className="bg-transparent text-slate-900 font-black text-sm focus:outline-none cursor-pointer mt-0.5"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* Pestañas de Vista: Pase de Lista vs Consolidado del Día */}
-                <div className="flex items-center gap-2 mt-6 pt-5 border-t border-slate-800/80">
+                <div className="flex items-center gap-2.5 mt-6 pt-5 border-t border-white/20">
                     <button
                         type="button"
                         onClick={() => setMainTab('roll-call')}
-                        className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                        className={`px-4.5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition-all cursor-pointer ${
                             mainTab === 'roll-call'
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                                ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
+                                : 'bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold backdrop-blur-sm'
                         }`}
                     >
                         <UserCheck size={16} />
@@ -516,10 +515,10 @@ export default function DailyAttendance() {
                     <button
                         type="button"
                         onClick={() => setMainTab('daily-summary')}
-                        className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                        className={`px-4.5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition-all cursor-pointer ${
                             mainTab === 'daily-summary'
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                                ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
+                                : 'bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold backdrop-blur-sm'
                         }`}
                     >
                         <ShieldCheck size={16} />
@@ -533,9 +532,9 @@ export default function DailyAttendance() {
                 <div className="space-y-6">
                     
                     {/* BARRA DE SELECCIÓN DE CURSOS RÁPIDOS */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                         <div className="flex items-center justify-between gap-3 mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                                 <Users size={14} className="text-indigo-500" />
                                 Selecciona el Salón a Controlar:
                             </span>
@@ -555,13 +554,13 @@ export default function DailyAttendance() {
                                         onClick={() => setSelectedCourse(courseName)}
                                         className={`px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all flex items-center gap-2 border cursor-pointer ${
                                             isSelected 
-                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/25 scale-[1.02]' 
-                                                : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                ? 'apple-glass-blue text-white shadow-md scale-[1.02]' 
+                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                                         }`}
                                     >
                                         <span>Curso {courseName}</span>
                                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
                                         }`}>
                                             {countInCourse}
                                         </span>
@@ -573,49 +572,49 @@ export default function DailyAttendance() {
 
                     {/* TARJETA DE ESTADÍSTICAS & ACCIONES DEL CURSO */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0 font-extrabold">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 shrink-0 font-extrabold">
                                 <Users size={20} />
                             </div>
                             <div>
                                 <p className="text-[11px] font-bold uppercase text-slate-400">Total Alumnos</p>
-                                <p className="text-xl font-black text-slate-800 dark:text-white leading-tight">{currentCounts.total}</p>
+                                <p className="text-xl font-black text-slate-800 leading-tight">{currentCounts.total}</p>
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl p-4 shadow-sm flex items-center gap-3 bg-emerald-50/20">
-                            <div className="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-extrabold">
+                        <div className="bg-white border border-emerald-200 rounded-2xl p-4 shadow-sm flex items-center gap-3 bg-emerald-50/20">
+                            <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 font-extrabold">
                                 <UserCheck size={20} />
                             </div>
                             <div>
-                                <p className="text-[11px] font-bold uppercase text-emerald-600 dark:text-emerald-400">Presentes</p>
-                                <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 leading-tight">{currentCounts.present}</p>
+                                <p className="text-[11px] font-bold uppercase text-emerald-600">Presentes</p>
+                                <p className="text-xl font-black text-emerald-700 leading-tight">{currentCounts.present}</p>
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/40 rounded-2xl p-4 shadow-sm flex items-center gap-3 bg-rose-50/20">
-                            <div className="w-11 h-11 rounded-xl bg-rose-100 dark:bg-rose-950 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 font-extrabold">
+                        <div className="bg-white border border-rose-200 rounded-2xl p-4 shadow-sm flex items-center gap-3 bg-rose-50/20">
+                            <div className="w-11 h-11 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shrink-0 font-extrabold">
                                 <UserX size={20} />
                             </div>
                             <div>
-                                <p className="text-[11px] font-bold uppercase text-rose-600 dark:text-rose-400">Inasistencias</p>
-                                <p className="text-xl font-black text-rose-700 dark:text-rose-300 leading-tight">{currentCounts.absent}</p>
+                                <p className="text-[11px] font-bold uppercase text-rose-600">Inasistencias</p>
+                                <p className="text-xl font-black text-rose-700 leading-tight">{currentCounts.absent}</p>
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4 shadow-sm flex items-center gap-3 bg-amber-50/20">
-                            <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 font-extrabold">
+                        <div className="bg-white border border-amber-200 rounded-2xl p-4 shadow-sm flex items-center gap-3 bg-amber-50/20">
+                            <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 shrink-0 font-extrabold">
                                 <Clock size={20} />
                             </div>
                             <div>
-                                <p className="text-[11px] font-bold uppercase text-amber-600 dark:text-amber-400">Llegadas Tarde</p>
-                                <p className="text-xl font-black text-amber-700 dark:text-amber-300 leading-tight">{currentCounts.late}</p>
+                                <p className="text-[11px] font-bold uppercase text-amber-600">Llegadas Tarde</p>
+                                <p className="text-xl font-black text-amber-700 leading-tight">{currentCounts.late}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* BARRA DE HERRAMIENTAS RÁPIDAS: BÚSQUEDA Y ACCIÓN MASIVA */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div className="relative w-full sm:w-80">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
                             <input 
@@ -623,7 +622,7 @@ export default function DailyAttendance() {
                                 placeholder="Filtrar por nombre o código..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
                             />
                         </div>
 
@@ -631,7 +630,7 @@ export default function DailyAttendance() {
                             <button
                                 type="button"
                                 onClick={handleMarkAllPresent}
-                                className="px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 w-full sm:w-auto justify-center cursor-pointer"
+                                className="px-3.5 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 w-full sm:w-auto justify-center cursor-pointer"
                             >
                                 <CheckCircle2 size={15} />
                                 Marcar Todos Presentes
@@ -640,22 +639,22 @@ export default function DailyAttendance() {
                     </div>
 
                     {/* LISTA INTERACTIVA DE ESTUDIANTES */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
-                        <div className="p-4 sm:p-5 bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+                        <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
                             <div>
-                                <h3 className="font-extrabold text-slate-800 dark:text-white text-base sm:text-lg">
+                                <h3 className="font-extrabold text-slate-800 text-base sm:text-lg">
                                     Lista de Estudiantes - Grado {selectedCourse}
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <p className="text-xs text-slate-500 mt-0.5">
                                     Toca el botón correspondiente para registrar el estado de cada estudiante
                                 </p>
                             </div>
-                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
                                 {courseStudents.length} Alumnos
                             </span>
                         </div>
 
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        <div className="divide-y divide-slate-100">
                             {courseStudents.length === 0 ? (
                                 <div className="py-12 text-center text-slate-400">
                                     <Users size={36} className="mx-auto mb-2 opacity-50" />
@@ -681,34 +680,34 @@ export default function DailyAttendance() {
                                             key={student.id} 
                                             className={`p-4 sm:p-5 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
                                                 isAbsent 
-                                                    ? 'bg-rose-50/40 dark:bg-rose-950/20 border-l-4 border-rose-500' 
+                                                    ? 'bg-rose-50/40 border-l-4 border-rose-500' 
                                                     : isLate 
-                                                    ? 'bg-amber-50/40 dark:bg-amber-950/20 border-l-4 border-amber-500'
+                                                    ? 'bg-amber-50/40 border-l-4 border-amber-500'
                                                     : isExcused
-                                                    ? 'bg-blue-50/40 dark:bg-blue-950/20 border-l-4 border-blue-500'
-                                                    : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30'
+                                                    ? 'bg-blue-50/40 border-l-4 border-blue-500'
+                                                    : 'hover:bg-slate-50/80'
                                             }`}
                                         >
                                             {/* Datos del estudiante y acudiente */}
                                             <div className="flex items-start gap-3.5 min-w-0 flex-1">
                                                 <div className={`w-9 h-9 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 ${
-                                                    isAbsent ? 'bg-rose-200 text-rose-800' : isLate ? 'bg-amber-200 text-amber-800' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                                    isAbsent ? 'bg-rose-200 text-rose-800' : isLate ? 'bg-amber-200 text-amber-800' : 'bg-slate-100 text-slate-600'
                                                 }`}>
                                                     {idx + 1}
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center gap-2">
-                                                        <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm sm:text-base leading-snug">
+                                                        <h4 className="font-extrabold text-slate-800 text-sm sm:text-base leading-snug">
                                                             {displayName}
                                                         </h4>
-                                                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500">
                                                             {student.id_code || 'SIN CÓDIGO'}
                                                         </span>
                                                     </div>
 
                                                     {/* Datos de contacto de los padres */}
-                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
                                                         <span className="flex items-center gap-1 font-medium">
                                                             <Mail size={12} className={parentEmail ? 'text-indigo-500' : 'text-slate-300'} />
                                                             {parentEmail ? (
@@ -750,7 +749,7 @@ export default function DailyAttendance() {
                                                                 placeholder={isAbsent ? "Motivo de inasistencia (opcional)..." : "Hora de ingreso / motivo del retardo..."}
                                                                 value={item.note || ''}
                                                                 onChange={(e) => handleNoteChange(student.id, e.target.value)}
-                                                                className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-inner"
+                                                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-inner text-slate-900"
                                                             />
                                                         </div>
                                                     )}
@@ -766,7 +765,7 @@ export default function DailyAttendance() {
                                                     className={`px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer ${
                                                         currentStatus === 'PRESENT'
                                                             ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 ring-2 ring-emerald-600 ring-offset-1'
-                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600'
                                                     }`}
                                                 >
                                                     <Check size={14} />
@@ -780,7 +779,7 @@ export default function DailyAttendance() {
                                                     className={`px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer ${
                                                         isAbsent
                                                             ? 'bg-rose-600 text-white shadow-md shadow-rose-600/25 ring-2 ring-rose-600 ring-offset-1'
-                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600'
                                                     }`}
                                                 >
                                                     <Ban size={14} />
@@ -794,7 +793,7 @@ export default function DailyAttendance() {
                                                     className={`px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer ${
                                                         isLate
                                                             ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25 ring-2 ring-amber-500 ring-offset-1'
-                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-600'
                                                     }`}
                                                 >
                                                     <Clock size={14} />
@@ -808,7 +807,7 @@ export default function DailyAttendance() {
                                                     className={`px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all flex-1 sm:flex-initial justify-center cursor-pointer ${
                                                         isExcused
                                                             ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600 ring-offset-1'
-                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
                                                     }`}
                                                 >
                                                     <ShieldCheck size={14} />
@@ -823,17 +822,17 @@ export default function DailyAttendance() {
                     </div>
 
                     {/* BARRA FLOTANTE / INFERIOR DE ACCIÓN Y GUARDADO */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-5 sticky bottom-4 z-20">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-5 sticky bottom-4 z-20">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
                             <div className="flex items-center gap-3">
                                 <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
-                                <p className="text-sm font-bold text-slate-800 dark:text-white">
+                                <p className="text-sm font-bold text-slate-800">
                                     {currentCounts.absent + currentCounts.late} novedad(es) para notificar
                                 </p>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3 border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-800 pt-2 sm:pt-0 sm:pl-4">
-                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                            <div className="flex flex-wrap items-center gap-3 border-t sm:border-t-0 sm:border-l border-slate-200 pt-2 sm:pt-0 sm:pl-4">
+                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
                                     <input 
                                         type="checkbox"
                                         checked={sendEmailNotification}
@@ -844,7 +843,7 @@ export default function DailyAttendance() {
                                     Enviar Correo a Padres
                                 </label>
 
-                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
                                     <input 
                                         type="checkbox"
                                         checked={sendMessageNotification}
@@ -861,7 +860,7 @@ export default function DailyAttendance() {
                             type="button"
                             onClick={handleSaveAndNotify}
                             disabled={saving || courseStudents.length === 0}
-                            className="w-full md:w-auto px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-extrabold rounded-2xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base cursor-pointer"
+                            className="w-full md:w-auto px-7 py-3.5 apple-glass-blue text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] active-press transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 text-sm sm:text-base cursor-pointer"
                         >
                             {saving ? (
                                 <>
@@ -883,14 +882,14 @@ export default function DailyAttendance() {
             {/* VISTA 2: CONSOLIDADO GENERAL DE INASISTENCIAS DE HOY */}
             {mainTab === 'daily-summary' && (
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                             <div>
-                                <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                                <h3 className="text-lg font-extrabold text-slate-800 flex items-center gap-2">
                                     <ShieldCheck size={20} className="text-indigo-600" />
                                     Resumen General de Ausencias del Plantel
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <p className="text-xs text-slate-500 mt-0.5">
                                     Todos los estudiantes ausentes o con retardo reportados en la fecha {selectedDate}
                                 </p>
                             </div>
@@ -899,7 +898,7 @@ export default function DailyAttendance() {
                                 <button
                                     type="button"
                                     onClick={loadDailySummary}
-                                    className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+                                    className="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
                                     title="Actualizar datos"
                                 >
                                     <RefreshCw size={16} />
@@ -922,7 +921,7 @@ export default function DailyAttendance() {
                                 <select
                                     value={summaryFilterCourse}
                                     onChange={(e) => setSummaryFilterCourse(e.target.value)}
-                                    className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none"
+                                    className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
                                 >
                                     <option value="ALL">Todos los Cursos</option>
                                     {courses.map(c => <option key={c} value={c}>Curso {c}</option>)}
@@ -934,7 +933,7 @@ export default function DailyAttendance() {
                                 <select
                                     value={summaryFilterStatus}
                                     onChange={(e) => setSummaryFilterStatus(e.target.value)}
-                                    className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none"
+                                    className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
                                 >
                                     <option value="ALL">Todas las Novedades</option>
                                     <option value="ABSENT">Solo Inasistencias (Faltas)</option>
@@ -946,7 +945,7 @@ export default function DailyAttendance() {
                     </div>
 
                     {/* TABLA CONSOLIDADA */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
                         {loadingSummary ? (
                             <div className="py-16 text-center">
                                 <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
@@ -955,14 +954,14 @@ export default function DailyAttendance() {
                         ) : dailyGlobalRecords.length === 0 ? (
                             <div className="py-16 text-center text-slate-400">
                                 <CheckCircle2 size={40} className="text-emerald-500 mx-auto mb-2 opacity-80" />
-                                <h4 className="font-bold text-slate-700 dark:text-slate-300">¡Sin inasistencias reportadas!</h4>
+                                <h4 className="font-bold text-slate-700">¡Sin inasistencias reportadas!</h4>
                                 <p className="text-xs text-slate-500 mt-1">No se registran ausencias para la fecha {selectedDate}.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse text-sm">
                                     <thead>
-                                        <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                                             <th className="p-4">Estudiante</th>
                                             <th className="p-4">Curso</th>
                                             <th className="p-4">Estado</th>
@@ -971,7 +970,7 @@ export default function DailyAttendance() {
                                             <th className="p-4 text-center">Acciones Rápidas</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                                    <tbody className="divide-y divide-slate-100 font-medium">
                                         {dailyGlobalRecords
                                             .filter(r => summaryFilterCourse === 'ALL' || r.student_grade === summaryFilterCourse)
                                             .filter(r => summaryFilterStatus === 'ALL' || r.status === summaryFilterStatus)
@@ -982,9 +981,9 @@ export default function DailyAttendance() {
                                                 const isExcused = record.status === 'EXCUSED';
 
                                                 return (
-                                                    <tr key={record.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+                                                    <tr key={record.id} className="hover:bg-slate-50/60 transition-colors">
                                                         <td className="p-4">
-                                                            <div className="font-bold text-slate-800 dark:text-white">
+                                                            <div className="font-bold text-slate-800">
                                                                 {record.student_name}
                                                             </div>
                                                             <div className="text-xs text-slate-400 font-mono">
@@ -993,7 +992,7 @@ export default function DailyAttendance() {
                                                         </td>
 
                                                         <td className="p-4">
-                                                            <span className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs border border-indigo-200 dark:border-indigo-800">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs border border-indigo-200">
                                                                 Grado {record.student_grade}
                                                             </span>
                                                         </td>
@@ -1001,10 +1000,10 @@ export default function DailyAttendance() {
                                                         <td className="p-4">
                                                             <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold inline-flex items-center gap-1 ${
                                                                 isAbsent 
-                                                                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' 
+                                                                    ? 'bg-rose-100 text-rose-800' 
                                                                     : isLate 
-                                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                                                    ? 'bg-amber-100 text-amber-800'
+                                                                    : 'bg-blue-100 text-blue-800'
                                                             }`}>
                                                                 {isAbsent && <Ban size={12} />}
                                                                 {isLate && <Clock size={12} />}
@@ -1019,7 +1018,7 @@ export default function DailyAttendance() {
                                                         </td>
 
                                                         <td className="p-4">
-                                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                            <div className="text-xs font-bold text-slate-700">
                                                                 {record.parentName}
                                                             </div>
                                                             <div className="text-[11px] text-slate-500 truncate max-w-[180px]">
@@ -1058,7 +1057,7 @@ export default function DailyAttendance() {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleUpdateGlobalRecordStatus(record.id, 'PRESENT')}
-                                                                            className="px-2 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
+                                                                            className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
                                                                             title="El estudiante llegó a clases: desmarcar falta y poner Presente"
                                                                         >
                                                                             <UserCheck size={12} />
@@ -1067,7 +1066,7 @@ export default function DailyAttendance() {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleUpdateGlobalRecordStatus(record.id, 'LATE')}
-                                                                            className="px-2 py-1 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-lg text-[11px] font-bold hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1"
+                                                                            className="px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1"
                                                                             title="El estudiante llegó con retraso: registrar Llegada Tarde"
                                                                         >
                                                                             <Clock size={12} />
@@ -1076,7 +1075,7 @@ export default function DailyAttendance() {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleUpdateGlobalRecordStatus(record.id, 'EXCUSED')}
-                                                                            className="px-2 py-1 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1"
+                                                                            className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1"
                                                                             title="Marcar como justificada por excusa médica"
                                                                         >
                                                                             <ShieldCheck size={12} />
@@ -1091,7 +1090,7 @@ export default function DailyAttendance() {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleUpdateGlobalRecordStatus(record.id, 'PRESENT')}
-                                                                            className="px-2 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
+                                                                            className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
                                                                             title="Desmarcar retardo y dejar Presente a tiempo"
                                                                         >
                                                                             <UserCheck size={12} />
@@ -1100,7 +1099,7 @@ export default function DailyAttendance() {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleUpdateGlobalRecordStatus(record.id, 'EXCUSED')}
-                                                                            className="px-2 py-1 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1"
+                                                                            className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1"
                                                                             title="Justificar retardo"
                                                                         >
                                                                             <ShieldCheck size={12} />
@@ -1115,7 +1114,7 @@ export default function DailyAttendance() {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleUpdateGlobalRecordStatus(record.id, 'PRESENT')}
-                                                                            className="px-2 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
+                                                                            className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
                                                                             title="Marcar como presente en clase"
                                                                         >
                                                                             <UserCheck size={12} />
@@ -1124,7 +1123,7 @@ export default function DailyAttendance() {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleUpdateGlobalRecordStatus(record.id, 'ABSENT')}
-                                                                            className="px-2 py-1 bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-lg text-[11px] font-bold hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1"
+                                                                            className="px-2 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1"
                                                                         >
                                                                             <Ban size={12} />
                                                                             Revertir a Falta
@@ -1147,32 +1146,32 @@ export default function DailyAttendance() {
             {/* MODAL DE RESULTADO / CONFIRMACIÓN DE ENVÍO */}
             {resultModalOpen && resultData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative">
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mx-auto mb-4 font-black">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative">
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 mx-auto mb-4 font-black">
                             <CheckCircle2 size={32} />
                         </div>
 
-                        <h3 className="text-xl font-extrabold text-slate-800 dark:text-white text-center">
+                        <h3 className="text-xl font-extrabold text-slate-800 text-center">
                             ¡Pase de Lista Guardado con Éxito!
                         </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">
+                        <p className="text-xs text-slate-500 text-center mt-1">
                             Salón: Grado {resultData.course} | Fecha: {resultData.date}
                         </p>
 
-                        <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 my-5 space-y-2 text-xs border border-slate-100 dark:border-slate-800">
-                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                        <div className="bg-slate-50 rounded-2xl p-4 my-5 space-y-2 text-xs border border-slate-100">
+                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
                                 <span className="text-slate-500">Estudiantes evaluados:</span>
-                                <strong className="text-slate-800 dark:text-white font-extrabold">{resultData.totalStudents}</strong>
+                                <strong className="text-slate-800 font-extrabold">{resultData.totalStudents}</strong>
                             </div>
-                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
                                 <span className="text-rose-600 font-bold">Inasistencias reportadas:</span>
                                 <strong className="text-rose-600 font-extrabold">{resultData.absentCount}</strong>
                             </div>
-                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
                                 <span className="text-amber-600 font-bold">Llegadas tarde:</span>
                                 <strong className="text-amber-600 font-extrabold">{resultData.lateCount}</strong>
                             </div>
-                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                            <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
                                 <span className="text-indigo-600 font-bold">Correos despachados:</span>
                                 <strong className="text-indigo-600 font-extrabold">
                                     {resultData.emailCount} correos {resultData.emailResults?.isSimulated ? '(Simulación Activa)' : '(Enviados)'}
