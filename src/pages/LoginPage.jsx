@@ -86,10 +86,12 @@ export default function LoginPage() {
                 {/* Logo & Título */}
                 <div className="text-center space-y-2">
                     <div className="inline-flex w-16 h-16 rounded-2xl bg-white p-2 items-center justify-center shadow-xl shadow-indigo-600/30 border border-white/40 ring-2 ring-indigo-500/30">
-                        <img src="/Escudo1.png" alt="Escudo INAS" className="w-full h-full object-contain" />
+                        <img src="/Escudo1.png" alt="Escudo Institucional INAS" className="w-full h-full object-contain" />
                     </div>
-                    <h1 className="text-3xl font-extrabold text-white tracking-tight">INAS</h1>
-                    <p className="text-slate-300 text-sm font-bold tracking-wide uppercase">Instituto Nueva América de Suba</p>
+                    <div className="flex items-center justify-center my-1">
+                        <img src="/INAS.png" alt="INAS" className="w-40 sm:w-44 h-auto max-h-12 object-contain drop-shadow-xl" />
+                    </div>
+                    <p className="text-slate-300 text-xs sm:text-sm font-bold tracking-wide uppercase">Instituto Nueva América de Suba</p>
                     <p className="text-indigo-300/80 text-[10.5px] italic max-w-sm mx-auto font-medium leading-tight">
                         “Ciudadanos productivos desde la construcción de proyectos de vida con calidad y responsabilidad ambiental”
                     </p>
