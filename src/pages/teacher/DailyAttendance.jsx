@@ -338,7 +338,7 @@ export default function DailyAttendance() {
                             sender_id: currentUser?.uid || 'system',
                             sender_name: authorName,
                             sender_role: userRole || 'teacher',
-                            receiver_id: parentUids.length > 0 ? parentUids[0] : 'ALL_PARENTS',
+                            receiver_id: parentUids.length > 0 ? parentUids[0] : st.id,
                             receiver_name: parentName,
                             target_type: 'STUDENT',
                             target_students: [st.id],

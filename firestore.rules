@@ -6,42 +6,63 @@ service cloud.firestore {
     // FUNCIONES AUXILIARES DE SEGURIDAD Y PERMISOS
     // =====================================================================
 
-    // Verificar si el usuario ha iniciado sesión
+    // Verificar si el usuario ha iniciado sesión con Firebase Auth
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && request.auth.token.email != null;
     }
 
-    // Verificar si el correo pertenece al dominio oficial institucional
+    // Verificar si el correo pertenece al dominio oficial institucional o cuentas maestras
     function isInstitutionalDomain() {
-      return isAuthenticated() && 
-        (request.auth.token.email.matches('.*@inas[.]edu[.]co$') || 
-         request.auth.token.email == 'admin@colegio.com' ||
-         request.auth.token.email == 'digaluju@gmail.com');
+      return isAuthenticated() && (
+        request.auth.token.email.matches('.*@inas[.]edu[.]co$') || 
+        request.auth.token.email == 'admin@colegio.com' ||
+        request.auth.token.email == 'digaluju@gmail.com'
+      );
     }
 
-    // Obtener los datos del usuario en la colección 'users'
+    // Obtener los datos del usuario en la colección 'users' si existe
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     // Verificar rol de Administrador
     function isAdmin() {
-      return isInstitutionalDomain() && 
-        (getUserData().role == 'admin' || request.auth.token.email == 'admin@colegio.com' || request.auth.token.email == 'digaluju@gmail.com');
+      return isInstitutionalDomain() && (
+        request.auth.token.email == 'admin@colegio.com' || 
+        request.auth.token.email == 'digaluju@gmail.com' ||
+        request.auth.token.email == 'rectoria@inas.edu.co' ||
+        request.auth.token.email == 'secretaria@inas.edu.co' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData().role == 'admin')
+      );
     }
 
     // Verificar rol de Docente
     function isTeacher() {
-      return isInstitutionalDomain() && (getUserData().role == 'teacher' || isAdmin());
-    }
-
-    // Verificar rol de Padre / Acudiente / Estudiante
-    function isParent() {
       return isInstitutionalDomain() && (
-        getUserData().role == 'parent' || 
-        getUserData().role == 'student' || 
-        getUserData().role == 'estudiante' || 
-        isAdmin()
+        isAdmin() || 
+        request.auth.token.email in [
+          'yulimatematicas@inas.edu.co',
+          'alexandralenguaje@inas.edu.co',
+          'carlosgomez@inas.edu.co',
+          'carolinaartes@inas.edu.co',
+          'carolinaorientacion@inas.edu.co',
+          'estebanm@inas.edu.co',
+          'florciencias@inas.edu.co',
+          'freddypacheco@inas.edu.co',
+          'ibonciencias@inas.edu.co',
+          'josejimenez@inas.edu.co',
+          'kathelenguaje@inas.edu.co',
+          'lauraflorez@inas.edu.co',
+          'luiscarvajal@inas.edu.co',
+          'luismatematicas@inas.edu.co',
+          'maritzaingles@inas.edu.co',
+          'merlyetica@inas.edu.co',
+          'orientacion@inas.edu.co',
+          'soniaingles@inas.edu.co'
+        ] ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData().role == 'teacher')
       );
     }
 
@@ -50,41 +71,33 @@ service cloud.firestore {
     // =====================================================================
 
     // 1. USUARIOS (users)
-    // Cada usuario solo puede leer su propio perfil; el admin puede gestionar todos.
     match /users/{userId} {
-      allow read: if isInstitutionalDomain() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
+      allow read: if isInstitutionalDomain();
+      allow create, update: if isInstitutionalDomain() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
     }
 
     // 2. ESTUDIANTES (students)
-    // Lectura autorizada a la comunidad institucional autenticada (Estadísticas, Directorio, Cuadro de honor y Vinculación)
     match /students/{studentId} {
       allow read: if isInstitutionalDomain();
       allow write: if isAdmin();
     }
 
     // 3. CALIFICACIONES Y BOLETINES (grades)
-    // Profesores y directivos pueden editar notas. Estudiantes y padres solo consultar.
     match /grades/{gradeId} {
       allow read: if isInstitutionalDomain();
       allow write: if isTeacher();
     }
 
     // 4. OBSERVADOR DEL ALUMNO (observation_logs)
-    // Profesores y Admin redactan faltas o reconocimientos.
-    // Los acudientes solo pueden actualizar su firma digital ("FIRMADO").
     match /observation_logs/{logId} {
       allow read: if isInstitutionalDomain();
       allow create: if isTeacher();
       allow delete: if isAdmin();
-      allow update: if isTeacher() || (
-        isParent() && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'signed_at', 'parent_signature', 'signed_by'])
-      );
+      allow update: if isTeacher() || isInstitutionalDomain();
     }
 
     // 5. CIRCULARES Y COMUNICADOS (circulars)
-    // Toda la comunidad autenticada puede leer. Solo Admin puede crear o publicar.
     match /circulars/{circularId} {
       allow read: if isInstitutionalDomain();
       allow write: if isAdmin();
@@ -97,7 +110,6 @@ service cloud.firestore {
     }
 
     // 7. FORMULARIOS DE ASPIRANTES Y MATRÍCULAS (aspirants)
-    // Información altamente confidencial: acceso exclusivo a Secretaría y Rectoría.
     match /aspirants/{aspirantId} {
       allow read, write: if isAdmin();
     }
@@ -116,16 +128,28 @@ service cloud.firestore {
 
     // 10. MENSAJERÍA INSTITUCIONAL (messages)
     match /messages/{messageId} {
-      allow read: if isInstitutionalDomain() && (
-        resource.data.senderId == request.auth.uid || 
-        resource.data.recipientId == request.auth.uid || 
-        isAdmin()
-      );
-      allow create: if isInstitutionalDomain() && request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow read, create: if isInstitutionalDomain();
+      allow update, delete: if isTeacher() || isAdmin();
     }
 
-    // REGLA POR DEFECTO: Denegar cualquier otra operación no explícita
+    // 11. DOCENTES Y PERSONAL INSTITUCIONAL (teachers)
+    match /teachers/{teacherId} {
+      allow read: if isInstitutionalDomain();
+      allow write: if isAdmin();
+    }
+
+    // 12. CONFIGURACIÓN DEL SISTEMA (config)
+    match /config/{configId} {
+      allow read: if isInstitutionalDomain();
+      allow write: if isAdmin();
+    }
+
+    // 13. AUDITORÍA Y ACTIVIDAD (audit_logs)
+    match /audit_logs/{logId} {
+      allow read, write: if isInstitutionalDomain();
+    }
+
+    // REGLA POR DEFECTO: Denegar cualquier otra operación no autorizada
     match /{document=**} {
       allow read, write: if false;
     }

@@ -18,9 +18,9 @@ export default function DigitalID() {
             // Modo Demo
             if (currentUser.uid.startsWith('fake-')) {
                 setStudent({
-                    name: "Juanito Pérez",
-                    grade: "9A",
-                    id_code: "ST-2023-001",
+                    name: "Estudiante Institucional INAS",
+                    grade: "701",
+                    id_code: "ST-2026-001",
                     photo_url: ""
                 });
                 setLoading(false);

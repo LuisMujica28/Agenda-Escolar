@@ -16,6 +16,7 @@ import CircularDetailModal from '../components/CircularDetailModal';
 import CircularReadersModal from '../components/CircularReadersModal';
 import QuickObservationModal from '../components/QuickObservationModal';
 import ConfirmModal from '../components/ConfirmModal';
+import { stripHtml } from '../lib/textUtils';
 
 export default function Dashboard() {
     const { currentUser, userRole } = useAuth();
@@ -1070,14 +1071,12 @@ export default function Dashboard() {
                         </span>
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight">
                             {(userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') 
-                                ? `¡Hola, ${currentUser.displayName || (userRole === 'parent' ? 'Acudiente' : 'Estudiante')}!` 
+                                ? `¡Hola, ${currentUser.displayName || 'Estudiante'}!` 
                                 : `Bienvenido al Panel de Control`}
                         </h1>
                         <p className="text-indigo-100/90 text-xs sm:text-sm mt-1 sm:mt-1.5 max-w-xl font-medium leading-relaxed">
                             {(userRole === 'parent' || userRole === 'student' || userRole === 'estudiante') && student 
-                                ? (userRole === 'student' || userRole === 'estudiante'
-                                    ? `Aquí tienes el resumen de tu rendimiento escolar, notas, asistencia y tareas.`
-                                    : `Aquí tienes el resumen del rendimiento, asistencia y tareas de tu hijo(a) ${student.name}.`)
+                                ? `Aquí tienes el resumen de tu rendimiento escolar, notas, asistencia y tareas.`
                                 : userRole === 'teacher'
                                 ? `Accede rápidamente al buscador de alumnos, crea nuevas tareas y anota observaciones.`
                                 : `Gestiona comunicados e importa listas oficiales del plantel de forma masiva.`}
@@ -1155,7 +1154,7 @@ export default function Dashboard() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <p className="text-[11px] sm:text-xs text-gray-500 line-clamp-2 sm:line-clamp-3 mt-1 leading-relaxed">{c.body}</p>
+                                                        <p className="text-[11px] sm:text-xs text-gray-500 line-clamp-2 sm:line-clamp-3 mt-1 leading-relaxed">{stripHtml(c.body)}</p>
                                                     </div>
 
                                                     {!isRead && (
@@ -2356,22 +2355,30 @@ export default function Dashboard() {
                                                 </button>
                                             </div>
                                             
-                                            <p className="text-[11px] text-gray-650 mt-1.5 whitespace-pre-wrap leading-relaxed">
-                                                {c.body}
-                                            </p>
+                                            <p className="text-[11px] text-gray-650 mt-1.5 line-clamp-3 leading-relaxed">
+                                                 {stripHtml(c.body)}
+                                             </p>
 
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-dashed border-slate-200">
-                                                 <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                                                     <CheckCircle2 className="text-emerald-500 shrink-0" size={12} />
-                                                     <span>Leído por {readCount} {readCount === 1 ? 'usuario' : 'usuarios'}</span>
-                                                 </div>
-                                                 <button
-                                                     onClick={() => setReadersModalCircular(c)}
-                                                     className="text-[9px] text-indigo-650 hover:text-indigo-850 bg-indigo-50 hover:bg-indigo-100 font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border border-indigo-100/50 transition select-none active-press shadow-2xs touch-target self-start sm:self-auto"
-                                                 >
-                                                     Ver Acuses
-                                                 </button>
-                                             </div>
+                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-dashed border-slate-200">
+                                                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                                                      <CheckCircle2 className="text-emerald-500 shrink-0" size={12} />
+                                                      <span>Leído por {readCount} {readCount === 1 ? 'usuario' : 'usuarios'}</span>
+                                                  </div>
+                                                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                                                      <button
+                                                          onClick={() => setSelectedCircular(c)}
+                                                          className="text-[9px] text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border border-slate-200 transition select-none active-press shadow-2xs touch-target"
+                                                      >
+                                                          Ver Detalle
+                                                      </button>
+                                                      <button
+                                                          onClick={() => setReadersModalCircular(c)}
+                                                          className="text-[9px] text-indigo-650 hover:text-indigo-850 bg-indigo-50 hover:bg-indigo-100 font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border border-indigo-100/50 transition select-none active-press shadow-2xs touch-target"
+                                                      >
+                                                          Ver Acuses
+                                                      </button>
+                                                  </div>
+                                              </div>
                                         </div>
                                     );
                                 })

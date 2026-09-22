@@ -3,6 +3,7 @@ import { Calendar, CheckCircle, AlertCircle, Eye, Paperclip } from 'lucide-react
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import CircularDetailModal from './CircularDetailModal';
+import { stripHtml } from '../lib/textUtils';
 
 export default function NewsCard({ news, onAcknowledge, currentUserId }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,7 +36,7 @@ export default function NewsCard({ news, onAcknowledge, currentUserId }) {
                 </div>
 
                 <p className="text-xs text-slate-500 mb-4 whitespace-pre-wrap leading-relaxed line-clamp-2">
-                    {news.body}
+                    {stripHtml(news.body)}
                 </p>
 
                 <div className="flex justify-between items-center text-[10px] text-slate-400 font-semibold border-t pt-3 mt-2">

@@ -199,15 +199,6 @@ function Layout({ children }) {
             >
               <User size={18} /> Carnet Estudiantil
             </Link>
-            <Link 
-              to="/admin/stats" 
-              onClick={() => setIsSidebarOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 text-sm font-semibold ${
-                isActive('/admin/stats') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
-              }`}
-            >
-              <BarChart2 size={18} /> Estadísticas Académicas
-            </Link>
           </>
         );
       case 'admin':
@@ -314,10 +305,11 @@ function Layout({ children }) {
     switch (userRole) {
       case 'admin': return 'Administrador';
       case 'teacher': return 'Docente';
-      case 'parent': return 'Acudiente';
       case 'student':
-      case 'estudiante': return 'Estudiante';
-      default: return 'Invitado';
+      case 'estudiante':
+      case 'parent':
+      default:
+        return 'Estudiante';
     }
   };
 
@@ -520,7 +512,7 @@ function App() {
           <Route 
             path="/admin/stats" 
             element={
-              <ProtectedRoute allowedRoles={['admin', 'teacher', 'parent', 'student', 'estudiante']}>
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
                 <Layout><AcademicStats /></Layout>
               </ProtectedRoute>
             } 

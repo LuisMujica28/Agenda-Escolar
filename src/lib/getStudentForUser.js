@@ -4,23 +4,23 @@ import { MOCK_STUDENTS } from './mockData.js';
 /**
  * Calcula un puntaje de coincidencia entre el correo/usuario activo y un estudiante.
  */
-function calculateStudentMatchScore(student, userEmail, userId) {
+function calculateStudentMatchScore(student, userEmail, userId, isMasterAuth = false) {
     if (!student || !userEmail) return 0;
 
     let score = 0;
     const userEmailLower = userEmail.toLowerCase().trim();
     const userPrefix = userEmailLower.split('@')[0];
 
-    // 1. Coincidencia por parent_uids
-    if (student.parent_uids && Array.isArray(student.parent_uids) && student.parent_uids.includes(userId)) {
-        score += 10000;
-    }
-
-    // 2. Coincidencia exacta por email del estudiante o email del padre
+    // 1. Coincidencia exacta por email del estudiante o email del padre (MÁXIMA PRIORIDAD)
     const sEmail = (student.email || '').toLowerCase().trim();
     const pEmail = (student.email_padre || '').toLowerCase().trim();
-    if (sEmail && sEmail === userEmailLower) score += 9000;
-    if (pEmail && pEmail === userEmailLower) score += 9000;
+    if (sEmail && sEmail === userEmailLower) score += 20000;
+    if (pEmail && pEmail === userEmailLower) score += 18000;
+
+    // 2. Coincidencia por parent_uids (sólo si no es sesión de master auth para evitar vincular el UID de admin)
+    if (!isMasterAuth && userId && student.parent_uids && Array.isArray(student.parent_uids) && student.parent_uids.includes(userId)) {
+        score += 10000;
+    }
 
     // 3. Análisis de nombres y apellidos
     const firstName = (student.firstName || '').toLowerCase().trim();
@@ -31,10 +31,10 @@ function calculateStudentMatchScore(student, userEmail, userId) {
     const lnParts = lastName.split(/\s+/).filter(Boolean);
     const fullParts = fullName.split(/\s+/).filter(Boolean);
 
-    // Primera letra del primer nombre
+    // Primera letra del primer nombre (o de alguna de las partes del nombre)
     const firstChar = fnParts[0] ? fnParts[0][0] : (fullParts[0] ? fullParts[0][0] : '');
 
-    // VALIDACIÓN CLAVE: El primer carácter del nombre DEBE coincidir con la primera letra del correo
+    // VALIDACIÓN CLAVE: El primer carácter del nombre coincide con la primera letra del correo
     const firstCharMatches = firstChar && userPrefix.startsWith(firstChar);
 
     if (firstCharMatches) {
@@ -76,6 +76,11 @@ function calculateStudentMatchScore(student, userEmail, userId) {
         }
     }
 
+    // Coincidencia de apellido en cualquier posición del prefijo
+    if (lnParts.length >= 1 && lnParts[0].length >= 4 && userPrefix.includes(lnParts[0])) {
+        score += 1200;
+    }
+
     return score;
 }
 
@@ -84,8 +89,9 @@ export async function getStudentForUser(db, currentUser) {
 
     try {
         const cleanEmail = (currentUser.email || '').toLowerCase().trim();
+        const isMaster = !!currentUser.isMasterAuth;
 
-        // 0. Búsqueda directa por correo del alumno o acudiente (rápida y exacta)
+        // 0. Búsqueda directa por correo del alumno o acudiente (rápida, indexada y exacta)
         if (cleanEmail) {
             try {
                 const qStudent = query(collection(db, 'students'), where('email', '==', cleanEmail));
@@ -125,7 +131,7 @@ export async function getStudentForUser(db, currentUser) {
         let highestScore = 0;
 
         for (const student of allStudents) {
-            const score = calculateStudentMatchScore(student, currentUser.email, currentUser.uid);
+            const score = calculateStudentMatchScore(student, currentUser.email, currentUser.uid, isMaster);
             if (score > highestScore) {
                 highestScore = score;
                 bestStudent = student;
@@ -133,8 +139,8 @@ export async function getStudentForUser(db, currentUser) {
         }
 
         if (bestStudent && highestScore > 0) {
-            // Auto-vincular parent_uids en Firestore si no está presente
-            if (currentUser.uid && (!bestStudent.parent_uids || !bestStudent.parent_uids.includes(currentUser.uid))) {
+            // Auto-vincular parent_uids en Firestore sólo si es un acudiente legítimo (no master impersonation)
+            if (!isMaster && currentUser.uid && (!bestStudent.parent_uids || !bestStudent.parent_uids.includes(currentUser.uid))) {
                 try {
                     await updateDoc(doc(db, 'students', bestStudent.id), {
                         parent_uids: arrayUnion(currentUser.uid)
@@ -146,7 +152,16 @@ export async function getStudentForUser(db, currentUser) {
             return bestStudent;
         }
 
-        return allStudents[0] || MOCK_STUDENTS[0];
+        // Si no hay ninguna coincidencia confiable, retornar perfil para el usuario actual (no de otro estudiante)
+        return {
+            id: `user-${currentUser.uid || 'temp'}`,
+            name: currentUser.displayName || cleanEmail.split('@')[0],
+            firstName: (currentUser.displayName || '').split(' ')[0] || cleanEmail.split('@')[0],
+            lastName: (currentUser.displayName || '').split(' ').slice(1).join(' ') || '',
+            email: cleanEmail,
+            grade: 'Estudiante INAS',
+            id_code: 'INAS-EST'
+        };
     } catch (err) {
         console.error("Error al buscar estudiante para el usuario:", err);
         return MOCK_STUDENTS[0];

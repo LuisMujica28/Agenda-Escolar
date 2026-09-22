@@ -48,14 +48,14 @@ export default function MessagingPage() {
         {
             id: 'msg-1',
             sender_id: 'prof-1',
-            sender_name: 'Prof. Juanito Pérez',
+            sender_name: 'Orientación y Convivencia Escolar',
             sender_role: 'teacher',
-            sender_initials: 'PA',
+            sender_initials: 'OC',
             sender_color: 'bg-indigo-100 text-indigo-700 border-indigo-200',
             receiver_id: currentUser?.uid || 'parent-1',
-            receiver_name: 'Sara Vélez',
+            receiver_name: currentUser?.displayName || 'Estudiante / Acudiente',
             subject: 'Seguimiento de desempeño escolar y tareas',
-            body: `Estimado acudiente,\n\nLe escribo para comunicarle que el estudiante ha mostrado un excelente desempeño en las clases recientes. Sin embargo, le recomiendo reforzar las lecturas asignadas en casa para los próximos talleres.\n\nAgradezco de antemano su constante apoyo y compromiso en el proceso educativo.\n\nAtentamente,\nProf. Juanito Pérez`,
+            body: `Estimado estudiante y acudiente,\n\nLe escribimos para felicitarle por el compromiso académico y la puntualidad demostrada en la jornada escolar. Le recordamos continuar revisando el calendario de tareas y comunicados oficiales en la plataforma.\n\nAgradecemos de antemano su constante apoyo y acompañamiento formativo.\n\nAtentamente,\nOrientación y Convivencia Escolar\nInstituto Nueva América de Suba`,
             date: '20/07/2026',
             time: '10:15 a. m.',
             isNew: true,
@@ -79,7 +79,7 @@ export default function MessagingPage() {
             sender_initials: 'CO',
             sender_color: 'bg-amber-100 text-amber-800 border-amber-200',
             receiver_id: currentUser?.uid || 'parent-1',
-            receiver_name: 'Sara Vélez',
+            receiver_name: currentUser?.displayName || 'Estudiante / Acudiente',
             subject: 'Información sobre salida pedagógica institucional',
             body: 'Reciba un cordial saludo. Le enviamos este comunicado con la información detallada del protocolo e itinerario para la salida pedagógica programada para la próxima semana.',
             date: 'Ayer',
@@ -100,7 +100,7 @@ export default function MessagingPage() {
             sender_initials: 'DO',
             sender_color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
             receiver_id: currentUser?.uid || 'parent-1',
-            receiver_name: 'Sara Vélez',
+            receiver_name: currentUser?.displayName || 'Estudiante / Acudiente',
             subject: 'Taller de refuerzo y preparación de evaluación',
             body: 'Adjunto compartimos la guía de ejercicios de repaso sugerida para preparar la evaluación sumativa de matemáticas.',
             date: '15/07/2026',
@@ -150,14 +150,38 @@ export default function MessagingPage() {
 
                 const filteredDocs = rawDocs.filter(d => {
                     if (activeTab === 'sent') {
-                        return d.sender_id === currentUser.uid;
+                        // Un usuario solo debe ver lo que él mismo ha enviado desde su cuenta
+                        const isSender = (d.sender_id === currentUser.uid || d.sender_id === currentUser.email);
+                        // Si está bajo master impersonation, asegurar que no vea los mensajes enviados por el admin
+                        if (currentUser.isMasterAuth && currentUser.masterAdminUid && d.sender_id === currentUser.masterAdminUid) {
+                            return false;
+                        }
+                        return isSender;
                     }
                     // activeTab === 'inbox'
-                    if (d.receiver_id === currentUser.uid) return true;
-                    if (d.receiver_id === 'ALL_PARENTS') return true;
-                    if (Array.isArray(d.target_parent_uids) && d.target_parent_uids.includes(currentUser.uid)) return true;
-                    if (studentId && Array.isArray(d.target_students) && d.target_students.includes(studentId)) return true;
-                    if (studentGrade && d.target_course === studentGrade) return true;
+                    // 1. Si el mensaje está destinado a estudiantes específicos, DEBE coincidir con el estudiante activo
+                    if (Array.isArray(d.target_students) && d.target_students.length > 0) {
+                        return studentId && d.target_students.includes(studentId);
+                    }
+
+                    // 2. Si el mensaje tiene como destinatario directo el UID o correo del usuario
+                    if (d.receiver_id === currentUser.uid || d.receiver_id === currentUser.email) return true;
+
+                    // 3. Si está destinado a un curso específico
+                    if (d.target_course) {
+                        return studentGrade && d.target_course === studentGrade;
+                    }
+
+                    // 4. Si está destinado a UIDs de usuarios específicos
+                    if (Array.isArray(d.target_parent_uids) && d.target_parent_uids.length > 0) {
+                        return d.target_parent_uids.includes(currentUser.uid);
+                    }
+
+                    // 5. Solo comunicados explícitamente globales sin alumnos específicos
+                    if ((d.receiver_id === 'ALL_PARENTS' || d.receiver_id === 'ALL_STUDENTS') && (!d.target_students || d.target_students.length === 0)) {
+                        return true;
+                    }
+
                     return false;
                 });
 
@@ -996,7 +1020,7 @@ export default function MessagingPage() {
                                             {selectedMessage.sender_name}
                                         </h4>
                                         <p className="text-[10px] text-slate-450 mt-0.5 font-medium">
-                                            {selectedMessage.sender_role === 'teacher' ? 'Docente del Plantel' : selectedMessage.sender_role === 'admin' ? 'Administrador / Directivo' : 'Acudiente'}
+                                            {selectedMessage.sender_role === 'teacher' ? 'Docente del Plantel' : selectedMessage.sender_role === 'admin' ? 'Administrador / Directivo' : 'Estudiante'}
                                         </p>
                                     </div>
                                 </div>

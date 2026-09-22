@@ -36,8 +36,8 @@ export const MOCK_NEWS = [
 export const MOCK_STUDENTS = [
     {
         id: 'st-1',
-        name: 'Juanito Pérez',
-        grade: '9A',
+        name: 'Estudiante Institucional INAS',
+        grade: '701',
         photo_url: '',
         parent_uids: ['parent-1']
     },
@@ -82,7 +82,7 @@ export const MOCK_LOGS = [
 ];
 
 export const MOCK_PARENTS = [
-    { uid: 'parent-1', displayName: 'Luisa Pérez (Acudiente de Juanito)', email: 'luisa@school.com' },
+    { uid: 'parent-1', displayName: 'Acudiente Institucional INAS', email: 'acudiente@inas.edu.co' },
     { uid: 'parent-2', displayName: 'Pedro García (Acudiente de María)', email: 'pedro@school.com' },
     { uid: 'parent-3', displayName: 'Sofía López (Acudiente de Carlos)', email: 'sofia@school.com' },
     { uid: 'parent-4', displayName: 'Carlos Ramos (Acudiente de Mateo)', email: 'carlos@school.com' },

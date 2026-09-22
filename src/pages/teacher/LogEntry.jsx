@@ -155,7 +155,7 @@ export default function LogEntry() {
                     sender_id: currentUser.uid,
                     sender_name: authorName,
                     sender_role: userRole || 'teacher',
-                    receiver_id: parentUids.length > 0 ? parentUids[0] : 'ALL_PARENTS',
+                    receiver_id: parentUids.length > 0 ? parentUids[0] : studentId,
                     receiver_name: `Familia de ${displayName}`,
                     target_type: 'STUDENT',
                     target_students: [studentId],
