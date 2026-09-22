@@ -199,7 +199,7 @@ export default function CircularDetailModal({ circular, onClose, currentUserId, 
             <div className="circular-modal-container bg-white rounded-3xl max-w-[24cm] w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
                 
                 {/* Cabecera de Controles */}
-                <div className="no-print bg-slate-50 border-b px-6 py-4 flex justify-between items-center shrink-0">
+                <div className="no-print bg-slate-50 border-b px-3.5 sm:px-6 py-3 sm:py-4 flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 shrink-0">
                     <div className="flex items-center gap-2">
                         <BookOpen size={18} className="text-indigo-650" />
                         <span className="text-xs font-black text-slate-800 uppercase tracking-wider">Documento Oficial</span>

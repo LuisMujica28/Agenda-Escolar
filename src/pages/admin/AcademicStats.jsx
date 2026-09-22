@@ -6,7 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
     ArrowLeft, Loader2, TrendingUp, Award, Users, 
     BookOpen, AlertTriangle, Sparkles, BarChart2, CheckCircle2, Printer,
-    Filter, Calendar, ShieldAlert, Target, GraduationCap, Flame, Star, ChevronRight,
+    Filter, Calendar, ShieldAlert, Target, GraduationCap, Flame, Star, ChevronRight, ChevronDown,
     Medal, Crown, AlertCircle, FileText, Search, Trophy, Compass, Check, Download, Info, X, Clock
 } from 'lucide-react';
 import { getStudentPhoto, DEFAULT_STUDENT_PHOTO } from '../../lib/avatarHelper';
@@ -137,6 +137,7 @@ export default function AcademicStats() {
 
     // Pestaña Activa: 'overview', 'year_projection', 'course_ranking', 'subject_ranking', 'global_ranking', 'honor_roll_print', 'diplomas_print'
     const [activeTab, setActiveTab] = useState('overview');
+    const [showMobileRules, setShowMobileRules] = useState(false);
 
     // Filtros
     const [selectedCourse, setSelectedCourse] = useState("");
@@ -929,8 +930,26 @@ export default function AcademicStats() {
                 </div>
             </div>
 
-            {/* Menú de Pestañas de Navegación del Módulo - Scroll Horizontal en Móviles */}
-            <div className="flex overflow-x-auto no-scrollbar gap-2 border-b border-slate-200/80 pb-2.5 -mx-1 px-1 sm:mx-0 sm:px-0 sm:flex-wrap">
+            {/* Selector de Pestaña Rápido para Móviles (sm:hidden) */}
+            <div className="sm:hidden mb-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Sección de Análisis</label>
+                <select 
+                    value={activeTab} 
+                    onChange={(e) => setActiveTab(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl text-xs font-black px-3 py-2.5 text-slate-800 shadow-xs focus:ring-2 focus:ring-indigo-600/20 outline-none"
+                >
+                    <option value="overview">📊 Resumen & Diagnóstico</option>
+                    <option value="year_projection">🚨 Proyección Fin de Año (300 pts) {yearLostStudents.length > 0 ? `(${yearLostStudents.length} perdieron)` : ''}</option>
+                    <option value="course_ranking">🏆 Ranking por Salón</option>
+                    <option value="subject_ranking">🥇 Ranking por Materia</option>
+                    <option value="global_ranking">🎖️ Ranking Institucional</option>
+                    <option value="honor_roll_print">📜 Cuadro de Honor Imprimible</option>
+                    <option value="diplomas_print">🎓 Diplomas de Excelencia (Top 3)</option>
+                </select>
+            </div>
+
+            {/* Menú de Pestañas de Navegación del Módulo - Visible en Tablets y Desktop (hidden sm:flex) */}
+            <div className="hidden sm:flex overflow-x-auto no-scrollbar gap-1.5 sm:gap-2 border-b border-slate-200/80 pb-2.5 -mx-1 px-1 sm:mx-0 sm:px-0 sm:flex-wrap touch-pan-x">
                 {[
                     { id: 'overview', label: '📊 Resumen & Diagnóstico', icon: BarChart2 },
                     { 
@@ -952,13 +971,13 @@ export default function AcademicStats() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-black text-xs flex items-center gap-2 border transition active-press shrink-0 whitespace-nowrap min-h-[42px] ${
+                            className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-black text-xs flex items-center gap-1.5 sm:gap-2 border transition active-press shrink-0 whitespace-nowrap min-h-[40px] sm:min-h-[42px] ${
                                 isActive
                                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20'
                                     : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
                             }`}
                         >
-                            <Icon size={16} />
+                            <Icon size={15} />
                             <span>{tab.label}</span>
                             {tab.badge && (
                                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${tab.badgeColor || 'bg-rose-600 text-white'}`}>
@@ -1011,10 +1030,26 @@ export default function AcademicStats() {
                             </div>
                         </div>
 
-                        {/* Selector de Cursos (Pills) */}
+                        {/* Selector de Cursos */}
                         <div className="lg:col-span-2 space-y-1">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Grado / Curso</label>
-                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                            
+                            {/* Desplegable en Móviles (sm:hidden) */}
+                            <div className="sm:hidden">
+                                <select
+                                    value={selectedCourse}
+                                    onChange={(e) => setSelectedCourse(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 shadow-xs outline-none focus:ring-2 focus:ring-indigo-600/20 min-h-[40px]"
+                                >
+                                    <option value="">🎓 Todos los Cursos ({stats.totalStudents} Estudiantes)</option>
+                                    {coursesList.map(c => (
+                                        <option key={c} value={c}>Curso {c}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Pills en Tablets y Desktop (hidden sm:flex) */}
+                            <div className="hidden sm:flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
                                 <button
                                     onClick={() => setSelectedCourse("")}
                                     className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition cursor-pointer min-h-[36px] flex items-center ${
@@ -1468,8 +1503,22 @@ export default function AcademicStats() {
                             </div>
                         </div>
 
-                        {/* Fichas de Explicación de Reglas Institucionales */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
+                        {/* Botón Móvil para Desplegar Reglas Institucionales (sm:hidden) */}
+                        <div className="sm:hidden pt-1">
+                            <button
+                                onClick={() => setShowMobileRules(!showMobileRules)}
+                                className="w-full py-2.5 px-3.5 bg-white/10 hover:bg-white/15 rounded-xl text-xs font-bold text-indigo-200 flex items-center justify-between transition border border-white/10 active-press"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <ShieldAlert size={14} className="text-amber-400" />
+                                    {showMobileRules ? 'Ocultar Reglas de Evaluación' : 'Ver Reglas Institucionales (300 Pts)'}
+                                </span>
+                                <ChevronDown size={15} className={`transform transition-transform ${showMobileRules ? 'rotate-180' : ''}`} />
+                            </button>
+                        </div>
+
+                        {/* Fichas de Explicación de Reglas Institucionales (Desplegables en móvil, siempre visibles en tablet/desktop) */}
+                        <div className={`${showMobileRules ? 'grid' : 'hidden'} sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-xs`}>
                             <div className="bg-white/5 border border-white/10 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl space-y-1">
                                 <div className="flex items-center gap-2 text-indigo-300 font-black text-[10.5px] sm:text-[11px] uppercase tracking-wider">
                                     <span>🎯 Regla de Aprobación</span>
@@ -1507,8 +1556,8 @@ export default function AcademicStats() {
                             </div>
                         </div>
 
-                        {/* Banner Informativo de Ingreso Tardío */}
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex items-start gap-3 text-xs text-amber-200">
+                        {/* Banner Informativo de Ingreso Tardío (Desplegable en móvil) */}
+                        <div className={`${showMobileRules ? 'flex' : 'hidden'} sm:flex bg-amber-500/10 border border-amber-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-3.5 items-start gap-3 text-xs text-amber-200`}>
                             <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
                             <div>
                                 <strong className="text-amber-300 block font-black">Casos Especiales de Ingreso Tardío:</strong>
@@ -1522,19 +1571,21 @@ export default function AcademicStats() {
                     {/* Barra de Filtros y Subpestañas */}
                     <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-4">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
-                            {/* Selector de Subpestaña - Scroll Horizontal en Móviles */}
-                            <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 shrink-0">
+                            {/* Selector de Subpestaña - Cuadrícula de 3 en Móviles, Flex en Desktop */}
+                            <div className="grid grid-cols-3 sm:flex gap-1.5 sm:gap-2 shrink-0">
                                 <button
                                     onClick={() => setYearProjectionSubTab('lost')}
-                                    className={`px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl font-black text-xs flex items-center gap-2 transition active-press border shrink-0 min-h-[40px] ${
+                                    className={`px-2 sm:px-4 py-2 rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-xs flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition active-press border min-h-[44px] ${
                                         yearProjectionSubTab === 'lost'
                                             ? 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-600/20'
                                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                                     }`}
                                 >
-                                    <ShieldAlert size={15} />
-                                    <span>1. Año Perdido Matemático</span>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                    <div className="flex items-center gap-1">
+                                        <ShieldAlert size={14} className="shrink-0" />
+                                        <span className="truncate">1. Perdidos</span>
+                                    </div>
+                                    <span className={`text-[9.5px] sm:text-[10px] px-1.5 py-0.2 rounded-full font-black ${
                                         yearProjectionSubTab === 'lost' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'
                                     }`}>
                                         {filteredLostYear.length}
@@ -1543,15 +1594,17 @@ export default function AcademicStats() {
 
                                 <button
                                     onClick={() => setYearProjectionSubTab('risk')}
-                                    className={`px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl font-black text-xs flex items-center gap-2 transition active-press border shrink-0 min-h-[40px] ${
+                                    className={`px-2 sm:px-4 py-2 rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-xs flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition active-press border min-h-[44px] ${
                                         yearProjectionSubTab === 'risk'
                                             ? 'bg-amber-500 border-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                                     }`}
                                 >
-                                    <AlertTriangle size={15} />
-                                    <span>2. Riesgo Crítico de Pérdida</span>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                    <div className="flex items-center gap-1">
+                                        <AlertTriangle size={14} className="shrink-0" />
+                                        <span className="truncate">2. Riesgo</span>
+                                    </div>
+                                    <span className={`text-[9.5px] sm:text-[10px] px-1.5 py-0.2 rounded-full font-black ${
                                         yearProjectionSubTab === 'risk' ? 'bg-slate-950/20 text-slate-950' : 'bg-amber-100 text-amber-900'
                                     }`}>
                                         {filteredRiskYear.length}
@@ -1560,14 +1613,14 @@ export default function AcademicStats() {
 
                                 <button
                                     onClick={() => setYearProjectionSubTab('all')}
-                                    className={`px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl font-black text-xs flex items-center gap-2 transition active-press border shrink-0 min-h-[40px] ${
+                                    className={`px-2 sm:px-4 py-2 rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-xs flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition active-press border min-h-[44px] ${
                                         yearProjectionSubTab === 'all'
                                             ? 'bg-slate-900 border-slate-900 text-white shadow-md'
                                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                                     }`}
                                 >
-                                    <span>📋 Vista Consolidada</span>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                    <span className="truncate">3. Todos</span>
+                                    <span className={`text-[9.5px] sm:text-[10px] px-1.5 py-0.2 rounded-full font-black ${
                                         yearProjectionSubTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-800'
                                     }`}>
                                         {filteredLostYear.length + filteredRiskYear.length}
@@ -1640,10 +1693,40 @@ export default function AcademicStats() {
                             </div>
                         </div>
 
-                        {/* Selector de Cursos en Pills */}
+                        {/* Selector de Cursos */}
                         <div className="pt-2 border-t border-slate-100 space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Filtrar por Curso / Salón</label>
-                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                            
+                            {/* Desplegable en Móviles (sm:hidden) */}
+                            <div className="sm:hidden">
+                                <select
+                                    value={effectiveYearCourse}
+                                    onChange={(e) => setYearCourseFilter(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-600/20 min-h-[40px]"
+                                >
+                                    <option value="">
+                                        🎓 Todos los Cursos ({
+                                            yearProjectionSubTab === 'lost'
+                                                ? `${yearLostStudents.length} perdidos`
+                                                : yearProjectionSubTab === 'risk'
+                                                    ? `${yearRiskStudents.length} en riesgo`
+                                                    : `${yearLostStudents.length} perdidos • ${yearRiskStudents.length} en riesgo`
+                                        })
+                                    </option>
+                                    {coursesList.map(c => {
+                                        const lostInCourse = yearLostStudents.filter(s => s.grade === c).length;
+                                        const riskInCourse = yearRiskStudents.filter(s => s.grade === c).length;
+                                        return (
+                                            <option key={c} value={c}>
+                                                Curso {c} {lostInCourse > 0 ? `(${lostInCourse} perdidos)` : ''} {riskInCourse > 0 ? `[${riskInCourse} en riesgo]` : ''}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+
+                            {/* Pills en Tablets y Desktop (hidden sm:flex) */}
+                            <div className="hidden sm:flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
                                 <button
                                     onClick={() => setYearCourseFilter("")}
                                     className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
@@ -1727,8 +1810,105 @@ export default function AcademicStats() {
                                     No hay estudiantes con pérdida de año matemática registrada para este filtro.
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                                    <table className="w-full text-left text-xs border-collapse">
+                                <>
+                                    {/* Lista de Tarjetas para Móviles (sm:hidden) */}
+                                    <div className="space-y-3 sm:hidden">
+                                        {filteredLostYear.map((st, idx) => (
+                                            <div key={st.id} className="bg-rose-50/60 border border-rose-200/90 rounded-2xl p-3.5 space-y-3 shadow-2xs">
+                                                {/* Encabezado del Estudiante */}
+                                                <div className="flex items-start justify-between gap-2 border-b border-rose-100 pb-2.5">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <span className="w-6 h-6 rounded-lg bg-rose-200 text-rose-900 font-black text-xs flex items-center justify-center shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="w-9 h-9 rounded-full overflow-hidden bg-white border border-rose-200 shrink-0">
+                                                            <img 
+                                                                src={getStudentPhoto(st.photo_url)} 
+                                                                alt={st.name} 
+                                                                className="w-full h-full object-cover" 
+                                                                onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                                            />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h4 className="font-black text-xs text-rose-950 uppercase leading-snug">
+                                                                {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                                            </h4>
+                                                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                                                Curso {st.grade} • Código: {st.id_code}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <span className="px-2.5 py-1 bg-rose-600 text-white font-black text-[10px] rounded-xl shrink-0 shadow-xs">
+                                                        ❌ AÑO PERDIDO
+                                                    </span>
+                                                </div>
+
+                                                {/* Alerta Ingreso Tardío (si aplica) */}
+                                                {st.isLateEnrollment && (
+                                                    <div className="bg-amber-100/90 border border-amber-300 rounded-xl p-2 text-[10px] text-amber-950 flex items-start gap-1.5">
+                                                        <Clock size={13} className="text-amber-700 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <strong className="block font-black text-amber-900">Ingreso Tardío: {st.periodsShortBadge}</strong>
+                                                            <p className="text-[9.5px] text-amber-800 leading-tight mt-0.5">
+                                                                Solo cursó {st.periodsLabel}. Faltan notas de Periodo {st.missingPeriods.join(', ')}.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Materias Irrecuperables */}
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between text-[11px] font-black text-rose-900">
+                                                        <span>Materias Irrecuperables:</span>
+                                                        <span className="text-rose-700 font-extrabold">{st.lostCount} asignatura{st.lostCount > 1 ? 's' : ''}</span>
+                                                    </div>
+
+                                                    <div className="space-y-1.5">
+                                                        {st.lostSubjects.map(ls => (
+                                                            <div key={ls.name} className="bg-white border border-rose-200 rounded-xl p-2.5 space-y-1 shadow-2xs">
+                                                                <div className="flex items-center justify-between gap-1.5">
+                                                                    <span className="font-black text-xs text-slate-900">{ls.name}</span>
+                                                                    <span className="text-[9.5px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-md shrink-0">
+                                                                        Déficit: -{ls.deficit}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-[10px] text-slate-600 pt-0.5 border-t border-slate-100">
+                                                                    <span>Suma P1-P3: <strong className="text-rose-950 font-bold">{ls.sum} pts</strong></span>
+                                                                    <span>Necesita P4: <strong className="text-rose-600 font-black">{ls.needed} pts</strong> (Máx 100)</span>
+                                                                </div>
+                                                                {ls.periodsCount < 3 && (
+                                                                    <p className="text-[9px] text-amber-800 font-semibold bg-amber-50 px-1.5 py-0.5 rounded">
+                                                                        Notas de {ls.periodsCount} periodo(s): {Object.keys(ls.periods).sort().map(p => `P${p}`).join(', ')}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Aviso de materias críticas adicionales */}
+                                                {st.critCount > 0 && (
+                                                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+                                                        <AlertTriangle size={12} className="text-amber-600 shrink-0" />
+                                                        <span>Registra además {st.critCount} materia(s) en zona crítica (&gt;90 pts en P4)</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Botón de Acción a Boletín */}
+                                                <Link 
+                                                    to={`/admin/boletin-print/${st.id}`}
+                                                    className="w-full bg-white hover:bg-rose-50 border border-rose-200 text-rose-800 font-extrabold text-xs py-2 rounded-xl transition flex items-center justify-center gap-1.5 active-press shadow-2xs"
+                                                >
+                                                    <BookOpen size={13} /> Ver Boletín Académico
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Tabla para Tablets y Desktop (hidden sm:block) */}
+                                    <div className="hidden sm:block overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                                        <table className="w-full text-left text-xs border-collapse">
                                         <thead>
                                             <tr className="bg-rose-50/70 border-b border-rose-200 text-rose-900 font-black uppercase text-[10px] tracking-wider">
                                                 <th className="p-3.5 text-center w-12">#</th>
@@ -1865,7 +2045,8 @@ export default function AcademicStats() {
                                         </tbody>
                                     </table>
                                 </div>
-                            )}
+                            </>
+                        )}
                         </div>
                     )}
 
@@ -1892,8 +2073,126 @@ export default function AcademicStats() {
                                     No hay estudiantes en riesgo crítico de pérdida de año para este filtro.
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                                    <table className="w-full text-left text-xs border-collapse">
+                                <>
+                                    {/* Lista de Tarjetas para Móviles (sm:hidden) */}
+                                    <div className="space-y-3 sm:hidden">
+                                        {filteredRiskYear.map((st, idx) => (
+                                            <div key={st.id} className="bg-amber-50/60 border border-amber-200/90 rounded-2xl p-3.5 space-y-3 shadow-2xs">
+                                                {/* Encabezado del Estudiante */}
+                                                <div className="flex items-start justify-between gap-2 border-b border-amber-100 pb-2.5">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <span className="w-6 h-6 rounded-lg bg-amber-200 text-amber-950 font-black text-xs flex items-center justify-center shrink-0">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="w-9 h-9 rounded-full overflow-hidden bg-white border border-amber-200 shrink-0">
+                                                            <img 
+                                                                src={getStudentPhoto(st.photo_url)} 
+                                                                alt={st.name} 
+                                                                className="w-full h-full object-cover" 
+                                                                onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                                            />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h4 className="font-black text-xs text-amber-950 uppercase leading-snug">
+                                                                {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                                            </h4>
+                                                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                                                Curso {st.grade} • Código: {st.id_code}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <span className="px-2.5 py-1 bg-amber-500 text-slate-950 font-black text-[10px] rounded-xl shrink-0 shadow-xs">
+                                                        ⚠️ RIESGO CRÍTICO
+                                                    </span>
+                                                </div>
+
+                                                {/* Condición de Riesgo */}
+                                                <div className="bg-amber-100/70 border border-amber-300/80 rounded-xl px-2.5 py-1.5 text-[10.5px] font-black text-amber-950 flex items-center gap-1.5">
+                                                    <AlertTriangle size={13} className="text-amber-700 shrink-0" />
+                                                    <span>
+                                                        {st.riskScenario === '1_LOST_AND_CRITICAL' 
+                                                            ? `1 Perdida + ${st.critCount} Crítica${st.critCount > 1 ? 's' : ''} (Sin margen de error)` 
+                                                            : st.riskScenario === '1_LOST_NO_MARGIN' 
+                                                                ? '1 Materia Ya Perdida (Sin margen de error en P4)' 
+                                                                : `${st.critCount} Materias Críticas (>90 pts en P4)`}
+                                                    </span>
+                                                </div>
+
+                                                {/* Alerta Ingreso Tardío (si aplica) */}
+                                                {st.isLateEnrollment && (
+                                                    <div className="bg-amber-100/90 border border-amber-300 rounded-xl p-2 text-[10px] text-amber-950 flex items-start gap-1.5">
+                                                        <Clock size={13} className="text-amber-700 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <strong className="block font-black text-amber-900">Ingreso Tardío: {st.periodsShortBadge}</strong>
+                                                            <p className="text-[9.5px] text-amber-800 leading-tight mt-0.5">
+                                                                Solo cursó {st.periodsLabel}. Faltan notas de Periodo {st.missingPeriods.join(', ')}.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Materias Decisivas */}
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between text-[11px] font-black text-amber-950">
+                                                        <span>Asignaturas Críticas (P4 Decisivo):</span>
+                                                    </div>
+
+                                                    <div className="space-y-1.5">
+                                                        {/* Materia Ya Perdida (si aplica) */}
+                                                        {st.lostSubjects.map(ls => (
+                                                            <div key={ls.name} className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 space-y-1 shadow-2xs">
+                                                                <div className="flex items-center justify-between gap-1.5">
+                                                                    <span className="font-black text-xs text-rose-950">⚠️ {ls.name} (Ya Perdida)</span>
+                                                                    <span className="text-[9.5px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-md shrink-0">
+                                                                        Déficit: -{ls.deficit}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-[10px] text-rose-800 pt-0.5 border-t border-rose-100">
+                                                                    <span>Suma P1-P3: <strong>{ls.sum} pts</strong></span>
+                                                                    <span>Requiere: <strong>{ls.needed} pts</strong></span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+
+                                                        {/* Materias Críticas > 90 */}
+                                                        {st.criticalSubjects.map(cs => (
+                                                            <div key={cs.name} className="bg-white border border-amber-200/90 rounded-xl p-2.5 space-y-1 shadow-2xs">
+                                                                <div className="flex items-center justify-between gap-1.5">
+                                                                    <span className="font-black text-xs text-slate-900">{cs.name}</span>
+                                                                    <span className="text-[9.5px] font-black bg-amber-500 text-slate-950 px-2 py-0.5 rounded-md shrink-0">
+                                                                        Requiere {cs.needed} pts en P4
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-[10px] text-slate-600 pt-0.5 border-t border-slate-100">
+                                                                    <span>Suma P1-P3: <strong className="text-amber-900 font-bold">{cs.sum} pts</strong></span>
+                                                                    <span>Meta: <strong className="text-indigo-600 font-bold">300 pts</strong></span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+
+                                                        {st.criticalSubjects.length === 0 && (
+                                                            <p className="text-[10px] text-slate-500 italic bg-white p-2 rounded-xl border border-slate-200">
+                                                                Otras {st.recoverableSubjects.length} materias en rango regular (requieren ≤ 90 pts en P4).
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Botón de Acción a Boletín */}
+                                                <Link 
+                                                    to={`/admin/boletin-print/${st.id}`}
+                                                    className="w-full bg-white hover:bg-amber-50 border border-amber-200 text-amber-900 font-extrabold text-xs py-2 rounded-xl transition flex items-center justify-center gap-1.5 active-press shadow-2xs"
+                                                >
+                                                    <BookOpen size={13} /> Ver Boletín Académico
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Tabla para Tablets y Desktop (hidden sm:block) */}
+                                    <div className="hidden sm:block overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                                        <table className="w-full text-left text-xs border-collapse">
                                         <thead>
                                             <tr className="bg-amber-50/70 border-b border-amber-200 text-amber-900 font-black uppercase text-[10px] tracking-wider">
                                                 <th className="p-3.5 text-center w-12">#</th>
@@ -2072,7 +2371,8 @@ export default function AcademicStats() {
                                         </tbody>
                                     </table>
                                 </div>
-                            )}
+                            </>
+                        )}
                         </div>
                     )}
                 </div>
@@ -2082,11 +2382,25 @@ export default function AcademicStats() {
             {activeTab === 'course_ranking' && (
                 <div className="space-y-6">
                     <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b pb-3">
-                            <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                <Trophy size={20} className="text-amber-500 shrink-0" /> Cuadro de Honor por Salón
-                            </h3>
-                            <span className="text-xs font-bold text-slate-400">Puestos 1° al 10° de cada grado</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b pb-3">
+                            <div>
+                                <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                    <Trophy size={20} className="text-amber-500 shrink-0" /> Cuadro de Honor por Salón
+                                </h3>
+                                <span className="text-xs font-bold text-slate-400">Puestos 1° al 5° de cada grado</span>
+                            </div>
+
+                            {/* Selector de Curso */}
+                            <select
+                                value={selectedCourse}
+                                onChange={e => setSelectedCourse(e.target.value)}
+                                className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl px-4 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-600/20 min-h-[40px]"
+                            >
+                                <option value="">🎓 Todos los Salones ({coursesList.length} Cursos)</option>
+                                {coursesList.map(c => (
+                                    <option key={c} value={c}>Curso {c}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -2113,7 +2427,7 @@ export default function AcademicStats() {
                                                                 {idx + 1}°
                                                             </span>
                                                             <div className="min-w-0">
-                                                                <span className="font-bold text-slate-800 text-xs block truncate max-w-[130px] sm:max-w-[150px]">
+                                                                <span className="font-bold text-slate-800 text-xs block truncate max-w-[180px] sm:max-w-[210px]">
                                                                     {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
                                                                 </span>
                                                                 <span className="text-[9px] text-slate-400 font-mono">Código: {st.id_code}</span>
@@ -2175,7 +2489,7 @@ export default function AcademicStats() {
                                                             {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
                                                         </span>
                                                         <div className="min-w-0">
-                                                            <span className="font-bold text-white block truncate max-w-[120px] sm:max-w-[140px]">
+                                                            <span className="font-bold text-white block truncate max-w-[180px] sm:max-w-[210px]">
                                                                 {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
                                                             </span>
                                                             <span className="text-[9.5px] text-indigo-200">Grado {st.grade}</span>
@@ -2205,7 +2519,53 @@ export default function AcademicStats() {
                         <span className="text-xs font-bold text-slate-400">{globalRankingsList.length} Estudiantes Ordenados</span>
                     </div>
 
-                    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                    {/* Lista en Tarjetas para Móviles (sm:hidden) */}
+                    <div className="space-y-2.5 sm:hidden">
+                        {globalRankingsList.map((st) => (
+                            <div key={st.id} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-2xs">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-xl text-xs font-black shrink-0 ${
+                                        st.globalRank === 1 ? 'bg-amber-400 text-white font-black shadow-xs shadow-amber-400/40' :
+                                        st.globalRank === 2 ? 'bg-slate-300 text-slate-800 font-black' :
+                                        st.globalRank === 3 ? 'bg-amber-700 text-white font-black' : 'bg-white text-slate-700 border border-slate-200'
+                                    }`}>
+                                        {st.globalRank}°
+                                    </span>
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white border border-slate-200 shrink-0">
+                                        <img 
+                                            src={getStudentPhoto(st.photo_url)} 
+                                            alt={st.name} 
+                                            className="w-full h-full object-cover" 
+                                            onError={(e) => { e.currentTarget.src = DEFAULT_STUDENT_PHOTO; }}
+                                        />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-extrabold text-xs text-slate-900 truncate uppercase leading-tight">
+                                            {st.lastName && st.firstName ? `${st.lastName} ${st.firstName}` : st.name}
+                                        </p>
+                                        <p className="text-[9.5px] text-slate-400 font-semibold mt-0.5">
+                                            Curso {st.grade} • {st.id_code}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className="font-black text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-xl">
+                                        {st.average} pts
+                                    </span>
+                                    <Link 
+                                        to={`/admin/boletin-print/${st.id}`}
+                                        className="text-[10px] font-bold text-indigo-600 bg-white border border-indigo-200 hover:bg-indigo-50 px-2.5 py-1.5 rounded-xl transition inline-flex items-center gap-1 active-press"
+                                    >
+                                        <BookOpen size={11} />
+                                    </Link>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Tabla Completa para Tablets y Desktop (hidden sm:block) */}
+                    <div className="hidden sm:block overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-extrabold uppercase text-[10px] tracking-wider">
@@ -2305,7 +2665,11 @@ export default function AcademicStats() {
                     </div>
 
                     {/* Hoja Formato Carta Imprimible Oficial - Con Wrapper Responsive Anti-Desborde */}
-                    <div className="overflow-x-auto max-w-full pb-4 rounded-2xl -mx-1 px-1 sm:mx-0 sm:px-0">
+                    <div className="sm:hidden bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900 font-semibold flex items-center gap-2 mb-2">
+                        <span className="animate-pulse">👉</span>
+                        <span className="text-[11px]">Desliza horizontalmente la hoja para previsualizar el Cuadro de Honor.</span>
+                    </div>
+                    <div className="overflow-x-auto max-w-full pb-4 rounded-2xl -mx-1 px-1 sm:mx-0 sm:px-0 touch-pan-x">
                         <div className="w-[21.5cm] min-h-[28cm] bg-white p-[1.5cm] border border-slate-300 shadow-2xl mx-auto relative flex flex-col justify-between overflow-hidden text-slate-900 printable-honor-roll shrink-0">
                             {/* Borde Oficial Doble */}
                             <div className="absolute inset-[0.4cm] border-[3px] border-slate-800 border-double rounded-xl pointer-events-none"></div>
@@ -2455,7 +2819,12 @@ export default function AcademicStats() {
                             <p className="text-xs text-slate-500 mt-1">Selecciona otro grado en la barra superior para visualizar e imprimir sus diplomas de honor.</p>
                         </div>
                     ) : (
-                        <div className="space-y-14 print:space-y-0 overflow-x-auto max-w-full pb-6 rounded-2xl -mx-1 px-1 sm:mx-0 sm:px-0">
+                        <div className="space-y-3">
+                            <div className="sm:hidden bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900 font-semibold flex items-center gap-2">
+                                <span className="animate-pulse">👉</span>
+                                <span className="text-[11px]">Desliza horizontalmente para previsualizar los Diplomas de Honor oficiales.</span>
+                            </div>
+                            <div className="space-y-14 print:space-y-0 overflow-x-auto max-w-full pb-6 rounded-2xl -mx-1 px-1 sm:mx-0 sm:px-0 touch-pan-x">
                             {topThreeDiplomasPrint.map((st, idx) => {
                                 const rankNames = [
                                     "PRIMER LUGAR DE EXCELENCIA ACADÉMICA", 
@@ -2592,7 +2961,8 @@ export default function AcademicStats() {
                                 );
                             })}
                         </div>
-                    )}
+                    </div>
+                )}
                 </div>
             )}
 

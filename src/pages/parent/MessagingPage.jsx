@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,7 +7,7 @@ import {
     Loader2, Mail, Send, Inbox, MessageSquare, PlusCircle, Edit3, 
     Search, SlidersHorizontal, Paperclip, Smile, Download, Reply, MoreVertical, 
     Folder, Flag, Calendar, FileText, CheckCircle2, ChevronDown, User, Sparkles, Filter, Clock,
-    Users, GraduationCap, X, Check, UserCheck, Shield, UserCog, BookOpen
+    Users, GraduationCap, X, Check, UserCheck, Shield, UserCog, BookOpen, Image as ImageIcon, ArrowLeft
 } from 'lucide-react';
 
 export default function MessagingPage() {
@@ -20,7 +20,15 @@ export default function MessagingPage() {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState(null);
+    const [mobileViewingDetail, setMobileViewingDetail] = useState(false);
     const [replyText, setReplyText] = useState('');
+    const [sendingReply, setSendingReply] = useState(false);
+
+    // Archivos adjuntos (incapacidades médicas, fotos, PDFs)
+    const [replyAttachment, setReplyAttachment] = useState(null);
+    const [composeAttachment, setComposeAttachment] = useState(null);
+    const replyFileInputRef = useRef(null);
+    const composeFileInputRef = useRef(null);
     
     // Target Selection Mode for Compose ('STAFF' | 'STUDENT' | 'COURSE')
     const [targetMode, setTargetMode] = useState('STUDENT');
@@ -210,6 +218,7 @@ export default function MessagingPage() {
                         category: d.category || 'Academia',
                         priority: d.priority || 'Normal',
                         dueDate: d.due_date || '27/07/2026',
+                        attachment: d.attachment || null,
                         created_at: d.created_at
                     };
                 });
@@ -315,6 +324,14 @@ export default function MessagingPage() {
                 finalReceiverName = `Acudientes del Curso ${targetCourse}`;
             }
 
+            const attachmentData = composeAttachment ? {
+                name: composeAttachment.name,
+                type: composeAttachment.type,
+                mimeType: composeAttachment.mimeType,
+                size: composeAttachment.size,
+                dataUrl: composeAttachment.dataUrl
+            } : null;
+
             const newMsgRef = await addDoc(collection(db, 'messages'), {
                 sender_id: currentUser.uid,
                 sender_name: currentUser.displayName || currentUser.email.split('@')[0],
@@ -329,6 +346,7 @@ export default function MessagingPage() {
                 body,
                 category,
                 priority,
+                attachment: attachmentData,
                 created_at: serverTimestamp(),
                 read: false,
                 read_at: null,
@@ -350,6 +368,7 @@ export default function MessagingPage() {
                 target_parent_uids: targetParentUids,
                 subject,
                 body,
+                attachment: attachmentData,
                 date: 'Hoy',
                 time: 'Ahora',
                 isNew: false,
@@ -368,6 +387,7 @@ export default function MessagingPage() {
             setStaffId('');
             setSelectedStudents([]);
             setStudentSearch('');
+            setComposeAttachment(null);
             setTimeout(() => {
                 setActiveTab('inbox');
                 setSuccessMessage('');
@@ -380,38 +400,187 @@ export default function MessagingPage() {
         }
     }
 
-    // Respuesta rápida
-    const handleSendQuickReply = () => {
-        if (!replyText.trim() || !selectedMessage) return;
-        
-        const newReplyObj = {
-            id: `reply-${Date.now()}`,
-            sender_id: currentUser.uid,
-            sender_name: currentUser.displayName || 'Remitente',
-            sender_role: userRole,
-            sender_initials: 'YO',
-            sender_color: 'bg-indigo-600 text-white',
-            receiver_id: selectedMessage.sender_id,
-            receiver_name: selectedMessage.sender_name,
-            subject: `Re: ${selectedMessage.subject}`,
-            body: replyText,
-            date: 'Ahora',
-            time: 'Justo ahora',
-            isNew: false,
-            category: selectedMessage.category || 'Academia',
-            priority: selectedMessage.priority || 'Normal'
-        };
-
-        alert(`Respuesta enviada a ${selectedMessage.sender_name}`);
-        setReplyText('');
+    // Formatear tamaño de archivo legible
+    const formatFileSize = (bytes) => {
+        if (!bytes) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     };
 
-    // Descarga del adjunto simulada
-    const handleDownloadAttachment = (filename) => {
+    // Compresión de imágenes de celular para que quepan con alta nitidez en Firestore (~200-350 KB)
+    const compressImage = (file, maxWidth = 1280, quality = 0.8) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new window.Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let { width, height } = img;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(dataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    // Selección de archivo adjunto (imagen o PDF de incapacidad)
+    const handleFileSelect = async (e, target = 'reply') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        const isImage = file.type.startsWith('image/');
+
+        if (!isPdf && !isImage) {
+            alert('Formato no admitido. Por favor selecciona una foto (JPG, PNG) o un archivo PDF de incapacidad/constancia.');
+            e.target.value = '';
+            return;
+        }
+
+        if (isPdf && file.size > 1.5 * 1024 * 1024) {
+            alert('El archivo PDF supera 1.5 MB. Te recomendamos adjuntar una versión optimizada o una fotografía clara del documento.');
+            e.target.value = '';
+            return;
+        }
+
+        try {
+            let dataUrl = '';
+            let finalSize = formatFileSize(file.size);
+
+            if (isImage) {
+                dataUrl = await compressImage(file);
+            } else {
+                dataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            const attachmentObj = {
+                name: file.name,
+                type: isPdf ? 'PDF' : 'Imagen',
+                mimeType: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+                size: finalSize,
+                dataUrl
+            };
+
+            if (target === 'reply') {
+                setReplyAttachment(attachmentObj);
+            } else {
+                setComposeAttachment(attachmentObj);
+            }
+        } catch (err) {
+            console.error("Error al procesar archivo:", err);
+            alert("Ocurrió un error al procesar el archivo seleccionado.");
+        } finally {
+            e.target.value = '';
+        }
+    };
+
+    // Respuesta rápida con soporte oficial (Incapacidad / Justificación)
+    const handleSendQuickReply = async () => {
+        if (!replyText.trim() && !replyAttachment) {
+            alert("Por favor escribe una respuesta o adjunta un soporte.");
+            return;
+        }
+        if (!selectedMessage) return;
+
+        setSendingReply(true);
+        try {
+            const replySubject = selectedMessage.subject.startsWith('Re: ')
+                ? selectedMessage.subject
+                : `Re: ${selectedMessage.subject}`;
+
+            const attachmentData = replyAttachment ? {
+                name: replyAttachment.name,
+                type: replyAttachment.type,
+                mimeType: replyAttachment.mimeType,
+                size: replyAttachment.size,
+                dataUrl: replyAttachment.dataUrl
+            } : null;
+
+            const replyPayload = {
+                sender_id: currentUser.uid,
+                sender_name: currentUser.displayName || currentUser.email?.split('@')[0] || 'Remitente',
+                sender_role: userRole || 'student',
+                receiver_id: selectedMessage.sender_id,
+                receiver_name: selectedMessage.sender_name,
+                target_type: 'STUDENT',
+                target_students: selectedMessage.target_students || [],
+                target_parent_uids: selectedMessage.target_parent_uids || [],
+                subject: replySubject,
+                body: replyText.trim() || 'Se adjunta soporte oficial / justificación médica.',
+                category: selectedMessage.category || 'Asistencia',
+                priority: selectedMessage.priority || 'Normal',
+                attachment: attachmentData,
+                created_at: serverTimestamp(),
+                read: false,
+                read_at: null,
+                read_by: []
+            };
+
+            const docRef = await addDoc(collection(db, 'messages'), replyPayload);
+
+            const newReplyObj = {
+                id: docRef.id,
+                ...replyPayload,
+                sender_initials: (currentUser.displayName || 'YO').slice(0, 2).toUpperCase(),
+                sender_color: 'bg-indigo-600 text-white',
+                date: 'Hoy',
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isNew: false
+            };
+
+            setMessages(prev => [newReplyObj, ...prev]);
+            setReplyText('');
+            setReplyAttachment(null);
+            alert(`¡Respuesta y soporte enviados exitosamente a ${selectedMessage.sender_name}!`);
+        } catch (error) {
+            console.error("Error al enviar respuesta:", error);
+            alert("No se pudo enviar la respuesta: " + error.message);
+        } finally {
+            setSendingReply(false);
+        }
+    };
+
+    // Descarga y apertura de archivo adjunto (PDF o Imagen)
+    const handleDownloadAttachment = (attachment) => {
+        if (!attachment) return;
+
+        const fileUrl = typeof attachment === 'object' ? (attachment.dataUrl || attachment.url) : null;
+        const fileName = typeof attachment === 'object' ? attachment.name : attachment;
+
+        if (fileUrl) {
+            const element = document.createElement("a");
+            element.href = fileUrl;
+            element.download = fileName || "Adjunto_Inas.pdf";
+            element.target = "_blank";
+            element.rel = "noopener noreferrer";
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            return;
+        }
+
+        // Fallback si es un mensaje de demo
         const element = document.createElement("a");
-        const file = new Blob([`Documento Oficial Adjunto: ${filename}`], {type: 'text/plain'});
+        const file = new Blob([`Documento Oficial Adjunto: ${fileName}`], { type: 'text/plain' });
         element.href = URL.createObjectURL(file);
-        element.download = filename || "Informe_academico.pdf";
+        element.download = fileName || "Informe_academico.pdf";
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
@@ -525,11 +694,11 @@ export default function MessagingPage() {
                     </div>
                 </div>
 
-                {/* Filtros de Bandeja y Botón de Redactar en la misma franja */}
-                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                {/* Filtros de Bandeja y Botón de Redactar con scroll horizontal suave en móviles */}
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 max-w-full">
                     <button
-                        onClick={() => setActiveTab('inbox')}
-                        className={`px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press ${
+                        onClick={() => { setActiveTab('inbox'); setMobileViewingDetail(false); }}
+                        className={`px-3.5 sm:px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press shrink-0 ${
                             activeTab === 'inbox'
                                 ? 'bg-slate-900 text-white shadow-sm'
                                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -545,8 +714,8 @@ export default function MessagingPage() {
                     </button>
 
                     <button
-                        onClick={() => setActiveTab('sent')}
-                        className={`px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press ${
+                        onClick={() => { setActiveTab('sent'); setMobileViewingDetail(false); }}
+                        className={`px-3.5 sm:px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press shrink-0 ${
                             activeTab === 'sent'
                                 ? 'bg-slate-900 text-white shadow-sm'
                                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -557,8 +726,8 @@ export default function MessagingPage() {
                     </button>
 
                     <button
-                        onClick={() => setActiveTab('drafts')}
-                        className={`px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press ${
+                        onClick={() => { setActiveTab('drafts'); setMobileViewingDetail(false); }}
+                        className={`px-3.5 sm:px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press shrink-0 ${
                             activeTab === 'drafts'
                                 ? 'bg-slate-900 text-white shadow-sm'
                                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -569,8 +738,8 @@ export default function MessagingPage() {
                     </button>
 
                     <button
-                        onClick={() => setActiveTab('compose')}
-                        className={`px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/15 ml-1`}
+                        onClick={() => { setActiveTab('compose'); setMobileViewingDetail(false); }}
+                        className={`px-3.5 sm:px-4 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-2 transition active-press bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/15 shrink-0`}
                     >
                         <PlusCircle size={15} />
                         <span>Redactar</span>
@@ -583,7 +752,9 @@ export default function MessagingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                 
                 {/* Columna Izquierda: Listado Continuo de Mensajes (5 de 12 Cols) */}
-                <div className="lg:col-span-5 bg-white border border-slate-150 rounded-3xl p-4 shadow-xs space-y-3">
+                <div className={`lg:col-span-5 bg-white border border-slate-150 rounded-3xl p-4 shadow-xs space-y-3 ${
+                    (activeTab === 'compose' || (selectedMessage && mobileViewingDetail)) ? 'hidden lg:block' : 'block'
+                }`}>
                     
                     {/* Buscador Integrado */}
                     <div className="relative">
@@ -614,6 +785,7 @@ export default function MessagingPage() {
                                         onClick={() => {
                                             setSelectedMessage(msg);
                                             handleMarkMessageAsRead(msg);
+                                            setMobileViewingDetail(true);
                                             if (activeTab === 'compose') setActiveTab('inbox');
                                         }}
                                         className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-left flex items-start gap-3 relative ${
@@ -683,6 +855,12 @@ export default function MessagingPage() {
                                                     {msg.category}
                                                 </span>
                                             )}
+
+                                            {msg.attachment && (
+                                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md border bg-slate-100 text-slate-600 border-slate-200 flex items-center gap-1" title="Contiene archivo adjunto">
+                                                    <Paperclip size={9} className="text-slate-500" /> Adjunto
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -692,10 +870,21 @@ export default function MessagingPage() {
                 </div>
 
                 {/* Columna Derecha: Visor de Mensaje Abierto o Formulario de Redacción (7 de 12 Cols) */}
-                <div className="lg:col-span-7">
+                <div className={`lg:col-span-7 ${
+                    (activeTab !== 'compose' && !mobileViewingDetail) ? 'hidden lg:block' : 'block'
+                }`}>
                     {activeTab === 'compose' ? (
                         /* Formulario Claro y Estructurado de Redactar Mensaje Nuevo */
-                        <div className="bg-white border border-slate-150 rounded-3xl p-6 shadow-xs space-y-4 text-left">
+                        <div className="bg-white border border-slate-150 rounded-3xl p-4 sm:p-6 shadow-xs space-y-4 text-left">
+                            {/* Botón Volver a la Bandeja en Mobile */}
+                            <button
+                                type="button"
+                                onClick={() => { setActiveTab('inbox'); setMobileViewingDetail(false); }}
+                                className="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold transition active-press"
+                            >
+                                <ArrowLeft size={14} /> Volver a mensajes
+                            </button>
+
                             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
                                 <div className="w-9 h-9 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
                                     <PlusCircle size={18} />
@@ -961,8 +1150,54 @@ export default function MessagingPage() {
                                         onChange={e => setBody(e.target.value)}
                                         placeholder="Escribe aquí el contenido oficial del mensaje..."
                                         required
-                                        className="w-full border border-slate-200 rounded-2xl p-3 text-xs h-40 font-medium focus:ring-2 focus:ring-indigo-600/20 outline-none"
+                                        className="w-full border border-slate-200 rounded-2xl p-3 text-xs h-36 font-medium focus:ring-2 focus:ring-indigo-600/20 outline-none"
                                     />
+                                </div>
+
+                                {/* Adjunto en Formulario de Redacción */}
+                                <div className="space-y-2">
+                                    <input
+                                        ref={composeFileInputRef}
+                                        type="file"
+                                        accept="image/*,.pdf,application/pdf"
+                                        onChange={(e) => handleFileSelect(e, 'compose')}
+                                        className="hidden"
+                                    />
+
+                                    {composeAttachment ? (
+                                        <div className="flex items-center justify-between p-3 rounded-2xl border border-indigo-200 bg-indigo-50/50">
+                                            <div className="flex items-center gap-2.5 overflow-hidden">
+                                                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                                                    {composeAttachment.type === 'PDF' ? <FileText size={16} /> : <ImageIcon size={16} />}
+                                                </div>
+                                                <div className="text-left truncate">
+                                                    <p className="text-xs font-bold text-slate-800 truncate max-w-[220px]">
+                                                        {composeAttachment.name}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-500 font-medium">
+                                                        {composeAttachment.type} • {composeAttachment.size}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setComposeAttachment(null)}
+                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                title="Eliminar adjunto"
+                                            >
+                                                <X size={15} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => composeFileInputRef.current?.click()}
+                                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-dashed border-slate-300 hover:border-indigo-400 text-slate-600 hover:text-indigo-600 text-xs font-bold transition hover:bg-slate-50"
+                                        >
+                                            <Paperclip size={14} className="text-slate-400" />
+                                            Adjuntar soporte o incapacidad (PDF o Imagen)
+                                        </button>
+                                    )}
                                 </div>
 
                                 <button
@@ -976,8 +1211,17 @@ export default function MessagingPage() {
                         </div>
                     ) : selectedMessage ? (
                         /* Panel Unificado de Lectura y Respuesta */
-                        <div className="bg-white border border-slate-150 rounded-3xl p-6 shadow-xs text-left space-y-5">
+                        <div className="bg-white border border-slate-150 rounded-3xl p-4 sm:p-6 shadow-xs text-left space-y-5">
                             
+                            {/* Botón Volver a la Lista en Mobile */}
+                            <button
+                                type="button"
+                                onClick={() => setMobileViewingDetail(false)}
+                                className="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-black transition active-press border border-indigo-100 mb-1"
+                            >
+                                <ArrowLeft size={14} /> Volver a mensajes
+                            </button>
+
                             {/* Cabecera del Mensaje */}
                             <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
                                 <div className="space-y-1">
@@ -1036,31 +1280,57 @@ export default function MessagingPage() {
 
                             {/* Archivos Adjuntos si existen */}
                             {selectedMessage.attachment && (
-                                <div className="pt-3 border-t border-slate-100 space-y-2">
+                                <div className="pt-3 border-t border-slate-100 space-y-2.5">
                                     <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                                        <Paperclip size={13} className="text-slate-400" /> Archivo Adjunto
+                                        <Paperclip size={13} className="text-indigo-600" /> Soporte / Archivo Adjunto
                                     </p>
-                                    <div className="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-slate-50/50 max-w-md">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center shrink-0">
-                                                <FileText size={16} />
+                                    <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 max-w-lg space-y-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                                                    selectedMessage.attachment.type === 'PDF' 
+                                                        ? 'bg-red-50 text-red-600 border-red-200' 
+                                                        : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                                                }`}>
+                                                    {selectedMessage.attachment.type === 'PDF' ? <FileText size={18} /> : <ImageIcon size={18} />}
+                                                </div>
+                                                <div className="leading-tight text-left min-w-0">
+                                                    <p className="text-xs font-bold text-slate-800 truncate" title={selectedMessage.attachment.name}>
+                                                        {selectedMessage.attachment.name}
+                                                    </p>
+                                                    <span className="text-[10px] text-slate-500 font-semibold">
+                                                        {selectedMessage.attachment.type || 'Documento'} • {selectedMessage.attachment.size || 'Archivo'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="leading-tight text-left">
-                                                <p className="text-xs font-bold text-slate-800 truncate max-w-[200px]">
-                                                    {selectedMessage.attachment.name}
-                                                </p>
-                                                <span className="text-[9.5px] text-slate-400 font-semibold">
-                                                    {selectedMessage.attachment.type} • {selectedMessage.attachment.size}
-                                                </span>
-                                            </div>
+                                            <button 
+                                                onClick={() => handleDownloadAttachment(selectedMessage.attachment)}
+                                                className="px-3 py-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 hover:bg-indigo-50 transition rounded-xl flex items-center gap-1.5 shrink-0 shadow-2xs"
+                                                title="Abrir o Descargar archivo"
+                                            >
+                                                <Download size={13} /> Abrir / Descargar
+                                            </button>
                                         </div>
-                                        <button 
-                                            onClick={() => handleDownloadAttachment(selectedMessage.attachment.name)}
-                                            className="p-1.5 text-indigo-600 hover:text-indigo-800 transition rounded-lg hover:bg-indigo-50"
-                                            title="Descargar archivo"
-                                        >
-                                            <Download size={15} />
-                                        </button>
+
+                                        {/* Vista previa en miniatura si es imagen con dataUrl */}
+                                        {selectedMessage.attachment.dataUrl && (selectedMessage.attachment.type === 'Imagen' || selectedMessage.attachment.mimeType?.startsWith('image/')) && (
+                                            <div className="pt-2 border-t border-slate-200/60">
+                                                <p className="text-[10px] font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+                                                    <ImageIcon size={11} /> Vista previa del soporte:
+                                                </p>
+                                                <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-white inline-block max-w-xs group cursor-pointer"
+                                                     onClick={() => handleDownloadAttachment(selectedMessage.attachment)}>
+                                                    <img 
+                                                        src={selectedMessage.attachment.dataUrl} 
+                                                        alt={selectedMessage.attachment.name} 
+                                                        className="max-h-48 w-auto object-contain rounded-xl hover:scale-102 transition duration-200" 
+                                                    />
+                                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1 rounded-xl">
+                                                        <Download size={14} /> Clic para ampliar / guardar
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -1139,28 +1409,81 @@ export default function MessagingPage() {
                                         </span>
                                     </div>
 
-                                    <div className="border border-slate-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-600/10 rounded-2xl p-3 bg-slate-50/50 transition">
+                                    {/* Input invisible para adjuntar archivo en respuesta rápida */}
+                                    <input
+                                        ref={replyFileInputRef}
+                                        type="file"
+                                        accept="image/*,.pdf,application/pdf"
+                                        onChange={(e) => handleFileSelect(e, 'reply')}
+                                        className="hidden"
+                                    />
+
+                                    <div className="border border-slate-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-600/10 rounded-2xl p-3 bg-slate-50/50 transition space-y-2">
+                                        
+                                        {/* Chip de previsualización de archivo adjunto en respuesta */}
+                                        {replyAttachment && (
+                                            <div className="flex items-center justify-between bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs shadow-2xs">
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                                        {replyAttachment.type === 'PDF' ? <FileText size={13} /> : <ImageIcon size={13} />}
+                                                    </div>
+                                                    <div className="truncate text-left">
+                                                        <span className="font-bold text-slate-800 truncate text-[11px] block max-w-[240px]">
+                                                            {replyAttachment.name}
+                                                        </span>
+                                                        <span className="text-[9.5px] text-slate-400 font-semibold">
+                                                            {replyAttachment.type} • {replyAttachment.size}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setReplyAttachment(null)}
+                                                    className="p-1 text-slate-400 hover:text-red-600 rounded-md transition hover:bg-red-50"
+                                                    title="Quitar archivo adjunto"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        )}
+
                                         <textarea
                                             value={replyText}
                                             onChange={(e) => setReplyText(e.target.value)}
-                                            placeholder="Escribe aquí tu respuesta oficial..."
+                                            placeholder="Escribe aquí tu respuesta oficial o justificación..."
                                             className="w-full text-xs font-medium text-slate-700 placeholder-slate-400 bg-transparent border-none outline-none resize-none min-h-[75px]"
                                         />
                                         <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
                                             <div className="flex items-center gap-1.5 text-slate-400">
-                                                <button className="p-1.5 hover:text-slate-600 rounded-lg hover:bg-white transition">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => replyFileInputRef.current?.click()}
+                                                    className={`p-1.5 rounded-lg transition flex items-center gap-1.5 text-xs font-bold ${
+                                                        replyAttachment ? 'text-indigo-600 bg-indigo-50 border border-indigo-100' : 'hover:text-indigo-600 hover:bg-white text-slate-500'
+                                                    }`}
+                                                    title="Adjuntar soporte médico o documento (PDF o Imagen)"
+                                                >
                                                     <Paperclip size={15} />
+                                                    <span className="text-[10px] hidden sm:inline">Adjuntar Incapacidad / PDF</span>
                                                 </button>
-                                                <button className="p-1.5 hover:text-slate-600 rounded-lg hover:bg-white transition">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setReplyText(prev => prev ? `${prev}\n📌 Justificación médica: ` : '📌 Justificación médica: ')}
+                                                    className="p-1.5 hover:text-indigo-600 rounded-lg hover:bg-white transition text-slate-500"
+                                                    title="Insertar prefijo de justificación médica"
+                                                >
                                                     <Smile size={15} />
                                                 </button>
                                             </div>
 
                                             <button 
+                                                type="button"
                                                 onClick={handleSendQuickReply}
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-md shadow-indigo-600/10 flex items-center gap-1.5 transition active-press"
+                                                disabled={sendingReply}
+                                                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-md shadow-indigo-600/10 flex items-center gap-1.5 transition active-press"
                                             >
-                                                <Send size={13} /> Responder
+                                                {sendingReply ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} 
+                                                {sendingReply ? 'Enviando...' : 'Responder'}
                                             </button>
                                         </div>
                                     </div>

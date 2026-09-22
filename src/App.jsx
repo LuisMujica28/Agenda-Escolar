@@ -313,6 +313,87 @@ function Layout({ children }) {
     }
   };
 
+  // Renderizar enlaces de la barra de navegación inferior en teléfonos móviles
+  const renderMobileBottomNav = () => {
+    switch (userRole) {
+      case 'teacher':
+        return (
+          <>
+            <Link to="/" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <HomeIcon size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Inicio</span>
+            </Link>
+            <Link to="/teacher/daily-attendance" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/teacher/daily-attendance') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <UserCheck size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Lista</span>
+            </Link>
+            <Link to="/teacher/search" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/teacher/search') || location.pathname.startsWith('/teacher/log') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <Search size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Alumnos</span>
+            </Link>
+            <Link to="/teacher/sync-grades" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/teacher/sync-grades') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <ClipboardList size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Notas</span>
+            </Link>
+            <Link to="/messages" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/messages') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <MessageSquare size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Mensajes</span>
+            </Link>
+          </>
+        );
+      case 'admin':
+        return (
+          <>
+            <Link to="/" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <HomeIcon size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Inicio</span>
+            </Link>
+            <Link to="/teacher/daily-attendance" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/teacher/daily-attendance') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <UserCheck size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Asistencia</span>
+            </Link>
+            <Link to="/planilla-print" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/planilla-print') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <Printer size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Planillas</span>
+            </Link>
+            <Link to="/admin/stats" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/admin/stats') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <BarChart2 size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Estadísticas</span>
+            </Link>
+            <Link to="/messages" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/messages') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <MessageSquare size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Mensajes</span>
+            </Link>
+          </>
+        );
+      default: // student / parent
+        return (
+          <>
+            <Link to="/" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <HomeIcon size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Inicio</span>
+            </Link>
+            <Link to="/parent/grades" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/parent/grades') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <BookOpen size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Boletín</span>
+            </Link>
+            <Link to="/parent/attendance" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/parent/attendance') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <CalendarIcon size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Asistencia</span>
+            </Link>
+            <Link to="/messages" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/messages') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <MessageSquare size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Mensajes</span>
+            </Link>
+            <Link to="/parent/id" className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${isActive('/parent/id') ? 'text-indigo-600 font-black' : 'text-slate-500 hover:text-slate-800'}`}>
+              <User size={18} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">Carnet</span>
+            </Link>
+          </>
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen flex relative">
       {/* Fondo de Dunas generado con código puro (SVG + Mesh en Blanco y Azul) */}
@@ -465,11 +546,16 @@ function Layout({ children }) {
         </header>
 
         {/* Dynamic Children Panel Responsivo con margen cómodo en Mobile (360px-430px) */}
-        <main className="flex-1 px-3 py-3.5 sm:p-6 md:p-8 lg:px-10 lg:py-8 overflow-y-auto min-w-0 relative z-10 pb-safe">
+        <main className="flex-1 px-3 py-3.5 sm:p-6 md:p-8 lg:px-10 lg:py-8 overflow-y-auto min-w-0 relative z-10 pb-20 md:pb-safe">
           <div className="w-full max-w-[1440px] mx-auto min-w-0">
             {children}
           </div>
         </main>
+
+        {/* Barra de Navegación Inferior Móvil (Thumb-zone rápida) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 px-1 py-1.5 flex items-center justify-around pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+          {renderMobileBottomNav()}
+        </nav>
       </div>
     </div>
   );
